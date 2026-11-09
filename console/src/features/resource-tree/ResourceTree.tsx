@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ComponentProps, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { ChevronRight, Loader2, MoveRight, Plus } from 'lucide-react'
 import type { Node } from '@/shared/api/gen/hayat/admin/v1/policy_pb'
@@ -18,7 +18,14 @@ export type TreeActions = {
 const rowBase = 'group flex w-full items-center gap-2 rounded-[7px] px-2.5 py-1.5 text-left text-xs'
 const rowIdle = 'text-muted-foreground hover:bg-accent hover:text-foreground'
 
-/** A tree row: twisty, icon, name, child count. A row is a link, so a selection is an address. */
+/**
+ * A tree row: twisty, icon, name, child count. A row is a link, so a selection is an address.
+ *
+ * `RowMenu` wraps it in `ContextMenuTrigger asChild`, which hands its right-click
+ * and pointer handlers (and a ref) to this component as props — they must reach
+ * the `<Link>`, or the trigger never hears the right-click and the browser's own
+ * menu opens instead.
+ */
 function Row({
   to,
   type,
@@ -30,6 +37,7 @@ function Row({
   busy,
   onToggle,
   onOpen,
+  ...triggerProps
 }: {
   to: string
   type: string
@@ -41,9 +49,10 @@ function Row({
   busy?: boolean
   onToggle: () => void
   onOpen: () => void
-}) {
+} & Omit<ComponentProps<typeof Link>, 'to' | 'title' | 'onClick' | 'className'>) {
   return (
     <Link
+      {...triggerProps}
       to={to}
       title={name}
       onClick={() => !expanded && expandable && onOpen()}
