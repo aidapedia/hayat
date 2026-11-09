@@ -1,0 +1,5 @@
+.dev
+.git
+console/node_modules
+console/dist
+**/*_test.go

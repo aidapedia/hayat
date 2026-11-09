@@ -1,0 +1,16 @@
+{{define "content"}}
+<form method="post" action="/signup" class="form" novalidate>
+  <input type="hidden" name="csrf" value="{{.CSRF}}">
+  <label class="field">
+    <span>Name</span>
+    <input type="text" name="name" value="{{.Name}}" autocomplete="name" maxlength="200" autofocus>
+  </label>
+  <label class="field">
+    <span>Email</span>
+    <input type="email" name="email" value="{{.Email}}" autocomplete="email" required>
+  </label>
+  <p class="hint">We'll email you a link to choose your password. Your account works once you open it.</p>
+  <button type="submit" class="btn">Create account</button>
+</form>
+{{end}}
+{{define "foot"}}Already have an account? <a href="/login{{if .AuthRequestID}}?authRequestID={{.AuthRequestID}}{{end}}">Sign in</a>{{end}}

@@ -1,0 +1,383 @@
+// The admin API's policy half: the catalog, roles, services and their
+// contracts, and the resource tree. Calls are allowed by permission, not by
+// being an instance admin: a tenant admin can manage their own tenant's tree,
+// a service owner their service. Instance admins hold every platform
+// permission, so they can do all of it.
+syntax = "proto3";
+
+package hayat.admin.v1;
+
+import "google/protobuf/timestamp.proto";
+import "hayat/admin/v1/admin.proto";
+
+option go_package = "github.com/aidapedia/hayat/gen/go/hayat/admin/v1;adminv1";
+
+message NodeType {
+  string key = 1;
+  string service = 2;
+  repeated string parents = 3;
+  string access_permission = 4;
+  bool via_placement = 5;
+  bool requires_membership = 6;
+  bool degradable = 7;
+  string description = 8;
+}
+
+message PermissionInfo {
+  string key = 1;
+  string service = 2;
+  string scope = 3;
+  string description = 4;
+}
+
+message Role {
+  string id = 1;
+  string slug = 2;
+  string name = 3;
+  string description = 4;
+  // hayat for built-ins, a service for contract roles, empty for roles admins made.
+  string service = 5;
+  repeated string applies_to = 6;
+  repeated string permissions = 7;
+  int32 grant_count = 8;
+  bool builtin = 9;
+}
+
+message Node {
+  string id = 1;
+  string tenant_id = 2;
+  string parent_id = 3;
+  string type = 4;
+  string external_id = 5;
+  string name = 6;
+  string owner_id = 7;
+  int32 depth = 8;
+  google.protobuf.Timestamp created_at = 9;
+  google.protobuf.Timestamp updated_at = 10;
+}
+
+message Explanation {
+  string kind = 1;
+  string node_id = 2;
+  string node_type = 3;
+  string node_name = 4;
+  string role_name = 5;
+  string principal_type = 6;
+  string principal_id = 7;
+  string text = 8;
+}
+
+message Grant {
+  string id = 1;
+  string node_id = 2;
+  // user | group
+  string principal_type = 3;
+  string principal_id = 4;
+  // A person's name or a group's name.
+  string principal_name = 5;
+  string principal_email = 6;
+  string role_id = 7;
+  string role_name = 8;
+  bool inherit = 9;
+  google.protobuf.Timestamp expires_at = 10;
+  string created_by = 11;
+  google.protobuf.Timestamp created_at = 12;
+}
+
+message ServiceInfo {
+  string id = 1;
+  string display_name = 2;
+  string description = 3;
+  string client_id = 4;
+  int32 active_version = 5;
+  repeated User owners = 6;
+  google.protobuf.Timestamp created_at = 7;
+  // True when a version waits for an approval the caller can give.
+  bool awaiting_you = 8;
+}
+
+message Contract {
+  string service_id = 1;
+  int32 version = 2;
+  // pending | active | superseded | rejected
+  string status = 3;
+  // The manifest as JSON.
+  string manifest_json = 4;
+  repeated string namespaces = 5;
+  repeated string approved = 6;
+  // What the version adds, as JSON.
+  string summary_json = 7;
+  string submitted_by = 8;
+  google.protobuf.Timestamp submitted_at = 9;
+  string decided_by = 10;
+  google.protobuf.Timestamp decided_at = 11;
+  string reason = 12;
+  // Namespaces the caller may approve that still wait.
+  repeated string can_approve = 13;
+}
+
+// ---------- Catalog and roles ----------
+
+service CatalogService {
+  rpc GetCatalog(GetCatalogRequest) returns (GetCatalogResponse);
+  rpc ListRoles(ListRolesRequest) returns (ListRolesResponse);
+  rpc CreateRole(CreateRoleRequest) returns (CreateRoleResponse);
+  rpc UpdateRole(UpdateRoleRequest) returns (UpdateRoleResponse);
+  rpc DeleteRole(DeleteRoleRequest) returns (DeleteRoleResponse);
+}
+
+message GetCatalogRequest {}
+message GetCatalogResponse {
+  repeated NodeType types = 1;
+  repeated PermissionInfo permissions = 2;
+}
+
+message ListRolesRequest {}
+message ListRolesResponse {
+  repeated Role roles = 1;
+}
+
+message CreateRoleRequest {
+  string name = 1;
+  string description = 2;
+  repeated string applies_to = 3;
+  repeated string permissions = 4;
+}
+message CreateRoleResponse {
+  Role role = 1;
+}
+
+message UpdateRoleRequest {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  repeated string applies_to = 4;
+  repeated string permissions = 5;
+}
+message UpdateRoleResponse {
+  Role role = 1;
+}
+
+message DeleteRoleRequest {
+  string id = 1;
+}
+message DeleteRoleResponse {}
+
+// ---------- Services and contracts ----------
+
+service RegistryService {
+  rpc ListServices(ListServicesRequest) returns (ListServicesResponse);
+  rpc GetService(GetServiceRequest) returns (GetServiceResponse);
+  // Creates the namespace, its confidential API client and the first owner.
+  rpc RegisterService(RegisterServiceRequest) returns (RegisterServiceResponse);
+  rpc AddServiceOwner(AddServiceOwnerRequest) returns (AddServiceOwnerResponse);
+  rpc RemoveServiceOwner(RemoveServiceOwnerRequest) returns (RemoveServiceOwnerResponse);
+  rpc RotateServiceSecret(RotateServiceSecretRequest) returns (RotateServiceSecretResponse);
+  rpc PublishContract(RegistryServicePublishContractRequest) returns (RegistryServicePublishContractResponse);
+  // Approves every namespace of the version the caller may approve.
+  rpc ApproveContract(ApproveContractRequest) returns (ApproveContractResponse);
+  rpc RejectContract(RejectContractRequest) returns (RejectContractResponse);
+}
+
+message ListServicesRequest {}
+message ListServicesResponse {
+  repeated ServiceInfo services = 1;
+}
+
+message GetServiceRequest {
+  string id = 1;
+}
+message GetServiceResponse {
+  ServiceInfo service = 1;
+  repeated Contract contracts = 2;
+  // Pending versions of other services that wait on this namespace.
+  repeated Contract incoming = 3;
+  bool can_manage = 4;
+}
+
+message RegisterServiceRequest {
+  string id = 1;
+  string display_name = 2;
+  string description = 3;
+  string owner_email = 4;
+}
+message RegisterServiceResponse {
+  ServiceInfo service = 1;
+  string client_id = 2;
+  // Shown once.
+  string client_secret = 3;
+}
+
+message AddServiceOwnerRequest {
+  string service_id = 1;
+  string email = 2;
+}
+message AddServiceOwnerResponse {
+  ServiceInfo service = 1;
+}
+
+message RemoveServiceOwnerRequest {
+  string service_id = 1;
+  string user_id = 2;
+}
+message RemoveServiceOwnerResponse {
+  ServiceInfo service = 1;
+}
+
+message RotateServiceSecretRequest {
+  string service_id = 1;
+}
+message RotateServiceSecretResponse {
+  string client_secret = 1;
+}
+
+message RegistryServicePublishContractRequest {
+  string service_id = 1;
+  string manifest = 2;
+}
+message RegistryServicePublishContractResponse {
+  Contract contract = 1;
+}
+
+message ApproveContractRequest {
+  string service_id = 1;
+  int32 version = 2;
+}
+message ApproveContractResponse {
+  Contract contract = 1;
+}
+
+message RejectContractRequest {
+  string service_id = 1;
+  int32 version = 2;
+  string reason = 3;
+}
+message RejectContractResponse {
+  Contract contract = 1;
+}
+
+// ---------- The tree ----------
+
+service TreeAdminService {
+  // Every node of a tenant, parents first.
+  rpc GetTenantTree(GetTenantTreeRequest) returns (GetTenantTreeResponse);
+  rpc GetNode(GetNodeRequest) returns (GetNodeResponse);
+  rpc CreateGroup(CreateGroupRequest) returns (CreateGroupResponse);
+  rpc RenameGroup(RenameGroupRequest) returns (RenameGroupResponse);
+  rpc MoveNode(MoveNodeRequest) returns (MoveNodeResponse);
+  rpc DeleteGroup(DeleteGroupRequest) returns (DeleteGroupResponse);
+  rpc AddGrant(AddGrantRequest) returns (AddGrantResponse);
+  rpc RemoveGrant(RemoveGrantRequest) returns (RemoveGrantResponse);
+  rpc AddGroupMember(AddGroupMemberRequest) returns (AddGroupMemberResponse);
+  rpc RemoveGroupMember(RemoveGroupMemberRequest) returns (RemoveGroupMemberResponse);
+  // Who really holds a permission here, and through what.
+  rpc WhoHasAccess(WhoHasAccessRequest) returns (WhoHasAccessResponse);
+  // Why a person may (or may not) do something here.
+  rpc ExplainAccess(ExplainAccessRequest) returns (ExplainAccessResponse);
+}
+
+message GetTenantTreeRequest {
+  string tenant_id = 1;
+}
+message GetTenantTreeResponse {
+  Tenant tenant = 1;
+  repeated Node nodes = 2;
+}
+
+message GetNodeRequest {
+  string id = 1;
+}
+message GetNodeResponse {
+  Node node = 1;
+  // Root first, the node itself last.
+  repeated Node ancestors = 2;
+  repeated Grant grants = 3;
+  // The roster, for a group.
+  repeated Member members = 4;
+  // What the caller may do here.
+  repeated string my_permissions = 5;
+  // Permissions that mean something here, for the access pickers.
+  repeated string permissions = 6;
+}
+
+message CreateGroupRequest {
+  string parent_id = 1;
+  string name = 2;
+}
+message CreateGroupResponse {
+  Node node = 1;
+}
+
+message RenameGroupRequest {
+  string id = 1;
+  string name = 2;
+}
+message RenameGroupResponse {
+  Node node = 1;
+}
+
+message MoveNodeRequest {
+  string id = 1;
+  string parent_id = 2;
+}
+message MoveNodeResponse {
+  Node node = 1;
+}
+
+message DeleteGroupRequest {
+  string id = 1;
+}
+message DeleteGroupResponse {}
+
+message AddGrantRequest {
+  string node_id = 1;
+  string principal_type = 2;
+  string principal_id = 3;
+  string role_id = 4;
+  bool inherit = 5;
+  google.protobuf.Timestamp expires_at = 6;
+}
+message AddGrantResponse {
+  Grant grant = 1;
+}
+
+message RemoveGrantRequest {
+  string id = 1;
+}
+message RemoveGrantResponse {}
+
+message AddGroupMemberRequest {
+  string group_id = 1;
+  string user_id = 2;
+}
+message AddGroupMemberResponse {}
+
+message RemoveGroupMemberRequest {
+  string group_id = 1;
+  string user_id = 2;
+}
+message RemoveGroupMemberResponse {}
+
+message WhoHasAccessRequest {
+  string node_id = 1;
+  string permission = 2;
+}
+message AccessHolder {
+  User user = 1;
+  Explanation reason = 2;
+}
+message WhoHasAccessResponse {
+  repeated AccessHolder holders = 1;
+}
+
+message ExplainAccessRequest {
+  string node_id = 1;
+  string user_id = 2;
+  string permission = 3;
+}
+message ExplainAccessResponse {
+  bool allowed = 1;
+  Explanation reason = 2;
+  // Everything the person may do here.
+  repeated string permissions = 3;
+}

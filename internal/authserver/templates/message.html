@@ -1,0 +1,11 @@
+{{define "content"}}
+{{if .Body}}<p class="body">{{.Body}}</p>{{end}}
+{{if .Confirm}}
+<form method="post" action="{{.Confirm}}" class="form">
+  <input type="hidden" name="csrf" value="{{.CSRF}}">
+  <button type="submit" class="btn">{{.Button}}</button>
+</form>
+{{else if .Continue}}
+<a class="btn" href="{{.Continue}}">{{.Button}}</a>
+{{end}}
+{{end}}

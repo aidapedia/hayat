@@ -1,0 +1,415 @@
+// The admin API: what the console calls, over HTTP/JSON (the Connect
+// protocol) on the admin role's port. Every call needs a Hayat access token
+// issued to the console client. AccountService is open to any signed-in
+// user; every other service needs an instance admin.
+syntax = "proto3";
+
+package hayat.admin.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/aidapedia/hayat/gen/go/hayat/admin/v1;adminv1";
+
+// ---------- Shared shapes ----------
+
+message User {
+  string id = 1;
+  string email = 2;
+  bool email_verified = 3;
+  string name = 4;
+  string avatar_url = 5;
+  string locale = 6;
+  string zoneinfo = 7;
+  string phone = 8;
+  // pending | active | disabled
+  string status = 9;
+  bool is_admin = 10;
+  bool has_password = 11;
+  string region = 12;
+  google.protobuf.Timestamp created_at = 13;
+  google.protobuf.Timestamp updated_at = 14;
+}
+
+message Session {
+  string id = 1;
+  repeated string amr = 2;
+  string ip = 3;
+  string user_agent = 4;
+  google.protobuf.Timestamp auth_time = 5;
+  google.protobuf.Timestamp last_seen_at = 6;
+  google.protobuf.Timestamp expires_at = 7;
+  // True for the session the caller is using right now.
+  bool current = 8;
+}
+
+message Tenant {
+  string id = 1;
+  string slug = 2;
+  string name = 3;
+  string owner_id = 4;
+  int32 member_count = 5;
+  string region = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp updated_at = 8;
+}
+
+message Member {
+  User user = 1;
+  bool is_owner = 2;
+  google.protobuf.Timestamp joined_at = 3;
+}
+
+message Client {
+  string id = 1;
+  string name = 2;
+  // public | confidential
+  string kind = 3;
+  repeated string redirect_uris = 4;
+  repeated string post_logout_redirect_uris = 5;
+  repeated string grant_types = 6;
+  bool builtin = 7;
+  bool disabled = 8;
+  google.protobuf.Timestamp created_at = 9;
+  google.protobuf.Timestamp updated_at = 10;
+}
+
+message SigningKey {
+  string id = 1;
+  // next | active | retired
+  string status = 2;
+  google.protobuf.Timestamp created_at = 3;
+  google.protobuf.Timestamp activated_at = 4;
+  google.protobuf.Timestamp retired_at = 5;
+}
+
+message AuditEvent {
+  string id = 1;
+  google.protobuf.Timestamp at = 2;
+  string actor = 3;
+  // The actor's display name, when the actor is a user Hayat still knows.
+  string actor_name = 4;
+  string action = 5;
+  string target = 6;
+  string detail_json = 7;
+}
+
+// ---------- Account: any signed-in user, about themselves ----------
+
+service AccountService {
+  rpc GetMe(GetMeRequest) returns (GetMeResponse);
+  rpc UpdateMe(UpdateMeRequest) returns (UpdateMeResponse);
+  rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordResponse);
+  rpc ListMySessions(ListMySessionsRequest) returns (ListMySessionsResponse);
+  rpc RevokeMySession(RevokeMySessionRequest) returns (RevokeMySessionResponse);
+}
+
+message GetMeRequest {}
+message GetMeResponse {
+  User user = 1;
+  repeated Tenant tenants = 2;
+}
+
+message UpdateMeRequest {
+  string name = 1;
+  string locale = 2;
+  string zoneinfo = 3;
+  string phone = 4;
+}
+message UpdateMeResponse {
+  User user = 1;
+}
+
+message ChangePasswordRequest {
+  string current_password = 1;
+  string new_password = 2;
+}
+message ChangePasswordResponse {}
+
+message ListMySessionsRequest {}
+message ListMySessionsResponse {
+  repeated Session sessions = 1;
+}
+
+message RevokeMySessionRequest {
+  string session_id = 1;
+}
+message RevokeMySessionResponse {}
+
+// ---------- Overview ----------
+
+service OverviewService {
+  rpc GetOverview(GetOverviewRequest) returns (GetOverviewResponse);
+}
+
+message GetOverviewRequest {}
+message GetOverviewResponse {
+  int32 users = 1;
+  int32 active_users = 2;
+  int32 tenants = 3;
+  int32 clients = 4;
+  int32 active_sessions = 5;
+  string issuer = 6;
+  string region = 7;
+  string version = 8;
+  repeated AuditEvent recent = 9;
+}
+
+// ---------- Users ----------
+
+service UserService {
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
+  rpc GetUser(GetUserRequest) returns (GetUserResponse);
+  // Creates a pending account and emails a link to choose a password. An
+  // address that already has an account returns it with created = false.
+  rpc InviteUser(InviteUserRequest) returns (InviteUserResponse);
+  rpc UpdateUser(UpdateUserRequest) returns (UpdateUserResponse);
+  rpc SetUserDisabled(SetUserDisabledRequest) returns (SetUserDisabledResponse);
+  rpc SetUserAdmin(SetUserAdminRequest) returns (SetUserAdminResponse);
+  rpc ResendVerification(ResendVerificationRequest) returns (ResendVerificationResponse);
+  // Ends one session, or every session when session_id is empty.
+  rpc RevokeUserSessions(RevokeUserSessionsRequest) returns (RevokeUserSessionsResponse);
+}
+
+message ListUsersRequest {
+  string query = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+}
+message ListUsersResponse {
+  repeated User users = 1;
+  string next_page_token = 2;
+}
+
+message GetUserRequest {
+  string id = 1;
+}
+message GetUserResponse {
+  User user = 1;
+  repeated Tenant tenants = 2;
+  repeated Session sessions = 3;
+}
+
+message InviteUserRequest {
+  string email = 1;
+  string name = 2;
+}
+message InviteUserResponse {
+  User user = 1;
+  bool created = 2;
+}
+
+message UpdateUserRequest {
+  string id = 1;
+  string name = 2;
+  string locale = 3;
+  string zoneinfo = 4;
+  string phone = 5;
+}
+message UpdateUserResponse {
+  User user = 1;
+}
+
+message SetUserDisabledRequest {
+  string id = 1;
+  bool disabled = 2;
+}
+message SetUserDisabledResponse {
+  User user = 1;
+}
+
+message SetUserAdminRequest {
+  string id = 1;
+  bool admin = 2;
+}
+message SetUserAdminResponse {
+  User user = 1;
+}
+
+message ResendVerificationRequest {
+  string id = 1;
+}
+message ResendVerificationResponse {}
+
+message RevokeUserSessionsRequest {
+  string id = 1;
+  string session_id = 2;
+}
+message RevokeUserSessionsResponse {}
+
+// ---------- Tenants ----------
+
+service TenantService {
+  rpc ListTenants(ListTenantsRequest) returns (ListTenantsResponse);
+  rpc GetTenant(GetTenantRequest) returns (GetTenantResponse);
+  rpc CreateTenant(CreateTenantRequest) returns (CreateTenantResponse);
+  rpc RenameTenant(RenameTenantRequest) returns (RenameTenantResponse);
+  // Refused while anything is filed under the tenant.
+  rpc DeleteTenant(DeleteTenantRequest) returns (DeleteTenantResponse);
+  // Adds an existing user by id, or invites an email address.
+  rpc AddMember(AddMemberRequest) returns (AddMemberResponse);
+  rpc RemoveMember(RemoveMemberRequest) returns (RemoveMemberResponse);
+  rpc TransferOwnership(TransferOwnershipRequest) returns (TransferOwnershipResponse);
+}
+
+message ListTenantsRequest {
+  string query = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+}
+message ListTenantsResponse {
+  repeated Tenant tenants = 1;
+  string next_page_token = 2;
+}
+
+message GetTenantRequest {
+  string id = 1;
+}
+message GetTenantResponse {
+  Tenant tenant = 1;
+  repeated Member members = 2;
+}
+
+message CreateTenantRequest {
+  string name = 1;
+  // Optional; derived from the name when empty.
+  string slug = 2;
+  // The owner, by id or by email (an unknown email is invited).
+  string owner_user_id = 3;
+  string owner_email = 4;
+}
+message CreateTenantResponse {
+  Tenant tenant = 1;
+}
+
+message RenameTenantRequest {
+  string id = 1;
+  string name = 2;
+}
+message RenameTenantResponse {
+  Tenant tenant = 1;
+}
+
+message DeleteTenantRequest {
+  string id = 1;
+}
+message DeleteTenantResponse {}
+
+message AddMemberRequest {
+  string tenant_id = 1;
+  string user_id = 2;
+  string email = 3;
+  string name = 4;
+}
+message AddMemberResponse {
+  Member member = 1;
+  // True when the email had no account and an invitation was sent.
+  bool invited = 2;
+}
+
+message RemoveMemberRequest {
+  string tenant_id = 1;
+  string user_id = 2;
+}
+message RemoveMemberResponse {}
+
+message TransferOwnershipRequest {
+  string tenant_id = 1;
+  string user_id = 2;
+}
+message TransferOwnershipResponse {
+  Tenant tenant = 1;
+}
+
+// ---------- OAuth clients ----------
+
+service ClientService {
+  rpc ListClients(ListClientsRequest) returns (ListClientsResponse);
+  rpc GetClient(GetClientRequest) returns (GetClientResponse);
+  // A confidential client's secret is returned here once and never again.
+  rpc CreateClient(CreateClientRequest) returns (CreateClientResponse);
+  rpc UpdateClient(UpdateClientRequest) returns (UpdateClientResponse);
+  rpc RotateClientSecret(RotateClientSecretRequest) returns (RotateClientSecretResponse);
+  rpc SetClientDisabled(SetClientDisabledRequest) returns (SetClientDisabledResponse);
+}
+
+message ListClientsRequest {}
+message ListClientsResponse {
+  repeated Client clients = 1;
+}
+
+message GetClientRequest {
+  string id = 1;
+}
+message GetClientResponse {
+  Client client = 1;
+}
+
+message CreateClientRequest {
+  string name = 1;
+  string kind = 2;
+  repeated string redirect_uris = 3;
+  repeated string post_logout_redirect_uris = 4;
+  repeated string grant_types = 5;
+}
+message CreateClientResponse {
+  Client client = 1;
+  string secret = 2;
+}
+
+message UpdateClientRequest {
+  string id = 1;
+  string name = 2;
+  repeated string redirect_uris = 3;
+  repeated string post_logout_redirect_uris = 4;
+  repeated string grant_types = 5;
+}
+message UpdateClientResponse {
+  Client client = 1;
+}
+
+message RotateClientSecretRequest {
+  string id = 1;
+}
+message RotateClientSecretResponse {
+  string secret = 1;
+}
+
+message SetClientDisabledRequest {
+  string id = 1;
+  bool disabled = 2;
+}
+message SetClientDisabledResponse {
+  Client client = 1;
+}
+
+// ---------- Signing keys ----------
+
+service KeyService {
+  rpc ListSigningKeys(ListSigningKeysRequest) returns (ListSigningKeysResponse);
+  rpc RotateSigningKeys(RotateSigningKeysRequest) returns (RotateSigningKeysResponse);
+}
+
+message ListSigningKeysRequest {}
+message ListSigningKeysResponse {
+  repeated SigningKey keys = 1;
+}
+
+message RotateSigningKeysRequest {}
+message RotateSigningKeysResponse {
+  repeated SigningKey keys = 1;
+}
+
+// ---------- Audit ----------
+
+service AuditService {
+  rpc ListAuditEvents(ListAuditEventsRequest) returns (ListAuditEventsResponse);
+}
+
+message ListAuditEventsRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+}
+message ListAuditEventsResponse {
+  repeated AuditEvent events = 1;
+  string next_page_token = 2;
+}

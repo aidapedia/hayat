@@ -1,0 +1,99 @@
+# Hayat on one machine. Every role is its own container so they scale and fail
+# apart; the console is optional.
+#
+#   cp .env.example .env            # then set HAYAT_MASTER_KEY
+#   docker compose up -d            # auth :8443, admin :8080, api :7443
+#   docker compose --profile console up -d   # + console :3000
+#   docker compose logs hayat-auth | grep setup   # the first-admin link
+#
+# This file is for development and small installs. For high availability run
+# the same image per role behind a load balancer, with PostgreSQL (CloudNativePG
+# or Patroni) and Redis managed separately.
+
+x-hayat: &hayat
+  image: ghcr.io/aidapedia/hayat:${HAYAT_VERSION:-latest}
+  build:
+    context: ../..
+  restart: unless-stopped
+  env_file: .env
+  environment:
+    HAYAT_DATABASE_URL: postgres://hayat:${POSTGRES_PASSWORD:-hayat}@postgres:5432/hayat?sslmode=disable
+    HAYAT_REDIS_URL: redis://redis:6379/0
+    HAYAT_SMTP_URL: ${HAYAT_SMTP_URL:-smtp://mailpit:1025}
+  depends_on:
+    hayat-migrate:
+      condition: service_completed_successfully
+    redis:
+      condition: service_started
+
+services:
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: hayat
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hayat}
+      POSTGRES_DB: hayat
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    ports: ["127.0.0.1:55432:5432"] # `make dev` runs hayat on the host against this
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hayat"]
+      interval: 5s
+      retries: 20
+
+  redis:
+    image: redis:7.4
+    restart: unless-stopped
+
+  mailpit:
+    image: axllent/mailpit:v1.21
+    ports: ["8025:8025"] # read the emails Hayat sends at http://localhost:8025
+
+  hayat-migrate:
+    <<: *hayat
+    restart: "no"
+    command: ["migrate"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  hayat-auth:
+    <<: *hayat
+    command: ["serve", "--role=auth"]
+    ports: ["8443:8443"]
+
+  hayat-admin:
+    <<: *hayat
+    command: ["serve", "--role=admin"]
+    ports: ["8080:8080"]
+
+  hayat-api:
+    <<: *hayat
+    command: ["serve", "--role=api"]
+    ports: ["7443:7443"] # gRPC (h2c), gRPC-Web and Connect for your services
+
+  hayat-worker:
+    <<: *hayat
+    command: ["serve", "--role=worker"]
+
+  hayat-console:
+    profiles: ["console"]
+    image: ghcr.io/aidapedia/hayat-console:${HAYAT_VERSION:-latest}
+    build:
+      context: ../../console
+    restart: unless-stopped
+    environment:
+      HAYAT_ADMIN_URL: http://hayat-admin:8080
+    ports: ["3000:80"]
+    depends_on: [hayat-admin]
+
+  # Compatibility checks against YugabyteDB: docker compose --profile yugabyte up yugabyte
+  yugabyte:
+    profiles: ["yugabyte"]
+    image: yugabytedb/yugabyte:2024.2.2.1-b6
+    command: ["bin/yugabyted", "start", "--background=false"]
+    ports: ["5433:5433"]
+
+volumes:
+  postgres:

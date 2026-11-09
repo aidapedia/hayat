@@ -1,0 +1,16 @@
+{{define "content"}}
+<form method="post" action="/login" class="form" novalidate>
+  <input type="hidden" name="csrf" value="{{.CSRF}}">
+  <input type="hidden" name="authRequestID" value="{{.AuthRequestID}}">
+  <label class="field">
+    <span>Email</span>
+    <input type="email" name="email" value="{{.Email}}" autocomplete="username" required autofocus>
+  </label>
+  <label class="field">
+    <span class="field-row">Password <a href="/forgot" class="link-sm">Forgot password?</a></span>
+    <input type="password" name="password" autocomplete="current-password" required>
+  </label>
+  <button type="submit" class="btn">Sign in</button>
+</form>
+{{end}}
+{{define "foot"}}New here? <a href="/signup{{if .AuthRequestID}}?authRequestID={{.AuthRequestID}}{{end}}">Create an account</a>{{end}}

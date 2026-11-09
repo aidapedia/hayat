@@ -1,0 +1,20 @@
+{{define "content"}}
+<form method="post" action="/setup" class="form" novalidate>
+  <input type="hidden" name="csrf" value="{{.CSRF}}">
+  <input type="hidden" name="token" value="{{.Token}}">
+  <label class="field">
+    <span>Your name</span>
+    <input type="text" name="name" value="{{.Name}}" autocomplete="name" autofocus>
+  </label>
+  <label class="field">
+    <span>Email</span>
+    <input type="email" name="email" value="{{.Email}}" autocomplete="username" required>
+  </label>
+  <label class="field">
+    <span>Password</span>
+    <input type="password" name="password" autocomplete="new-password" minlength="{{.MinLength}}" required>
+  </label>
+  <p class="hint">This account administers the whole instance. At least {{.MinLength}} characters.</p>
+  <button type="submit" class="btn">Create admin account</button>
+</form>
+{{end}}

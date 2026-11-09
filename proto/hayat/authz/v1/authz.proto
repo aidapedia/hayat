@@ -1,0 +1,260 @@
+// The service API: what your services call, over gRPC (or Connect/gRPC-Web)
+// on the api role's port. Every call carries an access token from the client
+// credentials grant, issued to the OAuth client a registered service owns.
+//
+// A service asks about any user (it is trusted to ask on their behalf), but
+// writes only nodes of its own namespace.
+syntax = "proto3";
+
+package hayat.authz.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/aidapedia/hayat/gen/go/hayat/authz/v1;authzv1";
+
+// Names a node: a service resource by (type, external_id), a tenant by
+// ("hayat/tenant", tenant id), or any node by node_id.
+message ResourceRef {
+  string type = 1;
+  string external_id = 2;
+  string node_id = 3;
+}
+
+message Consistency {
+  // Re-read the tenant's revision if the cached one is older: read your writes.
+  int64 at_least_rev = 1;
+  // Bypass every cache. For destructive actions.
+  bool fully_consistent = 2;
+}
+
+// Why a permission is held: the first thing up the chain that gave it.
+message Reason {
+  // owner | grant | placement | admin
+  string kind = 1;
+  string node_id = 2;
+  string node_type = 3;
+  string node_name = 4;
+  string role = 5;
+  string principal_type = 6;
+  string principal_id = 7;
+  // The same, in a sentence.
+  string text = 8;
+}
+
+message Resource {
+  string node_id = 1;
+  string type = 2;
+  string external_id = 3;
+  string name = 4;
+  string tenant_id = 5;
+  string parent_node_id = 6;
+  string owner_user_id = 7;
+}
+
+// ---------- Decisions ----------
+
+service AuthzService {
+  rpc Check(CheckRequest) returns (CheckResponse);
+  rpc BatchCheck(BatchCheckRequest) returns (BatchCheckResponse);
+  // Everything a user may do at one node. For drawing a page's buttons.
+  rpc PermissionsAt(PermissionsAtRequest) returns (PermissionsAtResponse);
+  // Nodes of one type where a user holds a permission. For lists.
+  rpc LookupResources(LookupResourcesRequest) returns (LookupResourcesResponse);
+  // People who really hold a permission at a node, through every route.
+  rpc LookupSubjects(LookupSubjectsRequest) returns (LookupSubjectsResponse);
+}
+
+message CheckRequest {
+  string user_id = 1;
+  string permission = 2;
+  ResourceRef resource = 3;
+  Consistency consistency = 4;
+  // Return the reason. Off by default to keep answers small.
+  bool explain = 5;
+}
+
+message CheckResponse {
+  bool allowed = 1;
+  // The tenant's revision the answer was computed at.
+  int64 rev = 2;
+  string tenant_id = 3;
+  Reason reason = 4;
+}
+
+message BatchCheckRequest {
+  repeated CheckRequest checks = 1;
+}
+
+message BatchCheckResponse {
+  // In the order asked. A check that couldn't be answered (unknown resource)
+  // is allowed = false with an empty rev.
+  repeated CheckResponse results = 1;
+}
+
+message PermissionsAtRequest {
+  string user_id = 1;
+  ResourceRef resource = 2;
+  Consistency consistency = 3;
+}
+
+message PermissionsAtResponse {
+  repeated string permissions = 1;
+  int64 rev = 2;
+  string tenant_id = 3;
+}
+
+message LookupResourcesRequest {
+  string user_id = 1;
+  string permission = 2;
+  string type = 3;
+  // Optional: only this tenant.
+  string tenant_id = 4;
+  int32 page_size = 5;
+  string page_token = 6;
+  Consistency consistency = 7;
+}
+
+message LookupResourcesResponse {
+  repeated Resource resources = 1;
+  string next_page_token = 2;
+}
+
+message LookupSubjectsRequest {
+  string permission = 1;
+  ResourceRef resource = 2;
+  Consistency consistency = 3;
+}
+
+message Subject {
+  string user_id = 1;
+  Reason reason = 2;
+}
+
+message LookupSubjectsResponse {
+  repeated Subject subjects = 1;
+}
+
+// ---------- The service's own nodes ----------
+
+service TreeService {
+  // Create or update the node mirroring a resource of yours. Idempotent: the
+  // same (type, external_id) renames, re-owns or re-files the node.
+  rpc UpsertResource(UpsertResourceRequest) returns (UpsertResourceResponse);
+  // Refused (FAILED_PRECONDITION) while anything is filed under it.
+  rpc DeleteResource(DeleteResourceRequest) returns (DeleteResourceResponse);
+  rpc GetResource(GetResourceRequest) returns (GetResourceResponse);
+}
+
+message UpsertResourceRequest {
+  string type = 1;
+  string external_id = 2;
+  string name = 3;
+  ResourceRef parent = 4;
+  // Optional. The owner can do everything at and under the node.
+  string owner_user_id = 5;
+}
+
+message DeleteResourceRequest {
+  string type = 1;
+  string external_id = 2;
+}
+
+message GetResourceRequest {
+  ResourceRef resource = 1;
+}
+
+message UpsertResourceResponse {
+  // Send this as at_least_rev on the next check to see the change.
+  int64 rev = 1;
+  string tenant_id = 2;
+  Resource resource = 3;
+}
+
+message DeleteResourceResponse {
+  int64 rev = 1;
+  string tenant_id = 2;
+}
+
+message GetResourceResponse {
+  Resource resource = 1;
+}
+
+// ---------- People ----------
+
+service DirectoryService {
+  rpc GetUser(GetUserRequest) returns (GetUserResponse);
+  rpc BatchGetUsers(BatchGetUsersRequest) returns (BatchGetUsersResponse);
+}
+
+message User {
+  string id = 1;
+  string email = 2;
+  bool email_verified = 3;
+  string name = 4;
+  string picture = 5;
+  string locale = 6;
+  string zoneinfo = 7;
+  // pending | active | disabled
+  string status = 8;
+}
+
+message GetUserRequest {
+  string id = 1;
+}
+
+message GetUserResponse {
+  User user = 1;
+}
+
+message BatchGetUsersRequest {
+  repeated string ids = 1;
+}
+
+message BatchGetUsersResponse {
+  // Unknown ids are left out.
+  repeated User users = 1;
+}
+
+// ---------- Change notifications ----------
+
+service WatchService {
+  // Streams every policy change from the cursor on. Drop cached decisions for
+  // the event's tenant (all of them for the zero tenant: a global change).
+  rpc Watch(WatchRequest) returns (stream WatchResponse);
+}
+
+message WatchRequest {
+  // The id of the last event you processed; empty starts from now.
+  string cursor = 1;
+}
+
+message WatchResponse {
+  PolicyEvent event = 1;
+}
+
+message PolicyEvent {
+  string id = 1;
+  // 00000000-0000-0000-0000-000000000000 for a global change.
+  string tenant_id = 2;
+  int64 rev = 3;
+  string kind = 4;
+  google.protobuf.Timestamp at = 5;
+}
+
+// ---------- Contracts from CI ----------
+
+service SchemaService {
+  // Publish a new version of your contract. It waits for owner approval.
+  rpc PublishContract(PublishContractRequest) returns (PublishContractResponse);
+}
+
+message PublishContractRequest {
+  // YAML or JSON.
+  string manifest = 1;
+}
+
+message PublishContractResponse {
+  int32 version = 1;
+  string status = 2;
+  repeated string namespaces = 3;
+}

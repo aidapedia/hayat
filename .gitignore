@@ -1,0 +1,7 @@
+.dev/
+deploy/compose/.env
+console/node_modules/
+console/dist/
+/hayat
+*.log
+.DS_Store

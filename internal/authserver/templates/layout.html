@@ -1,0 +1,31 @@
+{{define "layout"}}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>{{.Title}} · Hayat</title>
+<link rel="stylesheet" href="/assets/hayat.css">
+<link rel="icon" href="/assets/hayat.png" type="image/png">
+</head>
+<body>
+<main class="shell">
+  <a class="brand" href="{{.ConsoleURL}}" aria-label="Hayat">
+    <img src="/assets/hayat.png" alt="" width="32" height="32">
+    <span>
+      <span class="brand-name">Hayat</span>
+      <span class="brand-sub">Identity</span>
+    </span>
+  </a>
+  <section class="card">
+    <h1>{{.Heading}}</h1>
+    {{if .Sub}}<p class="sub">{{.Sub}}</p>{{end}}
+    {{if .Error}}<div class="alert alert-error" role="alert">{{.Error}}</div>{{end}}
+    {{if .Notice}}<div class="alert alert-notice" role="status">{{.Notice}}</div>{{end}}
+    {{template "content" .}}
+  </section>
+  <p class="foot">{{template "foot" .}}</p>
+</main>
+</body>
+</html>{{end}}
+{{define "foot"}}{{end}}
