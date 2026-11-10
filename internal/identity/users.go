@@ -207,6 +207,10 @@ func (s *Service) HasAdmin(ctx context.Context) (bool, error) {
 // insertUser writes the account and its global ref. The ref's unique email is
 // what makes two sign-ups for one address fail cleanly in any region.
 func (s *Service) insertUser(ctx context.Context, tx pgx.Tx, email, name, status, role, passwordHash string, verified bool) (User, error) {
+	return s.insertUserID(ctx, tx, store.NewID(), email, name, status, role, passwordHash, verified)
+}
+
+func (s *Service) insertUserID(ctx context.Context, tx pgx.Tx, id uuid.UUID, email, name, status, role, passwordHash string, verified bool) (User, error) {
 	var taken bool
 	if err := tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM user_refs WHERE email_lower = lower($1))`, email).Scan(&taken); err != nil {
 		return User{}, err
@@ -216,7 +220,6 @@ func (s *Service) insertUser(ctx context.Context, tx pgx.Tx, email, name, status
 	}
 	// A concurrent sign-up can still win the race. The savepoint keeps that
 	// unique violation from aborting the caller's transaction.
-	id := store.NewID()
 	sp, err := tx.Begin(ctx)
 	if err != nil {
 		return User{}, err
@@ -347,6 +350,62 @@ func (s *Service) CreateActive(ctx context.Context, rawEmail, name, password str
 			return err
 		}
 		return audit.Write(ctx, tx, u.Region, actor, event, "user:"+u.ID.String(), nil)
+	})
+	return u, err
+}
+
+// ImportedUser is an account moved in from another system with `hayat import`.
+type ImportedUser struct {
+	ID           uuid.UUID
+	Email        string
+	Name         string
+	PasswordHash string // argon2id, or crypto.LegacySHA256Prefix + hex; "" for none
+	Status       string // pending | active | disabled
+	Zoneinfo     string
+	Admin        bool
+}
+
+// Import writes an account with the id and password hash it had elsewhere, so
+// the other system's references to it stay valid and its owner signs in with
+// the password they already know. The address counts as verified only for an
+// active account: the other system had already let it in. Only the operator
+// reaches this, through `hayat import`.
+func (s *Service) Import(ctx context.Context, in ImportedUser, actor string) (User, error) {
+	email, err := NormalizeEmail(in.Email)
+	if err != nil {
+		return User{}, fmt.Errorf("%s: %w", in.Email, err)
+	}
+	if in.ID == uuid.Nil {
+		return User{}, errs.New("an imported account needs its id")
+	}
+	status := in.Status
+	if status != StatusActive && status != StatusDisabled {
+		status = StatusPending
+	}
+	if strings.HasPrefix(in.PasswordHash, "$") && !strings.HasPrefix(in.PasswordHash, "$argon2id$") && !crypto.NeedsRehash(in.PasswordHash) {
+		return User{}, errs.Newf("%s: unknown password hash format", email)
+	}
+	role := ""
+	if in.Admin {
+		role = RoleAdmin
+	}
+	var u User
+	err = s.store.Tx(ctx, func(tx pgx.Tx) error {
+		if u, err = s.insertUserID(ctx, tx, in.ID, email, in.Name, status, role, in.PasswordHash, status == StatusActive); err != nil {
+			return err
+		}
+		if in.Zoneinfo != "" {
+			if u, err = scanUser(tx.QueryRow(ctx, `UPDATE users SET zoneinfo = $3 WHERE region = $1 AND id = $2 RETURNING `+userColumns,
+				u.Region, u.ID, in.Zoneinfo)); err != nil {
+				return err
+			}
+		}
+		if in.Admin {
+			if _, err := revision.Bump(ctx, tx, u.Region, revision.Global, "user.imported_admin"); err != nil {
+				return err
+			}
+		}
+		return audit.Write(ctx, tx, u.Region, actor, "user.imported", "user:"+u.ID.String(), map[string]any{"email": email})
 	})
 	return u, err
 }
@@ -534,6 +593,14 @@ func (s *Service) Authenticate(ctx context.Context, email, password string) (Use
 	}
 	if u.Status == StatusDisabled {
 		return User{}, ErrDisabled
+	}
+	if crypto.NeedsRehash(hash) {
+		// An imported hash: swap it for argon2id now that we hold the password.
+		// A failure here costs nothing but the upgrade, so sign-in goes ahead.
+		if fresh, err := crypto.HashPassword(password); err == nil {
+			_, _ = s.store.Pool.Exec(ctx, `UPDATE users SET password_hash = $3, updated_at = now() WHERE region = $1 AND id = $2 AND password_hash = $4`,
+				u.Region, u.ID, fresh, hash)
+		}
 	}
 	return u, nil
 }

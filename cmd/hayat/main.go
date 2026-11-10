@@ -5,11 +5,14 @@
 //	hayat setup-link                         print a fresh first-admin link
 //	hayat rotate-keys                        rotate the signing keys now
 //	hayat seed                               dev data and sign-in accounts (HAYAT_DEV only)
+//	hayat import --file b.json [--app-url u] load another system's people and access (tabletsgo)
 //	hayat version
 package main
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -42,7 +45,7 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: hayat <serve|migrate|setup-link|rotate-keys|seed|version> [flags]")
+	fmt.Fprintln(os.Stderr, "usage: hayat <serve|migrate|setup-link|rotate-keys|seed|import|version> [flags]")
 }
 
 func run(ctx context.Context, cmd string, args []string, log *slog.Logger) error {
@@ -120,6 +123,38 @@ func run(ctx context.Context, cmd string, args []string, log *slog.Logger) error
 		}
 		return nil
 
+	case "import":
+		fs := flag.NewFlagSet("import", flag.ExitOnError)
+		file := fs.String("file", "", "the bundle another system exported (required)")
+		appURL := fs.String("app-url", "", "the application's public URL; registers its sign-in client with <url>/callback")
+		out := fs.String("out", "", "also write the result (id map, credentials) to this JSON file")
+		_ = fs.Parse(args)
+		if *file == "" {
+			return errors.New("import needs --file")
+		}
+		raw, err := os.ReadFile(*file)
+		if err != nil {
+			return err
+		}
+		bundle, err := app.ParseBundle(raw)
+		if err != nil {
+			return err
+		}
+		a, err := app.New(cfg, s, log)
+		if err != nil {
+			return err
+		}
+		res, importErr := a.Import(ctx, bundle, app.ImportOptions{AppURL: *appURL})
+		printImport(cfg, bundle, res)
+		if *out != "" {
+			body, _ := json.MarshalIndent(res, "", "  ")
+			if err := os.WriteFile(*out, body, 0o600); err != nil {
+				return err
+			}
+			fmt.Println("Result written to " + *out)
+		}
+		return importErr
+
 	case "rotate-keys":
 		a, err := app.New(cfg, s, log)
 		if err != nil {
@@ -143,4 +178,32 @@ func splitRoles(raw string) []string {
 		}
 	}
 	return out
+}
+
+// printImport tells the operator what happened and what to give the service.
+func printImport(cfg config.Config, b app.Bundle, r app.ImportResult) {
+	fmt.Printf("Imported from %s: %d people (%d already here), %d tenants (%d skipped), %d groups, %d resources, %d grants.\n",
+		b.Source, r.UsersCreated, r.UsersMatched, r.TenantsCreated, r.TenantsSkipped, r.Groups, r.Resources, r.Grants)
+	if r.ContractVersion > 0 {
+		fmt.Printf("Service %q runs contract version %d.\n", b.Service.ID, r.ContractVersion)
+	}
+	for _, w := range r.Warnings {
+		fmt.Println("  warning: " + w)
+	}
+	if len(r.IDMap) > 0 {
+		fmt.Printf("%d people matched existing accounts under other ids. Pass the result file (--out) to %s so it rewrites its references.\n",
+			len(r.IDMap), b.Source)
+	}
+	if r.ServiceRegistered || r.WebClientID != "" {
+		fmt.Println("\nConfigure " + b.Source + " with:")
+		fmt.Println("  HAYAT_ISSUER=" + cfg.Issuer)
+		if r.ServiceRegistered {
+			fmt.Println("  HAYAT_CLIENT_ID=" + r.ClientID)
+			fmt.Println("  HAYAT_CLIENT_SECRET=" + r.ClientSecret + "   (shown once)")
+		}
+		if r.WebClientID != "" {
+			fmt.Println("  HAYAT_WEB_CLIENT_ID=" + r.WebClientID)
+		}
+		fmt.Println("  HAYAT_API_URL=<the api role's address, e.g. http://hayat-api:7443>")
+	}
 }

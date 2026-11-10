@@ -32,7 +32,10 @@ Design: <https://claude.ai/artifact/AceR8JGbXjPdNE2mz8WHck>
   owner of every namespace they touch approves.
 - **Service API** (gRPC, gRPC-Web and Connect on one port): Check, BatchCheck,
   PermissionsAt, LookupResources, LookupSubjects, resource writes, user
-  profiles, a Watch stream of policy changes, contract publishing.
+  profiles, a user's tenants and a tenant's roster, a Watch stream of policy
+  changes, contract publishing.
+- **Import** (`hayat import`): moves another system's people and access in —
+  tabletsgo writes the bundle when it hands identity over to Hayat.
 - **SDKs**: Go (`sdk/go/hayat`) and Node (`sdk/node`), with client credentials,
   a decision cache emptied by Watch, read-your-writes and token verification.
 - **Console**: services and contract approval, roles, and a Resource Tree page
@@ -159,6 +162,27 @@ Every role also serves `/healthz` and `/readyz` on 9090. `serve` without
    Verify your users' Hayat access tokens offline with `VerifyAccessToken` /
    `verifyAccessToken` (or the bundled middleware), then ask `Check`. Tokens
    never carry permissions.
+
+## Move a service's own accounts in
+
+A service that kept its own users, tenants and grants hands them over with a
+bundle (format `hayat-import`, version 1 — tabletsgo writes one with
+`npm run hayat:bundle`, and on its first start after the switch):
+
+```sh
+hayat import --file bundle.json --app-url https://db.example.com --out result.json
+```
+
+It registers the service if needed (printing its API credentials once),
+publishes and approves the bundle's contract, registers a public sign-in client
+for `<app-url>/callback`, then writes people, tenants, groups, rosters, resources,
+roles and grants. People and tenants keep the ids they had, so the service's rows
+still point at them. A password hash in the old system's unsalted SHA-256 form
+(`$sha256$<hex>`) verifies once and is replaced with argon2id on that sign-in.
+An address Hayat already knows is matched, not duplicated: `result.json`'s
+`idMap` lists the ids that changed, for the service to rewrite. The bundle's
+admins become Hayat instance admins only if Hayat has none yet. Running it again
+changes nothing.
 
 ## Configuration
 

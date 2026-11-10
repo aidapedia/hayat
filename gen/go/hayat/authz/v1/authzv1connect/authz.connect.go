@@ -75,6 +75,12 @@ const (
 	// DirectoryServiceBatchGetUsersProcedure is the fully-qualified name of the DirectoryService's
 	// BatchGetUsers RPC.
 	DirectoryServiceBatchGetUsersProcedure = "/hayat.authz.v1.DirectoryService/BatchGetUsers"
+	// DirectoryServiceListUserTenantsProcedure is the fully-qualified name of the DirectoryService's
+	// ListUserTenants RPC.
+	DirectoryServiceListUserTenantsProcedure = "/hayat.authz.v1.DirectoryService/ListUserTenants"
+	// DirectoryServiceListTenantMembersProcedure is the fully-qualified name of the DirectoryService's
+	// ListTenantMembers RPC.
+	DirectoryServiceListTenantMembersProcedure = "/hayat.authz.v1.DirectoryService/ListTenantMembers"
 	// WatchServiceWatchProcedure is the fully-qualified name of the WatchService's Watch RPC.
 	WatchServiceWatchProcedure = "/hayat.authz.v1.WatchService/Watch"
 	// SchemaServicePublishContractProcedure is the fully-qualified name of the SchemaService's
@@ -394,6 +400,11 @@ func (UnimplementedTreeServiceHandler) GetResource(context.Context, *connect.Req
 type DirectoryServiceClient interface {
 	GetUser(context.Context, *connect.Request[v1.GetUserRequest]) (*connect.Response[v1.GetUserResponse], error)
 	BatchGetUsers(context.Context, *connect.Request[v1.BatchGetUsersRequest]) (*connect.Response[v1.BatchGetUsersResponse], error)
+	// The tenants a user belongs to, by name. For a service's tenant switcher.
+	ListUserTenants(context.Context, *connect.Request[v1.ListUserTenantsRequest]) (*connect.Response[v1.ListUserTenantsResponse], error)
+	// A tenant's roster with each person's profile. Belonging, not permission:
+	// ask PermissionsAt for what someone may do.
+	ListTenantMembers(context.Context, *connect.Request[v1.ListTenantMembersRequest]) (*connect.Response[v1.ListTenantMembersResponse], error)
 }
 
 // NewDirectoryServiceClient constructs a client for the hayat.authz.v1.DirectoryService service. By
@@ -419,13 +430,27 @@ func NewDirectoryServiceClient(httpClient connect.HTTPClient, baseURL string, op
 			connect.WithSchema(directoryServiceMethods.ByName("BatchGetUsers")),
 			connect.WithClientOptions(opts...),
 		),
+		listUserTenants: connect.NewClient[v1.ListUserTenantsRequest, v1.ListUserTenantsResponse](
+			httpClient,
+			baseURL+DirectoryServiceListUserTenantsProcedure,
+			connect.WithSchema(directoryServiceMethods.ByName("ListUserTenants")),
+			connect.WithClientOptions(opts...),
+		),
+		listTenantMembers: connect.NewClient[v1.ListTenantMembersRequest, v1.ListTenantMembersResponse](
+			httpClient,
+			baseURL+DirectoryServiceListTenantMembersProcedure,
+			connect.WithSchema(directoryServiceMethods.ByName("ListTenantMembers")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // directoryServiceClient implements DirectoryServiceClient.
 type directoryServiceClient struct {
-	getUser       *connect.Client[v1.GetUserRequest, v1.GetUserResponse]
-	batchGetUsers *connect.Client[v1.BatchGetUsersRequest, v1.BatchGetUsersResponse]
+	getUser           *connect.Client[v1.GetUserRequest, v1.GetUserResponse]
+	batchGetUsers     *connect.Client[v1.BatchGetUsersRequest, v1.BatchGetUsersResponse]
+	listUserTenants   *connect.Client[v1.ListUserTenantsRequest, v1.ListUserTenantsResponse]
+	listTenantMembers *connect.Client[v1.ListTenantMembersRequest, v1.ListTenantMembersResponse]
 }
 
 // GetUser calls hayat.authz.v1.DirectoryService.GetUser.
@@ -438,10 +463,25 @@ func (c *directoryServiceClient) BatchGetUsers(ctx context.Context, req *connect
 	return c.batchGetUsers.CallUnary(ctx, req)
 }
 
+// ListUserTenants calls hayat.authz.v1.DirectoryService.ListUserTenants.
+func (c *directoryServiceClient) ListUserTenants(ctx context.Context, req *connect.Request[v1.ListUserTenantsRequest]) (*connect.Response[v1.ListUserTenantsResponse], error) {
+	return c.listUserTenants.CallUnary(ctx, req)
+}
+
+// ListTenantMembers calls hayat.authz.v1.DirectoryService.ListTenantMembers.
+func (c *directoryServiceClient) ListTenantMembers(ctx context.Context, req *connect.Request[v1.ListTenantMembersRequest]) (*connect.Response[v1.ListTenantMembersResponse], error) {
+	return c.listTenantMembers.CallUnary(ctx, req)
+}
+
 // DirectoryServiceHandler is an implementation of the hayat.authz.v1.DirectoryService service.
 type DirectoryServiceHandler interface {
 	GetUser(context.Context, *connect.Request[v1.GetUserRequest]) (*connect.Response[v1.GetUserResponse], error)
 	BatchGetUsers(context.Context, *connect.Request[v1.BatchGetUsersRequest]) (*connect.Response[v1.BatchGetUsersResponse], error)
+	// The tenants a user belongs to, by name. For a service's tenant switcher.
+	ListUserTenants(context.Context, *connect.Request[v1.ListUserTenantsRequest]) (*connect.Response[v1.ListUserTenantsResponse], error)
+	// A tenant's roster with each person's profile. Belonging, not permission:
+	// ask PermissionsAt for what someone may do.
+	ListTenantMembers(context.Context, *connect.Request[v1.ListTenantMembersRequest]) (*connect.Response[v1.ListTenantMembersResponse], error)
 }
 
 // NewDirectoryServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -463,12 +503,28 @@ func NewDirectoryServiceHandler(svc DirectoryServiceHandler, opts ...connect.Han
 		connect.WithSchema(directoryServiceMethods.ByName("BatchGetUsers")),
 		connect.WithHandlerOptions(opts...),
 	)
+	directoryServiceListUserTenantsHandler := connect.NewUnaryHandler(
+		DirectoryServiceListUserTenantsProcedure,
+		svc.ListUserTenants,
+		connect.WithSchema(directoryServiceMethods.ByName("ListUserTenants")),
+		connect.WithHandlerOptions(opts...),
+	)
+	directoryServiceListTenantMembersHandler := connect.NewUnaryHandler(
+		DirectoryServiceListTenantMembersProcedure,
+		svc.ListTenantMembers,
+		connect.WithSchema(directoryServiceMethods.ByName("ListTenantMembers")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/hayat.authz.v1.DirectoryService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case DirectoryServiceGetUserProcedure:
 			directoryServiceGetUserHandler.ServeHTTP(w, r)
 		case DirectoryServiceBatchGetUsersProcedure:
 			directoryServiceBatchGetUsersHandler.ServeHTTP(w, r)
+		case DirectoryServiceListUserTenantsProcedure:
+			directoryServiceListUserTenantsHandler.ServeHTTP(w, r)
+		case DirectoryServiceListTenantMembersProcedure:
+			directoryServiceListTenantMembersHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -484,6 +540,14 @@ func (UnimplementedDirectoryServiceHandler) GetUser(context.Context, *connect.Re
 
 func (UnimplementedDirectoryServiceHandler) BatchGetUsers(context.Context, *connect.Request[v1.BatchGetUsersRequest]) (*connect.Response[v1.BatchGetUsersResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.authz.v1.DirectoryService.BatchGetUsers is not implemented"))
+}
+
+func (UnimplementedDirectoryServiceHandler) ListUserTenants(context.Context, *connect.Request[v1.ListUserTenantsRequest]) (*connect.Response[v1.ListUserTenantsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.authz.v1.DirectoryService.ListUserTenants is not implemented"))
+}
+
+func (UnimplementedDirectoryServiceHandler) ListTenantMembers(context.Context, *connect.Request[v1.ListTenantMembersRequest]) (*connect.Response[v1.ListTenantMembersResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.authz.v1.DirectoryService.ListTenantMembers is not implemented"))
 }
 
 // WatchServiceClient is a client for the hayat.authz.v1.WatchService service.

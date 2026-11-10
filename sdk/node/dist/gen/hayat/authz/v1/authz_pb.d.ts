@@ -506,6 +506,120 @@ export type GetResourceResponse = Message<"hayat.authz.v1.GetResourceResponse"> 
  */
 export declare const GetResourceResponseSchema: GenMessage<GetResourceResponse>;
 /**
+ * @generated from message hayat.authz.v1.Tenant
+ */
+export type Tenant = Message<"hayat.authz.v1.Tenant"> & {
+    /**
+     * @generated from field: string id = 1;
+     */
+    id: string;
+    /**
+     * @generated from field: string slug = 2;
+     */
+    slug: string;
+    /**
+     * @generated from field: string name = 3;
+     */
+    name: string;
+    /**
+     * @generated from field: string owner_user_id = 4;
+     */
+    ownerUserId: string;
+    /**
+     * The tenant's node in the tree: a parent for UpsertResource.
+     *
+     * @generated from field: string node_id = 5;
+     */
+    nodeId: string;
+    /**
+     * @generated from field: int32 member_count = 6;
+     */
+    memberCount: number;
+};
+/**
+ * Describes the message hayat.authz.v1.Tenant.
+ * Use `create(TenantSchema)` to create a new message.
+ */
+export declare const TenantSchema: GenMessage<Tenant>;
+/**
+ * @generated from message hayat.authz.v1.ListUserTenantsRequest
+ */
+export type ListUserTenantsRequest = Message<"hayat.authz.v1.ListUserTenantsRequest"> & {
+    /**
+     * @generated from field: string user_id = 1;
+     */
+    userId: string;
+};
+/**
+ * Describes the message hayat.authz.v1.ListUserTenantsRequest.
+ * Use `create(ListUserTenantsRequestSchema)` to create a new message.
+ */
+export declare const ListUserTenantsRequestSchema: GenMessage<ListUserTenantsRequest>;
+/**
+ * @generated from message hayat.authz.v1.ListUserTenantsResponse
+ */
+export type ListUserTenantsResponse = Message<"hayat.authz.v1.ListUserTenantsResponse"> & {
+    /**
+     * @generated from field: repeated hayat.authz.v1.Tenant tenants = 1;
+     */
+    tenants: Tenant[];
+};
+/**
+ * Describes the message hayat.authz.v1.ListUserTenantsResponse.
+ * Use `create(ListUserTenantsResponseSchema)` to create a new message.
+ */
+export declare const ListUserTenantsResponseSchema: GenMessage<ListUserTenantsResponse>;
+/**
+ * @generated from message hayat.authz.v1.ListTenantMembersRequest
+ */
+export type ListTenantMembersRequest = Message<"hayat.authz.v1.ListTenantMembersRequest"> & {
+    /**
+     * @generated from field: string tenant_id = 1;
+     */
+    tenantId: string;
+};
+/**
+ * Describes the message hayat.authz.v1.ListTenantMembersRequest.
+ * Use `create(ListTenantMembersRequestSchema)` to create a new message.
+ */
+export declare const ListTenantMembersRequestSchema: GenMessage<ListTenantMembersRequest>;
+/**
+ * @generated from message hayat.authz.v1.TenantMember
+ */
+export type TenantMember = Message<"hayat.authz.v1.TenantMember"> & {
+    /**
+     * @generated from field: hayat.authz.v1.User user = 1;
+     */
+    user?: User | undefined;
+    /**
+     * @generated from field: bool is_owner = 2;
+     */
+    isOwner: boolean;
+    /**
+     * @generated from field: google.protobuf.Timestamp joined_at = 3;
+     */
+    joinedAt?: Timestamp | undefined;
+};
+/**
+ * Describes the message hayat.authz.v1.TenantMember.
+ * Use `create(TenantMemberSchema)` to create a new message.
+ */
+export declare const TenantMemberSchema: GenMessage<TenantMember>;
+/**
+ * @generated from message hayat.authz.v1.ListTenantMembersResponse
+ */
+export type ListTenantMembersResponse = Message<"hayat.authz.v1.ListTenantMembersResponse"> & {
+    /**
+     * @generated from field: repeated hayat.authz.v1.TenantMember members = 1;
+     */
+    members: TenantMember[];
+};
+/**
+ * Describes the message hayat.authz.v1.ListTenantMembersResponse.
+ * Use `create(ListTenantMembersResponseSchema)` to create a new message.
+ */
+export declare const ListTenantMembersResponseSchema: GenMessage<ListTenantMembersResponse>;
+/**
  * @generated from message hayat.authz.v1.User
  */
 export type User = Message<"hayat.authz.v1.User"> & {
@@ -811,6 +925,27 @@ export declare const DirectoryService: GenService<{
         methodKind: "unary";
         input: typeof BatchGetUsersRequestSchema;
         output: typeof BatchGetUsersResponseSchema;
+    };
+    /**
+     * The tenants a user belongs to, by name. For a service's tenant switcher.
+     *
+     * @generated from rpc hayat.authz.v1.DirectoryService.ListUserTenants
+     */
+    listUserTenants: {
+        methodKind: "unary";
+        input: typeof ListUserTenantsRequestSchema;
+        output: typeof ListUserTenantsResponseSchema;
+    };
+    /**
+     * A tenant's roster with each person's profile. Belonging, not permission:
+     * ask PermissionsAt for what someone may do.
+     *
+     * @generated from rpc hayat.authz.v1.DirectoryService.ListTenantMembers
+     */
+    listTenantMembers: {
+        methodKind: "unary";
+        input: typeof ListTenantMembersRequestSchema;
+        output: typeof ListTenantMembersResponseSchema;
     };
 }>;
 /**

@@ -32,6 +32,7 @@ import (
 	"github.com/aidapedia/hayat/internal/identity"
 	hoidc "github.com/aidapedia/hayat/internal/oidc"
 	"github.com/aidapedia/hayat/internal/store"
+	"github.com/aidapedia/hayat/internal/tenancy"
 	"github.com/aidapedia/hayat/internal/tree"
 )
 
@@ -42,6 +43,7 @@ type Server struct {
 	tree     *tree.Service
 	engine   *authz.Engine
 	ids      *identity.Service
+	tenants  *tenancy.Service
 	verifier *op.AccessTokenVerifier
 	log      *slog.Logger
 
@@ -55,8 +57,8 @@ type cachedService struct {
 }
 
 func New(cfg config.Config, s *store.Store, cat *catalog.Service, t *tree.Service, engine *authz.Engine, ids *identity.Service,
-	storage *hoidc.Storage, log *slog.Logger) *Server {
-	return &Server{cfg: cfg, store: s, cat: cat, tree: t, engine: engine, ids: ids, log: log,
+	tenants *tenancy.Service, storage *hoidc.Storage, log *slog.Logger) *Server {
+	return &Server{cfg: cfg, store: s, cat: cat, tree: t, engine: engine, ids: ids, tenants: tenants, log: log,
 		verifier: op.NewAccessTokenVerifier(cfg.Issuer, &op.OpenIDKeySet{Storage: storage}),
 		services: map[string]cachedService{}}
 }

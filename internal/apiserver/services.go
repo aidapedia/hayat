@@ -15,6 +15,7 @@ import (
 	"github.com/aidapedia/hayat/internal/identity"
 	"github.com/aidapedia/hayat/internal/revision"
 	"github.com/aidapedia/hayat/internal/store"
+	"github.com/aidapedia/hayat/internal/tenancy"
 	"github.com/aidapedia/hayat/internal/tree"
 )
 
@@ -285,6 +286,69 @@ func (d *directoryService) BatchGetUsers(ctx context.Context, req *connect.Reque
 	resp := &authzv1.BatchGetUsersResponse{}
 	for _, u := range users {
 		resp.Users = append(resp.Users, toUser(u))
+	}
+	return connect.NewResponse(resp), nil
+}
+
+func toTenant(t tenancy.Tenant, nodeID uuid.UUID) *authzv1.Tenant {
+	out := &authzv1.Tenant{Id: t.ID.String(), Slug: t.Slug, Name: t.Name, MemberCount: int32(t.MemberCount)}
+	if t.OwnerID != uuid.Nil {
+		out.OwnerUserId = t.OwnerID.String()
+	}
+	if nodeID != uuid.Nil {
+		out.NodeId = nodeID.String()
+	}
+	return out
+}
+
+func (d *directoryService) ListUserTenants(ctx context.Context, req *connect.Request[authzv1.ListUserTenantsRequest]) (*connect.Response[authzv1.ListUserTenantsResponse], error) {
+	user, err := parseUser(req.Msg.UserId)
+	if err != nil {
+		return nil, err
+	}
+	tenants, err := d.s.tenants.ForUser(ctx, user)
+	if err != nil {
+		return nil, d.s.fail(err)
+	}
+	resp := &authzv1.ListUserTenantsResponse{}
+	for _, t := range tenants {
+		var nodeID uuid.UUID
+		if n, err := d.s.tree.ByRef(ctx, tenancy.TypeTenant, t.ID.String()); err == nil {
+			nodeID = n.ID
+		}
+		resp.Tenants = append(resp.Tenants, toTenant(t, nodeID))
+	}
+	return connect.NewResponse(resp), nil
+}
+
+func (d *directoryService) ListTenantMembers(ctx context.Context, req *connect.Request[authzv1.ListTenantMembersRequest]) (*connect.Response[authzv1.ListTenantMembersResponse], error) {
+	tenantID, err := uuid.Parse(req.Msg.TenantId)
+	if err != nil {
+		return nil, invalid("tenant_id is not a valid id")
+	}
+	members, err := d.s.tenants.Members(ctx, tenantID)
+	if err != nil {
+		return nil, d.s.fail(err)
+	}
+	ids := make([]uuid.UUID, 0, len(members))
+	for _, m := range members {
+		ids = append(ids, m.UserID)
+	}
+	users, err := d.s.ids.GetUsers(ctx, ids)
+	if err != nil {
+		return nil, d.s.fail(err)
+	}
+	byID := make(map[uuid.UUID]identity.User, len(users))
+	for _, u := range users {
+		byID[u.ID] = u
+	}
+	resp := &authzv1.ListTenantMembersResponse{}
+	for _, m := range members {
+		u, ok := byID[m.UserID]
+		if !ok {
+			continue
+		}
+		resp.Members = append(resp.Members, &authzv1.TenantMember{User: toUser(u), IsOwner: m.IsOwner, JoinedAt: timestamppb.New(m.JoinedAt)})
 	}
 	return connect.NewResponse(resp), nil
 }

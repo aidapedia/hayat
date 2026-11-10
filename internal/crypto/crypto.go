@@ -42,11 +42,25 @@ func HashPassword(password string) (string, error) {
 		b64.EncodeToString(salt), b64.EncodeToString(key)), nil
 }
 
+// LegacySHA256Prefix marks a password hash imported from another system that
+// stored an unsalted SHA-256 hex digest (tabletsgo before Hayat). It verifies,
+// so the people who had it can still sign in, and is replaced with argon2id the
+// first time they do (NeedsRehash). Nothing in Hayat ever writes one.
+const LegacySHA256Prefix = "$sha256$"
+
+// NeedsRehash reports whether a hash that just verified should be replaced
+// with a fresh argon2id one.
+func NeedsRehash(hash string) bool { return strings.HasPrefix(hash, LegacySHA256Prefix) }
+
 // VerifyPassword reports whether password matches hash. An empty hash never
 // matches: it means the account has no password (it signs in through a provider).
 func VerifyPassword(hash, password string) bool {
 	if hash == "" {
 		return false
+	}
+	if hex, ok := strings.CutPrefix(hash, LegacySHA256Prefix); ok {
+		sum := sha256.Sum256([]byte(password))
+		return subtle.ConstantTimeCompare([]byte(fmt.Sprintf("%x", sum)), []byte(strings.ToLower(hex))) == 1
 	}
 	parts := strings.Split(hash, "$")
 	if len(parts) != 6 || parts[1] != "argon2id" {

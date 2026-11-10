@@ -14,6 +14,7 @@ package tenancy
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 	"strings"
 	"time"
@@ -166,6 +167,33 @@ func (s *Service) ForUser(ctx context.Context, userID uuid.UUID) ([]Tenant, erro
 // Create makes a tenant owned by ownerID, who becomes its first member. The
 // tenant lives in this deployment's region.
 func (s *Service) Create(ctx context.Context, name, slug string, ownerID uuid.UUID, actor string) (Tenant, error) {
+	return s.create(ctx, store.NewID(), name, slug, ownerID, actor, "tenant.created")
+}
+
+// Import creates a tenant with the id it had in another system (`hayat import`),
+// so that system's references to it stay valid. The slug is made from the name,
+// numbered when another tenant already uses it.
+func (s *Service) Import(ctx context.Context, id uuid.UUID, name string, ownerID uuid.UUID, actor string) (Tenant, error) {
+	base := Slugify(name)
+	if !slugRe.MatchString(base) {
+		base = "tenant-" + strings.ReplaceAll(id.String(), "-", "")[:8]
+	}
+	slug := base
+	for i := 2; ; i++ {
+		var taken bool
+		if err := s.store.Pool.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM tenant_refs WHERE slug = $1)`, slug).Scan(&taken); err != nil {
+			return Tenant{}, err
+		}
+		if !taken {
+			break
+		}
+		suffix := fmt.Sprintf("-%d", i)
+		slug = strings.Trim(base[:min(len(base), 48-len(suffix))], "-") + suffix
+	}
+	return s.create(ctx, id, name, slug, ownerID, actor, "tenant.imported")
+}
+
+func (s *Service) create(ctx context.Context, id uuid.UUID, name, slug string, ownerID uuid.UUID, actor, event string) (Tenant, error) {
 	name = strings.TrimSpace(name)
 	if name == "" {
 		return Tenant{}, ErrNameMissing
@@ -177,7 +205,6 @@ func (s *Service) Create(ctx context.Context, name, slug string, ownerID uuid.UU
 		return Tenant{}, ErrBadSlug
 	}
 	region := s.store.Region
-	id := store.NewID()
 	nodeID := store.NewID()
 	var t Tenant
 	err := s.store.Tx(ctx, func(tx pgx.Tx) error {
@@ -213,7 +240,7 @@ func (s *Service) Create(ctx context.Context, name, slug string, ownerID uuid.UU
 		if _, err := tx.Exec(ctx, `INSERT INTO tenant_revisions (region, tenant_id, rev) VALUES ($1, $2, 1)`, region, id); err != nil {
 			return err
 		}
-		if err := audit.Write(ctx, tx, region, actor, "tenant.created", "tenant:"+id.String(), map[string]any{"slug": slug, "owner": ownerID}); err != nil {
+		if err := audit.Write(ctx, tx, region, actor, event, "tenant:"+id.String(), map[string]any{"slug": slug, "owner": ownerID}); err != nil {
 			return err
 		}
 		var err error

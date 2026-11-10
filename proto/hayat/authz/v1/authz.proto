@@ -184,6 +184,43 @@ message GetResourceResponse {
 service DirectoryService {
   rpc GetUser(GetUserRequest) returns (GetUserResponse);
   rpc BatchGetUsers(BatchGetUsersRequest) returns (BatchGetUsersResponse);
+  // The tenants a user belongs to, by name. For a service's tenant switcher.
+  rpc ListUserTenants(ListUserTenantsRequest) returns (ListUserTenantsResponse);
+  // A tenant's roster with each person's profile. Belonging, not permission:
+  // ask PermissionsAt for what someone may do.
+  rpc ListTenantMembers(ListTenantMembersRequest) returns (ListTenantMembersResponse);
+}
+
+message Tenant {
+  string id = 1;
+  string slug = 2;
+  string name = 3;
+  string owner_user_id = 4;
+  // The tenant's node in the tree: a parent for UpsertResource.
+  string node_id = 5;
+  int32 member_count = 6;
+}
+
+message ListUserTenantsRequest {
+  string user_id = 1;
+}
+
+message ListUserTenantsResponse {
+  repeated Tenant tenants = 1;
+}
+
+message ListTenantMembersRequest {
+  string tenant_id = 1;
+}
+
+message TenantMember {
+  User user = 1;
+  bool is_owner = 2;
+  google.protobuf.Timestamp joined_at = 3;
+}
+
+message ListTenantMembersResponse {
+  repeated TenantMember members = 1;
 }
 
 message User {

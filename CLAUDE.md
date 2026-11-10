@@ -73,7 +73,8 @@ enterprise SSO, MFA) is next.
 ## Where things are
 ```
 cmd/hayat/            the one binary: serve --role=auth|admin|api|worker, migrate, setup-link, rotate-keys,
-                      seed (dev accounts + sample tenants, HAYAT_DEV only; `make up` runs it)
+                      seed (dev accounts + sample tenants, HAYAT_DEV only; `make up` runs it),
+                      import (another system's bundle — internal/app/import.go)
                       (local runs use it too: `make dev` = compose Postgres + migrate + serve)
 internal/config       every env var
 internal/store        pgx pool, Tx with retry, UUIDv7, ErrNotFound
