@@ -201,3 +201,21 @@ make generate   # after editing proto/: Go and TypeScript code (needs buf + plug
 Set `HAYAT_TEST_DATABASE_URL` (and `HAYAT_TEST_DATABASE_ENGINE=yugabyte`) to run
 the tests against a server of your own, for example the compose `yugabyte`
 profile.
+
+CI (`.github/workflows/quality.yml`) runs on every push and PR: Go vet + tests,
+the console's typecheck and build, the SDK's typecheck, and a check that
+generated code (`make generate`, `sdk/node/dist`) is committed up to date.
+
+## Releases
+
+1. **Actions → Release → Run workflow** with a version (or
+   `gh workflow run release.yml -f version=0.3.0`). It bumps
+   `console/package.json` on a `release/v0.3.0` branch and opens a PR into the
+   major's release line (`v0.x.x`, created from `main` on the first release). Set a
+   `RELEASE_PAT` secret to have it open the PR; without one it links to it.
+2. **Merge the PR.** `release-publish.yml` tags the merged commit `v0.3.0`, builds
+   `ghcr.io/aidapedia/hayat` and `ghcr.io/aidapedia/hayat-console` for amd64 and
+   arm64 (tags `0.3.0`, `0.3`, `latest`) and creates the GitHub Release.
+
+Pushing a `v*.*.*` tag by hand builds and publishes the same way. The binary's
+version comes from the tag (`hayat version`); the Node SDK keeps its own.

@@ -1,0 +1,119 @@
+name: Docker release
+
+# Build and publish Hayat's two images for a release:
+#   ghcr.io/aidapedia/hayat          the binary (every role, migrate, import)
+#   ghcr.io/aidapedia/hayat-console  the optional console (nginx + the React build)
+# Two entry points:
+#   1. push a semver tag by hand (e.g. v0.3.0) — builds from that tag as-is.
+#   2. called by release-publish.yml (workflow_call) after it tags the merged,
+#      version-synced commit.
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_call:
+    inputs:
+      version:
+        description: 'Version without leading v, e.g. 0.3.0'
+        required: true
+        type: string
+      ref:
+        description: 'Commit SHA to build (the version-synced commit)'
+        required: true
+        type: string
+
+# A re-pushed tag (or a re-run of the same version) cancels the older
+# in-progress build instead of running two builds of the same version.
+concurrency:
+  group: docker-release-${{ inputs.version || github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # create the GitHub Release
+      packages: write
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - image: hayat
+            context: .
+          - image: hayat-console
+            context: console
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+
+      - name: Set up QEMU (multi-arch emulation)
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Version = the workflow_call input, or the tag without the leading "v".
+      # Tags: <version>, <major>.<minor>, latest — what deploy/compose's
+      # HAYAT_VERSION picks from.
+      - name: Derive version and image tags
+        id: ver
+        env:
+          IMAGE: ${{ matrix.image }}
+        run: |
+          V="${{ inputs.version }}"
+          if [ -z "$V" ]; then V="${GITHUB_REF_NAME#v}"; fi
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          REF=$(echo "${REGISTRY}/${{ github.repository_owner }}/${IMAGE}" | tr '[:upper:]' '[:lower:]')
+          MM="${V%.*}"
+          {
+            echo "tags<<EOF"
+            echo "${REF}:${V}"
+            echo "${REF}:${MM}"
+            echo "${REF}:latest"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.ver.outputs.tags }}
+          # Baked into the binary (internal/adminserver.Version, via ldflags), so
+          # `hayat version` and the console's overview report the release.
+          build-args: |
+            VERSION=${{ steps.ver.outputs.version }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+          # mode=min keeps the cache under GitHub's per-repo limit for two
+          # multi-arch images; ignore-error=true means a cache-service hiccup can
+          # never fail an otherwise-successful release.
+          cache-to: type=gha,mode=min,scope=${{ matrix.image }},ignore-error=true
+
+  release:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Create the GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ inputs.version || github.ref_name }}
+        run: |
+          TAG="v${VERSION#v}"
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --generate-notes

@@ -56,6 +56,8 @@ test:           ## Go tests (embedded Postgres) + console typecheck
 
 generate:       ## regenerate Go and TypeScript from proto/
 	PATH="$$(go env GOPATH)/bin:$$PATH" buf lint && PATH="$$(go env GOPATH)/bin:$$PATH" buf generate
+	@# The Node SDK is the service API only; the admin API is the console's.
+	@rm -rf sdk/node/src/gen/hayat/admin
 
 build:
 	go build -o hayat ./cmd/hayat
