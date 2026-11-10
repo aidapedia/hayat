@@ -1,0 +1,87 @@
+name: Quality
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  # The backend: vet + every Go test. Tests run on an embedded PostgreSQL
+  # (internal/testdb), so no database service is needed.
+  go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: go vet ./...
+      - run: go test ./...
+      - run: go build -o /dev/null ./cmd/hayat
+
+  # The console and the Node SDK: typecheck and build, the way their images and
+  # the npm package are built.
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: console/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: |
+            console/pnpm-lock.yaml
+            sdk/node/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+        working-directory: console
+      - run: pnpm typecheck
+        working-directory: console
+      - run: pnpm build
+        working-directory: console
+      - run: pnpm install --frozen-lockfile
+        working-directory: sdk/node
+      - run: pnpm typecheck
+        working-directory: sdk/node
+
+  # Generated code is committed (gen/go, the console's and the SDK's TypeScript,
+  # the SDK's dist), so building never needs buf. This fails when a proto/ or
+  # SDK change was committed without `make generate` / the SDK build.
+  generated:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: console/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: |
+            console/pnpm-lock.yaml
+            sdk/node/pnpm-lock.yaml
+      # The same generator versions the committed code was made with: buf, and
+      # protoc-gen-go / protoc-gen-connect-go at the versions go.mod pins.
+      - name: Install buf and the Go plugins
+        run: |
+          go install github.com/bufbuild/buf/cmd/buf@v1.75.0
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@$(go list -m -f '{{.Version}}' google.golang.org/protobuf)
+          go install connectrpc.com/connect/cmd/protoc-gen-connect-go@$(go list -m -f '{{.Version}}' connectrpc.com/connect)
+      - run: pnpm install --frozen-lockfile
+        working-directory: console
+      - run: make generate
+      - run: pnpm install --frozen-lockfile && pnpm build
+        working-directory: sdk/node
+      - name: Nothing changed
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            git status --porcelain
+            git diff --stat
+            echo "::error::Generated code is out of date — run \`make generate\` and rebuild sdk/node, then commit."
+            exit 1
+          fi

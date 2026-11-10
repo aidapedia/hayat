@@ -96,6 +96,7 @@ sdk/go/hayat          Go client: token, cached Check, Watch, VerifyAccessToken
 sdk/node              Node client (same features), built with tsc
 console/              React + Vite + shadcn/ui, feature-sliced like tabletsgo
 deploy/compose/       docker-compose + .env.example
+.github/workflows/    quality (go, web, generated-code-is-current), release → release-publish → docker-release (both images)
 ```
 
 ## Console conventions (after tabletsgo)

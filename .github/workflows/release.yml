@@ -1,0 +1,126 @@
+name: Release
+
+# Step 1 of the release: bump the version and push a release/* branch, then open
+# (or link) the PR. The PR targets the release line for the version's MAJOR:
+# 0.3.0 → v0.x.x, 1.2.0 → v1.x.x, and so on. The first release of a new major
+# creates its line from the default branch. Merging the PR triggers
+# release-publish.yml, which tags the merged commit and builds the images — so
+# the tag and the version-synced files are the SAME commit.
+#
+# The binary's version is not a file: it comes from the tag, baked in at image
+# build time (-X internal/adminserver.Version). What this bumps is the console's
+# package.json, so the console image carries the same number. The Node SDK
+# (sdk/node) keeps its own version — it is a library, released on its own.
+#
+# Trigger from the Actions tab (Run workflow) or:
+#   gh workflow run release.yml -f version=0.3.0
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release, no leading v (e.g. 0.3.0)'
+        required: true
+        type: string
+
+concurrency:
+  group: release-${{ inputs.version }}
+  cancel-in-progress: false
+
+jobs:
+  open-pr:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write        # push the release/* branch
+    steps:
+      - name: Checkout default branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
+
+      - name: Normalize + validate version
+        id: norm
+        run: |
+          V="${{ inputs.version }}"
+          V="${V#v}"
+          echo "$V" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' \
+            || { echo "::error::Invalid semver: '$V' (expected X.Y.Z)"; exit 1; }
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "base=v${V%%.*}.x.x" >> "$GITHUB_OUTPUT"
+
+      - name: Check out the major's release line
+        env:
+          BASE: ${{ steps.norm.outputs.base }}
+          DEFAULT: ${{ github.event.repository.default_branch }}
+        run: |
+          if git ls-remote --heads --exit-code origin "refs/heads/${BASE}" >/dev/null 2>&1; then
+            git fetch origin "${BASE}"
+            git checkout -B "${BASE}" "origin/${BASE}"
+          else
+            # First release of this major: start its line from the default branch.
+            echo "Release line ${BASE} does not exist; creating it from ${DEFAULT}."
+            git checkout -B "${BASE}" "origin/${DEFAULT}"
+            git push origin "${BASE}"
+          fi
+
+      - name: Refuse if already released
+        env:
+          VERSION: ${{ steps.norm.outputs.version }}
+        run: |
+          if git ls-remote --tags --exit-code origin "refs/tags/v${VERSION}" >/dev/null 2>&1; then
+            echo "::error::Tag v${VERSION} already exists"; exit 1
+          fi
+
+      - name: Bump console/package.json
+        env:
+          VERSION: ${{ steps.norm.outputs.version }}
+        run: |
+          # npm pkg set edits "version" in place (no install, no git tag).
+          (cd console && npm pkg set "version=${VERSION}")
+          if git diff --quiet -- console/package.json; then
+            echo "::error::Nothing to bump — console/package.json already shows v${VERSION}"; exit 1
+          fi
+
+      - name: Push release branch
+        env:
+          VERSION: ${{ steps.norm.outputs.version }}
+        run: |
+          BR="release/v${VERSION}"
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BR"
+          git add console/package.json
+          git commit -m "release: v${VERSION}"
+          git push -f origin "$BR"
+
+      - name: Open pull request
+        env:
+          # A user PAT (RELEASE_PAT), NOT GITHUB_TOKEN: the org blocks GITHUB_TOKEN
+          # from creating PRs, but a PAT acts as you, so it is allowed. If the
+          # secret is missing/empty we degrade to a prefilled compare link.
+          GH_TOKEN: ${{ secrets.RELEASE_PAT }}
+          VERSION: ${{ steps.norm.outputs.version }}
+          BASE: ${{ steps.norm.outputs.base }}
+        run: |
+          BR="release/v${VERSION}"
+          PR_URL="${{ github.server_url }}/${{ github.repository }}/compare/${BASE}...${BR}?expand=1"
+          if [ -z "${GH_TOKEN}" ]; then
+            {
+              echo "## Release v${VERSION} — open the PR manually"
+              echo ""
+              echo "No \`RELEASE_PAT\` secret set. Click to open the release PR into \`${BASE}\`:"
+              echo ""
+              echo "[**Open PR for v${VERSION}**](${PR_URL})"
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "No RELEASE_PAT — open the PR here: ${PR_URL}"
+            exit 0
+          fi
+          if [ -n "$(gh pr list --head "$BR" --state open --json number -q '.[0].number')" ]; then
+            echo "PR already open for $BR."
+          else
+            gh pr create \
+              --base "$BASE" \
+              --head "$BR" \
+              --title "release: v${VERSION}" \
+              --body "Automated version bump to \`v${VERSION}\` (console/package.json). Merge to tag the merged commit, build both images, and publish the release."
+          fi
