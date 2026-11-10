@@ -37,7 +37,10 @@ Design: <https://claude.ai/artifact/AceR8JGbXjPdNE2mz8WHck>
   a decision cache emptied by Watch, read-your-writes and token verification.
 - **Console**: services and contract approval, roles, and a Resource Tree page
   (every tenant, its groups and resources; right-click to add a group or move a
-  node) with grants, rosters, "who has access" and "check a person".
+  node) with grants, rosters, "who has access" and "check a person". A
+  tenant's owner signs in to the same console and runs their tenant (members,
+  rename, its Resource Tree) without being an instance admin; members see their
+  tenants read-only unless granted more.
 
 Not yet: Google/GitHub and enterprise SSO, MFA (phase 3), multi-region on
 YugabyteDB (phase 4), a shared Redis decision cache (each api pod caches in

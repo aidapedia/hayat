@@ -13,6 +13,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -201,6 +202,8 @@ func TestAdminAPI(t *testing.T) {
 		t.Fatalf("non-admin: want PermissionDenied, got %v", err)
 	}
 
+	testTenantOwner(t, e, tenants, created.Msg.Tenant.Id, beaToken)
+
 	// Signing out of Hayat cuts the console off at once, not when the token expires.
 	page := e.must(browser.Get(e.auth + "/logout"))
 	body, _ := io.ReadAll(page.Body)
@@ -208,6 +211,109 @@ func TestAdminAPI(t *testing.T) {
 	e.must(browser.PostForm(e.auth+"/logout", url.Values{"csrf": {string(csrf[1])}}))
 	if _, err := overview.GetOverview(ctx, connect.NewRequest(&adminv1.GetOverviewRequest{})); code(err) != connect.CodeUnauthenticated {
 		t.Fatalf("after sign-out: want Unauthenticated, got %v", err)
+	}
+}
+
+// activate signs an invited address in for the first time and returns its token.
+func (e *env) activate(addr, password string) string {
+	e.t.Helper()
+	ctx := context.Background()
+	u, err := e.a.IDs.GetUserByEmail(ctx, addr)
+	if err != nil {
+		e.t.Fatal(err)
+	}
+	if err := e.a.IDs.ResendVerification(ctx, u.ID); err != nil {
+		e.t.Fatal(err)
+	}
+	region, link := e.latestLink(addr)
+	if _, err := e.a.IDs.CompleteVerification(ctx, region, link, password); err != nil {
+		e.t.Fatal(err)
+	}
+	token, _ := e.signIn(addr, password)
+	return token
+}
+
+// A tenant's owner runs it from the console without being an instance admin:
+// the tenant service is allowed by permission on the tenant node.
+func testTenantOwner(t *testing.T, e *env, admin adminv1connect.TenantServiceClient, acmeID, beaToken string) {
+	ctx := context.Background()
+	other, err := admin.CreateTenant(ctx, connect.NewRequest(&adminv1.CreateTenantRequest{Name: "Globex", OwnerEmail: "root@example.com"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	bea := adminv1connect.NewTenantServiceClient(http.DefaultClient, e.admin, bearer(beaToken))
+	list, err := bea.ListTenants(ctx, connect.NewRequest(&adminv1.ListTenantsRequest{}))
+	if err != nil || len(list.Msg.Tenants) != 1 || list.Msg.Tenants[0].Id != acmeID {
+		t.Fatalf("owner lists only their tenants: %v %v", list, err)
+	}
+	got, err := bea.GetTenant(ctx, connect.NewRequest(&adminv1.GetTenantRequest{Id: acmeID}))
+	if err != nil || !slices.Contains(got.Msg.MyPermissions, "hayat.members.manage") {
+		t.Fatalf("owner holds every permission on their tenant: %v %v", got, err)
+	}
+	if _, err := bea.GetTenant(ctx, connect.NewRequest(&adminv1.GetTenantRequest{Id: other.Msg.Tenant.Id})); code(err) != connect.CodePermissionDenied {
+		t.Fatalf("someone else's tenant: want PermissionDenied, got %v", err)
+	}
+	if _, err := bea.RenameTenant(ctx, connect.NewRequest(&adminv1.RenameTenantRequest{Id: acmeID, Name: "Acme Inc"})); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := bea.AddMember(ctx, connect.NewRequest(&adminv1.AddMemberRequest{TenantId: acmeID, Email: "carl@example.com"})); err != nil {
+		t.Fatal(err)
+	}
+	tree := adminv1connect.NewTreeAdminServiceClient(http.DefaultClient, e.admin, bearer(beaToken))
+	if _, err := tree.GetTenantTree(ctx, connect.NewRequest(&adminv1.GetTenantTreeRequest{TenantId: acmeID})); err != nil {
+		t.Fatalf("owner opens their resource tree: %v", err)
+	}
+	for name, call := range map[string]func() error{
+		"create": func() error {
+			_, err := bea.CreateTenant(ctx, connect.NewRequest(&adminv1.CreateTenantRequest{Name: "Mine", OwnerEmail: "bea@example.com"}))
+			return err
+		},
+		"delete": func() error {
+			_, err := bea.DeleteTenant(ctx, connect.NewRequest(&adminv1.DeleteTenantRequest{Id: acmeID}))
+			return err
+		},
+	} {
+		if code(call()) != connect.CodePermissionDenied {
+			t.Fatalf("owner %s: want PermissionDenied", name)
+		}
+	}
+
+	// A plain member sees the tenant but changes nothing, and can't take ownership.
+	carlToken := e.activate("carl@example.com", "carl's long password")
+	carl := adminv1connect.NewTenantServiceClient(http.DefaultClient, e.admin, bearer(carlToken))
+	seen, err := carl.GetTenant(ctx, connect.NewRequest(&adminv1.GetTenantRequest{Id: acmeID}))
+	if err != nil || len(seen.Msg.MyPermissions) != 0 || len(seen.Msg.Members) != 2 {
+		t.Fatalf("member reads the tenant: %v %v", seen, err)
+	}
+	carlID := seen.Msg.Members[1].User.Id
+	if seen.Msg.Members[0].User.Email == "carl@example.com" {
+		carlID = seen.Msg.Members[0].User.Id
+	}
+	for name, call := range map[string]func() error{
+		"rename": func() error {
+			_, err := carl.RenameTenant(ctx, connect.NewRequest(&adminv1.RenameTenantRequest{Id: acmeID, Name: "Carl's"}))
+			return err
+		},
+		"add member": func() error {
+			_, err := carl.AddMember(ctx, connect.NewRequest(&adminv1.AddMemberRequest{TenantId: acmeID, Email: "dee@example.com"}))
+			return err
+		},
+		"take ownership": func() error {
+			_, err := carl.TransferOwnership(ctx, connect.NewRequest(&adminv1.TransferOwnershipRequest{TenantId: acmeID, UserId: carlID}))
+			return err
+		},
+	} {
+		if code(call()) != connect.CodePermissionDenied {
+			t.Fatalf("member %s: want PermissionDenied", name)
+		}
+	}
+
+	if _, err := bea.RemoveMember(ctx, connect.NewRequest(&adminv1.RemoveMemberRequest{TenantId: acmeID, UserId: carlID})); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := carl.GetTenant(ctx, connect.NewRequest(&adminv1.GetTenantRequest{Id: acmeID})); code(err) != connect.CodePermissionDenied {
+		t.Fatalf("after removal: want PermissionDenied, got %v", err)
 	}
 }
 

@@ -60,7 +60,12 @@ enterprise SSO, MFA) is next.
   Mirrored nodes are created, renamed, moved and deleted by their service only.
 - **Admin policy calls are allowed by permission, not by `is_admin`**: handlers
   call `s.require(ctx, perm, node)`. Instance admins pass because they hold
-  every platform permission.
+  every platform permission. That includes `TenantService`, so a tenant's owner
+  runs their tenant and its tree from the console; only creating or deleting a
+  tenant needs an instance admin, and ownership is only handed over by the
+  owner (or an admin), never taken with a Tenant admin grant. The console
+  mirrors it: tenant pages open to members, every action shows only when
+  `my_permissions` holds it.
 - **The console is optional.** Sign-in pages live in the binary
   (`internal/authserver/templates`), never in the console.
 - **The admin API accepts only console tokens** and checks the session live on every call.

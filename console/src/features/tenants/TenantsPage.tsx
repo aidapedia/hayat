@@ -95,6 +95,7 @@ function CreateTenantDialog({ open, onOpenChange }: { open: boolean; onOpenChang
 }
 
 export default function TenantsPage() {
+  const { isAdmin } = useMe()
   const tenants = useClient(TenantService)
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
@@ -112,11 +113,17 @@ export default function TenantsPage() {
     <>
       <PageHeader
         title="Tenants"
-        desc="Organisations shared by every service. A tabletsgo workspace, a billing account and a payments merchant can all belong to one tenant."
+        desc={
+          isAdmin
+            ? 'Organisations shared by every service. A tabletsgo workspace, a billing account and a payments merchant can all belong to one tenant.'
+            : 'The organisations you belong to. Open one to see its members and its Resource Tree.'
+        }
         action={
-          <Button size="lg" onClick={() => setCreating(true)}>
-            <Plus /> Create tenant
-          </Button>
+          isAdmin && (
+            <Button size="lg" onClick={() => setCreating(true)}>
+              <Plus /> Create tenant
+            </Button>
+          )
         }
       />
       <div className="mt-7 flex flex-col gap-4">
@@ -127,7 +134,7 @@ export default function TenantsPage() {
           <LoadingState />
         ) : list.items.length === 0 ? (
           <EmptyState icon={Building2} title={query ? 'No tenant matches that search' : 'No tenants yet'}>
-            {!query && 'Create the first one to group people and the resources they share.'}
+            {!query && (isAdmin ? 'Create the first one to group people and the resources they share.' : "You don't belong to any tenant yet.")}
           </EmptyState>
         ) : (
           <>

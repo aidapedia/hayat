@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router'
 import { toast } from 'sonner'
 import { Crown, FolderTree, MoreHorizontal, Pencil, Trash2, UserMinus, UserPlus } from 'lucide-react'
 import { TenantService, type Member } from '@/shared/api/gen/hayat/admin/v1/admin_pb'
+import { useMe } from '@/features/auth'
 import { errorMessage, useClient } from '@/shared/api/client'
 import { useQuery } from '@/shared/hooks/use-query'
 import { formatDate, formatDateTime } from '@/shared/lib/datetime'
@@ -111,10 +112,23 @@ function RenameDialog({ id, current, open, onOpenChange, onDone }: { id: string;
   )
 }
 
+/** A member's row; it links to their user page only for an instance admin, the only one who can open it. */
+function MemberPerson({ member: m, link }: { member: Member; link: boolean }) {
+  const person = (
+    <PersonRow
+      name={m.user?.name}
+      email={m.user?.email ?? ''}
+      trailing={m.isOwner ? <Pill className="border-primary/30 text-primary">Owner</Pill> : undefined}
+    />
+  )
+  return link ? <Link to={`/users/${m.user?.id}`}>{person}</Link> : person
+}
+
 type Pending = { title: string; body: string; confirm: string; destructive?: boolean; typeToConfirm?: string; run: () => Promise<void> }
 
 export default function TenantDetailPage() {
   const { id = '' } = useParams()
+  const { isAdmin, me } = useMe()
   const tenants = useClient(TenantService)
   const navigate = useNavigate()
   const { data, error, loading, reload } = useQuery(() => tenants.getTenant({ id }), [tenants, id])
@@ -128,6 +142,10 @@ export default function TenantDetailPage() {
   const t = data.tenant
 
   const memberName = (m: Member) => m.user?.name || m.user?.email || 'this member'
+  // Show only what the server would allow; it checks every action again.
+  const canRename = data.myPermissions.includes('hayat.tenant.manage')
+  const canManageMembers = data.myPermissions.includes('hayat.members.manage')
+  const canTransfer = isAdmin || t.ownerId === me.user?.id
 
   return (
     <>
@@ -143,29 +161,33 @@ export default function TenantDetailPage() {
                 <FolderTree /> Resource tree
               </Link>
             </Button>
-            <Button variant="outline" size="lg" onClick={() => setRenaming(true)}>
-              <Pencil /> Rename
-            </Button>
-            <Button
-              variant="destructive"
-              size="lg"
-              onClick={() =>
-                setPending({
-                  title: `Delete ${t.name}?`,
-                  body: 'The tenant and its membership list are deleted. Accounts are kept. This is refused while any service still files resources under the tenant.',
-                  confirm: 'Delete tenant',
-                  destructive: true,
-                  typeToConfirm: t.slug,
-                  run: async () => {
-                    await tenants.deleteTenant({ id })
-                    toast.success(`${t.name} deleted`)
-                    navigate('/tenants')
-                  },
-                })
-              }
-            >
-              <Trash2 /> Delete
-            </Button>
+            {canRename && (
+              <Button variant="outline" size="lg" onClick={() => setRenaming(true)}>
+                <Pencil /> Rename
+              </Button>
+            )}
+            {isAdmin && (
+              <Button
+                variant="destructive"
+                size="lg"
+                onClick={() =>
+                  setPending({
+                    title: `Delete ${t.name}?`,
+                    body: 'The tenant and its membership list are deleted. Accounts are kept. This is refused while any service still files resources under the tenant.',
+                    confirm: 'Delete tenant',
+                    destructive: true,
+                    typeToConfirm: t.slug,
+                    run: async () => {
+                      await tenants.deleteTenant({ id })
+                      toast.success(`${t.name} deleted`)
+                      navigate('/tenants')
+                    },
+                  })
+                }
+              >
+                <Trash2 /> Delete
+              </Button>
+            )}
           </>
         }
       />
@@ -176,9 +198,11 @@ export default function TenantDetailPage() {
           title="Members"
           desc="Who belongs to this tenant. What they may do is set in the Resource Tree."
           action={
-            <Button onClick={() => setAdding(true)}>
-              <UserPlus /> Add member
-            </Button>
+            canManageMembers && (
+              <Button onClick={() => setAdding(true)}>
+                <UserPlus /> Add member
+              </Button>
+            )
           }
         >
           <div className="overflow-x-auto rounded-xl border">
@@ -195,20 +219,14 @@ export default function TenantDetailPage() {
                 {data.members.map((m) => (
                   <TableRow key={m.user?.id}>
                     <TableCell>
-                      <Link to={`/users/${m.user?.id}`}>
-                        <PersonRow
-                          name={m.user?.name}
-                          email={m.user?.email ?? ''}
-                          trailing={m.isOwner ? <Pill className="border-primary/30 text-primary">Owner</Pill> : undefined}
-                        />
-                      </Link>
+                      <MemberPerson member={m} link={isAdmin} />
                     </TableCell>
                     <TableCell>
                       <StatusBadge status={m.user?.status ?? ''} />
                     </TableCell>
                     <TableCell className="text-[12px] text-muted-foreground">{formatDate(m.joinedAt)}</TableCell>
                     <TableCell className="text-right">
-                      {!m.isOwner && (
+                      {!m.isOwner && (canTransfer || canManageMembers) && (
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon-sm" aria-label={`Actions for ${memberName(m)}`}>
@@ -216,43 +234,47 @@ export default function TenantDetailPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-52">
-                            <DropdownMenuItem
-                              className="text-[13px]"
-                              disabled={m.user?.status !== 'active'}
-                              onSelect={() =>
-                                setPending({
-                                  title: `Make ${memberName(m)} the owner?`,
-                                  body: 'A tenant has exactly one owner. The current owner stays a member.',
-                                  confirm: 'Transfer ownership',
-                                  run: async () => {
-                                    await tenants.transferOwnership({ tenantId: id, userId: m.user!.id })
-                                    toast.success('Ownership transferred')
-                                    await reload()
-                                  },
-                                })
-                              }
-                            >
-                              <Crown /> Make owner
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              variant="destructive"
-                              className="text-[13px]"
-                              onSelect={() =>
-                                setPending({
-                                  title: `Remove ${memberName(m)}?`,
-                                  body: `They stop belonging to ${t.name}. Their account is kept.`,
-                                  confirm: 'Remove member',
-                                  destructive: true,
-                                  run: async () => {
-                                    await tenants.removeMember({ tenantId: id, userId: m.user!.id })
-                                    toast.success('Member removed')
-                                    await reload()
-                                  },
-                                })
-                              }
-                            >
-                              <UserMinus /> Remove from tenant
-                            </DropdownMenuItem>
+                            {canTransfer && (
+                              <DropdownMenuItem
+                                className="text-[13px]"
+                                disabled={m.user?.status !== 'active'}
+                                onSelect={() =>
+                                  setPending({
+                                    title: `Make ${memberName(m)} the owner?`,
+                                    body: 'A tenant has exactly one owner. The current owner stays a member.',
+                                    confirm: 'Transfer ownership',
+                                    run: async () => {
+                                      await tenants.transferOwnership({ tenantId: id, userId: m.user!.id })
+                                      toast.success('Ownership transferred')
+                                      await reload()
+                                    },
+                                  })
+                                }
+                              >
+                                <Crown /> Make owner
+                              </DropdownMenuItem>
+                            )}
+                            {canManageMembers && (
+                              <DropdownMenuItem
+                                variant="destructive"
+                                className="text-[13px]"
+                                onSelect={() =>
+                                  setPending({
+                                    title: `Remove ${memberName(m)}?`,
+                                    body: `They stop belonging to ${t.name}. Their account is kept.`,
+                                    confirm: 'Remove member',
+                                    destructive: true,
+                                    run: async () => {
+                                      await tenants.removeMember({ tenantId: id, userId: m.user!.id })
+                                      toast.success('Member removed')
+                                      await reload()
+                                    },
+                                  })
+                                }
+                              >
+                                <UserMinus /> Remove from tenant
+                              </DropdownMenuItem>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       )}

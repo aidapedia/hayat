@@ -2273,9 +2273,12 @@ func (x *GetTenantRequest) GetId() string {
 }
 
 type GetTenantResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Tenant        *Tenant                `protobuf:"bytes,1,opt,name=tenant,proto3" json:"tenant,omitempty"`
-	Members       []*Member              `protobuf:"bytes,2,rep,name=members,proto3" json:"members,omitempty"`
+	state   protoimpl.MessageState `protogen:"open.v1"`
+	Tenant  *Tenant                `protobuf:"bytes,1,opt,name=tenant,proto3" json:"tenant,omitempty"`
+	Members []*Member              `protobuf:"bytes,2,rep,name=members,proto3" json:"members,omitempty"`
+	// What the caller may do on the tenant node, so the console shows only
+	// the actions the server would allow.
+	MyPermissions []string `protobuf:"bytes,3,rep,name=my_permissions,json=myPermissions,proto3" json:"my_permissions,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2320,6 +2323,13 @@ func (x *GetTenantResponse) GetTenant() *Tenant {
 func (x *GetTenantResponse) GetMembers() []*Member {
 	if x != nil {
 		return x.Members
+	}
+	return nil
+}
+
+func (x *GetTenantResponse) GetMyPermissions() []string {
+	if x != nil {
+		return x.MyPermissions
 	}
 	return nil
 }
@@ -3957,10 +3967,11 @@ const file_hayat_admin_v1_admin_proto_rawDesc = "" +
 	"\atenants\x18\x01 \x03(\v2\x16.hayat.admin.v1.TenantR\atenants\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\"\n" +
 	"\x10GetTenantRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"u\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"\x9c\x01\n" +
 	"\x11GetTenantResponse\x12.\n" +
 	"\x06tenant\x18\x01 \x01(\v2\x16.hayat.admin.v1.TenantR\x06tenant\x120\n" +
-	"\amembers\x18\x02 \x03(\v2\x16.hayat.admin.v1.MemberR\amembers\"\x82\x01\n" +
+	"\amembers\x18\x02 \x03(\v2\x16.hayat.admin.v1.MemberR\amembers\x12%\n" +
+	"\x0emy_permissions\x18\x03 \x03(\tR\rmyPermissions\"\x82\x01\n" +
 	"\x13CreateTenantRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
 	"\x04slug\x18\x02 \x01(\tR\x04slug\x12\"\n" +

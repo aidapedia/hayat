@@ -238,16 +238,24 @@ message RevokeUserSessionsResponse {}
 
 // ---------- Tenants ----------
 
+// Allowed by permission on the tenant node, so a tenant's owner (and anyone
+// granted Tenant admin) runs it without being an instance admin.
 service TenantService {
+  // An instance admin sees every tenant; anyone else, the ones they belong to.
   rpc ListTenants(ListTenantsRequest) returns (ListTenantsResponse);
+  // Members, and anyone holding a permission on the tenant.
   rpc GetTenant(GetTenantRequest) returns (GetTenantResponse);
+  // Instance admin only.
   rpc CreateTenant(CreateTenantRequest) returns (CreateTenantResponse);
+  // hayat.tenant.manage.
   rpc RenameTenant(RenameTenantRequest) returns (RenameTenantResponse);
-  // Refused while anything is filed under the tenant.
+  // Instance admin only. Refused while anything is filed under the tenant.
   rpc DeleteTenant(DeleteTenantRequest) returns (DeleteTenantResponse);
-  // Adds an existing user by id, or invites an email address.
+  // hayat.members.manage. Adds an existing user by id, or invites an email address.
   rpc AddMember(AddMemberRequest) returns (AddMemberResponse);
+  // hayat.members.manage.
   rpc RemoveMember(RemoveMemberRequest) returns (RemoveMemberResponse);
+  // The current owner or an instance admin.
   rpc TransferOwnership(TransferOwnershipRequest) returns (TransferOwnershipResponse);
 }
 
@@ -267,6 +275,9 @@ message GetTenantRequest {
 message GetTenantResponse {
   Tenant tenant = 1;
   repeated Member members = 2;
+  // What the caller may do on the tenant node, so the console shows only
+  // the actions the server would allow.
+  repeated string my_permissions = 3;
 }
 
 message CreateTenantRequest {

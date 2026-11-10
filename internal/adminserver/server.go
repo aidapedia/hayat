@@ -5,7 +5,9 @@
 // The token is verified offline against the published keys, then its session
 // is checked live, so signing out or disabling an account cuts the console off
 // at once rather than when the token expires. AccountService is for any
-// signed-in user; every other service needs an instance admin.
+// signed-in user; tenants, the catalog, the registry and the tree are allowed
+// by permission in each handler (so a tenant's owner runs their tenant);
+// every other service needs an instance admin.
 package adminserver
 
 import (
@@ -82,11 +84,11 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle(adminv1connect.NewAccountServiceHandler(&accountService{s}, user))
 	mux.Handle(adminv1connect.NewOverviewServiceHandler(&overviewService{s}, admin))
 	mux.Handle(adminv1connect.NewUserServiceHandler(&userService{s}, admin))
-	mux.Handle(adminv1connect.NewTenantServiceHandler(&tenantService{s}, admin))
 	mux.Handle(adminv1connect.NewClientServiceHandler(&clientService{s}, admin))
 	mux.Handle(adminv1connect.NewKeyServiceHandler(&keyService{s}, admin))
 	mux.Handle(adminv1connect.NewAuditServiceHandler(&auditService{s}, admin))
 	// Policy calls are allowed by permission: each handler checks its own.
+	mux.Handle(adminv1connect.NewTenantServiceHandler(&tenantService{s}, user))
 	mux.Handle(adminv1connect.NewCatalogServiceHandler(&catalogService{s}, user))
 	mux.Handle(adminv1connect.NewRegistryServiceHandler(&registryService{s}, user))
 	mux.Handle(adminv1connect.NewTreeAdminServiceHandler(&treeAdminService{s}, user))

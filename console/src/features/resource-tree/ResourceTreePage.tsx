@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router'
 import { FolderTree, RefreshCw, ShieldCheck } from 'lucide-react'
 import { TenantService } from '@/shared/api/gen/hayat/admin/v1/admin_pb'
 import { TreeAdminService, type Node } from '@/shared/api/gen/hayat/admin/v1/policy_pb'
+import { useMe } from '@/features/auth'
 import { errorMessage, useClient } from '@/shared/api/client'
 import { usePagedList } from '@/shared/hooks/use-paged-list'
 import { useQuery } from '@/shared/hooks/use-query'
@@ -24,6 +25,7 @@ type TreeDialog = { kind: 'group' | 'move'; tenantId: string; node: Node }
  */
 export default function ResourceTreePage() {
   const { tenantId = '', nodeId } = useParams()
+  const { isAdmin } = useMe()
   const navigate = useNavigate()
   const tenantsApi = useClient(TenantService)
   const treeApi = useClient(TreeAdminService)
@@ -86,7 +88,7 @@ export default function ResourceTreePage() {
       <PageHeader
         title="Resource Tree"
         crumbs={tenantName ? [{ label: tenantName }] : undefined}
-        desc="Every tenant, the groups inside it and the resources services file there, and who has been granted what at each level."
+        desc={`${isAdmin ? 'Every tenant' : 'Your tenants'}, the groups inside them and the resources services file there, and who has been granted what at each level.`}
         action={
           <Button variant="outline" size="lg" onClick={refresh} disabled={list.loading}>
             <RefreshCw className={list.loading ? 'animate-spin' : undefined} /> Refresh
@@ -103,7 +105,15 @@ export default function ResourceTreePage() {
       ) : tenants.length === 0 ? (
         <div className="mt-6">
           <EmptyState icon={FolderTree} title="No tenants yet">
-            The tree starts at a tenant. <Link to="/tenants" className="underline">Create one</Link> and its groups and resources show up here.
+            The tree starts at a tenant.{' '}
+            {isAdmin && (
+              <>
+                <Link to="/tenants" className="underline">
+                  Create one
+                </Link>{' '}
+                and its groups and resources show up here.
+              </>
+            )}
           </EmptyState>
         </div>
       ) : (

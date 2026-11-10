@@ -39,6 +39,24 @@ func (s *Server) require(ctx context.Context, perm string, node tree.Node) error
 	return nil
 }
 
+// visible lets someone open a node of a tenant when they belong to the tenant
+// or hold any permission there, and returns those permissions, sorted.
+func (s *Server) visible(ctx context.Context, n tree.Node) ([]string, error) {
+	r, err := s.engine.At(ctx, caller(ctx).User.ID, n, authz.Consistency{Fresh: true})
+	if err != nil {
+		return nil, s.fail(err)
+	}
+	if !r.Member && len(r.Perms) == 0 {
+		return nil, connect.NewError(connect.CodePermissionDenied, errors.New("you don't belong to this tenant"))
+	}
+	perms := make([]string, 0, len(r.Perms))
+	for p := range r.Perms {
+		perms = append(perms, p)
+	}
+	slices.Sort(perms)
+	return perms, nil
+}
+
 func (s *Server) requireAdmin(ctx context.Context) error {
 	if !caller(ctx).User.IsAdmin() {
 		return connect.NewError(connect.CodePermissionDenied, errors.New("only an instance admin can do this"))
@@ -509,17 +527,9 @@ func (r *registryService) RejectContract(ctx context.Context, req *connect.Reque
 
 type treeAdminService struct{ s *Server }
 
-// canSee lets someone open a tenant's tree when they belong to it or hold any
-// permission there.
 func (t *treeAdminService) canSee(ctx context.Context, n tree.Node) error {
-	r, err := t.s.engine.At(ctx, caller(ctx).User.ID, n, authz.Consistency{Fresh: true})
-	if err != nil {
-		return t.s.fail(err)
-	}
-	if !r.Member && len(r.Perms) == 0 {
-		return connect.NewError(connect.CodePermissionDenied, errors.New("you don't belong to this tenant"))
-	}
-	return nil
+	_, err := t.s.visible(ctx, n)
+	return err
 }
 
 func (t *treeAdminService) GetTenantTree(ctx context.Context, req *connect.Request[adminv1.GetTenantTreeRequest]) (*connect.Response[adminv1.GetTenantTreeResponse], error) {

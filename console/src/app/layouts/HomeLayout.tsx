@@ -106,7 +106,18 @@ const ADMIN_NAV: NavModel = {
   ],
 }
 
-// Someone who isn't an instance admin has one thing to manage here: themselves.
+// Someone who belongs to a tenant manages it here: its members and its
+// Resource Tree. What they may change is decided by the server, per action.
+const MEMBER_NAV: NavModel = {
+  root: { label: 'Tenants', path: '/tenants' },
+  pinned: [{ label: 'Tenants', Icon: Building2, path: '/tenants' }],
+  groups: [
+    { group: 'Access', items: [{ label: 'Resource Tree', Icon: FolderTree, path: '/resource-tree' }] },
+    { group: 'Account', items: [{ label: 'Account', Icon: UserRound, path: '/account' }] },
+  ],
+}
+
+// Someone who isn't an instance admin and belongs to no tenant has one thing to manage here: themselves.
 const USER_NAV: NavModel = {
   root: { label: 'Account', path: '/account' },
   pinned: [{ label: 'Account', Icon: UserRound, path: '/account' }],
@@ -321,8 +332,8 @@ const loadOpen = () => {
 
 /** Home shell: sidebar + the active page. */
 export default function HomeLayout() {
-  const { isAdmin } = useMe()
-  const nav = isAdmin ? ADMIN_NAV : USER_NAV
+  const { isAdmin, me } = useMe()
+  const nav = isAdmin ? ADMIN_NAV : me.tenants.length > 0 ? MEMBER_NAV : USER_NAV
   const listed = nav.groups.filter((g) => g.group !== 'Account')
   const [open, setOpen] = useState(loadOpen)
 

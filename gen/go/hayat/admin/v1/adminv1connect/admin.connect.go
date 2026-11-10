@@ -640,15 +640,21 @@ func (UnimplementedUserServiceHandler) RevokeUserSessions(context.Context, *conn
 
 // TenantServiceClient is a client for the hayat.admin.v1.TenantService service.
 type TenantServiceClient interface {
+	// An instance admin sees every tenant; anyone else, the ones they belong to.
 	ListTenants(context.Context, *connect.Request[v1.ListTenantsRequest]) (*connect.Response[v1.ListTenantsResponse], error)
+	// Members, and anyone holding a permission on the tenant.
 	GetTenant(context.Context, *connect.Request[v1.GetTenantRequest]) (*connect.Response[v1.GetTenantResponse], error)
+	// Instance admin only.
 	CreateTenant(context.Context, *connect.Request[v1.CreateTenantRequest]) (*connect.Response[v1.CreateTenantResponse], error)
+	// hayat.tenant.manage.
 	RenameTenant(context.Context, *connect.Request[v1.RenameTenantRequest]) (*connect.Response[v1.RenameTenantResponse], error)
-	// Refused while anything is filed under the tenant.
+	// Instance admin only. Refused while anything is filed under the tenant.
 	DeleteTenant(context.Context, *connect.Request[v1.DeleteTenantRequest]) (*connect.Response[v1.DeleteTenantResponse], error)
-	// Adds an existing user by id, or invites an email address.
+	// hayat.members.manage. Adds an existing user by id, or invites an email address.
 	AddMember(context.Context, *connect.Request[v1.AddMemberRequest]) (*connect.Response[v1.AddMemberResponse], error)
+	// hayat.members.manage.
 	RemoveMember(context.Context, *connect.Request[v1.RemoveMemberRequest]) (*connect.Response[v1.RemoveMemberResponse], error)
+	// The current owner or an instance admin.
 	TransferOwnership(context.Context, *connect.Request[v1.TransferOwnershipRequest]) (*connect.Response[v1.TransferOwnershipResponse], error)
 }
 
@@ -768,15 +774,21 @@ func (c *tenantServiceClient) TransferOwnership(ctx context.Context, req *connec
 
 // TenantServiceHandler is an implementation of the hayat.admin.v1.TenantService service.
 type TenantServiceHandler interface {
+	// An instance admin sees every tenant; anyone else, the ones they belong to.
 	ListTenants(context.Context, *connect.Request[v1.ListTenantsRequest]) (*connect.Response[v1.ListTenantsResponse], error)
+	// Members, and anyone holding a permission on the tenant.
 	GetTenant(context.Context, *connect.Request[v1.GetTenantRequest]) (*connect.Response[v1.GetTenantResponse], error)
+	// Instance admin only.
 	CreateTenant(context.Context, *connect.Request[v1.CreateTenantRequest]) (*connect.Response[v1.CreateTenantResponse], error)
+	// hayat.tenant.manage.
 	RenameTenant(context.Context, *connect.Request[v1.RenameTenantRequest]) (*connect.Response[v1.RenameTenantResponse], error)
-	// Refused while anything is filed under the tenant.
+	// Instance admin only. Refused while anything is filed under the tenant.
 	DeleteTenant(context.Context, *connect.Request[v1.DeleteTenantRequest]) (*connect.Response[v1.DeleteTenantResponse], error)
-	// Adds an existing user by id, or invites an email address.
+	// hayat.members.manage. Adds an existing user by id, or invites an email address.
 	AddMember(context.Context, *connect.Request[v1.AddMemberRequest]) (*connect.Response[v1.AddMemberResponse], error)
+	// hayat.members.manage.
 	RemoveMember(context.Context, *connect.Request[v1.RemoveMemberRequest]) (*connect.Response[v1.RemoveMemberResponse], error)
+	// The current owner or an instance admin.
 	TransferOwnership(context.Context, *connect.Request[v1.TransferOwnershipRequest]) (*connect.Response[v1.TransferOwnershipResponse], error)
 }
 

@@ -29,10 +29,17 @@ function ToResourceTree() {
   return <Navigate to={nodeId ? `/resource-tree/${id}/${nodeId}` : `/resource-tree/${id}`} replace />
 }
 
-/** Admin pages; anyone else is sent to their account. The server enforces it too. */
+/** Admin pages; anyone else is sent to their tenants, or their account. The server enforces it too. */
 function AdminOnly({ children }: { children: ReactNode }) {
-  const { isAdmin } = useMe()
-  return isAdmin ? children : <Navigate to="/account" replace />
+  const { isAdmin, me } = useMe()
+  if (isAdmin) return children
+  return <Navigate to={me.tenants.length > 0 ? '/tenants' : '/account'} replace />
+}
+
+/** Tenant pages: instance admins, and anyone who belongs to a tenant. */
+function TenantsOnly({ children }: { children: ReactNode }) {
+  const { isAdmin, me } = useMe()
+  return isAdmin || me.tenants.length > 0 ? children : <Navigate to="/account" replace />
 }
 
 function NotFound() {
@@ -72,12 +79,6 @@ export default function App() {
                     ['/', <OverviewPage key="o" />],
                     ['/users', <UsersPage key="u" />],
                     ['/users/:id', <UserDetailPage key="ud" />],
-                    ['/tenants', <TenantsPage key="t" />],
-                    ['/tenants/:id', <TenantDetailPage key="td" />],
-                    ['/tenants/:id/resources', <ToResourceTree key="tr" />],
-                    ['/tenants/:id/resources/:nodeId', <ToResourceTree key="trn" />],
-                    // One route, so moving between nodes keeps the page (and the open branches) mounted.
-                    ['/resource-tree/:tenantId?/:nodeId?', <ResourceTreePage key="rt" />],
                     ['/roles', <RolesPage key="r" />],
                     ['/services', <ServicesPage key="s" />],
                     ['/services/:id', <ServiceDetailPage key="sd" />],
@@ -93,6 +94,25 @@ export default function App() {
                         <AdminOnly>
                           <Suspense fallback={<LoadingState />}>{el}</Suspense>
                         </AdminOnly>
+                      }
+                    />
+                  ))}
+                  {/* A tenant's owner and members open these too; the server checks each action. */}
+                  {[
+                    ['/tenants', <TenantsPage key="t" />],
+                    ['/tenants/:id', <TenantDetailPage key="td" />],
+                    ['/tenants/:id/resources', <ToResourceTree key="tr" />],
+                    ['/tenants/:id/resources/:nodeId', <ToResourceTree key="trn" />],
+                    // One route, so moving between nodes keeps the page (and the open branches) mounted.
+                    ['/resource-tree/:tenantId?/:nodeId?', <ResourceTreePage key="rt" />],
+                  ].map(([path, el]) => (
+                    <Route
+                      key={path as string}
+                      path={path as string}
+                      element={
+                        <TenantsOnly>
+                          <Suspense fallback={<LoadingState />}>{el}</Suspense>
+                        </TenantsOnly>
                       }
                     />
                   ))}
