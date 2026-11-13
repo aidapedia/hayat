@@ -50,6 +50,14 @@ func TestTenantLifecycle(t *testing.T) {
 	if err != nil || len(members) != 2 {
 		t.Fatalf("members: %v %v", members, err)
 	}
+	page, err := svc.MembersPage(ctx, tn.ID, tenancy.MemberCursor{}, 1)
+	if err != nil || len(page) != 1 || page[0].UserID != owner.ID || !page[0].IsOwner {
+		t.Fatalf("first page: %v %v", page, err)
+	}
+	page, err = svc.MembersPage(ctx, tn.ID, tenancy.MemberCursor{JoinedAt: page[0].JoinedAt, UserID: page[0].UserID}, 1)
+	if err != nil || len(page) != 1 || page[0].UserID != other.ID {
+		t.Fatalf("second page: %v %v", page, err)
+	}
 	if err := svc.RemoveMember(ctx, tn.ID, owner.ID, "test"); !errors.Is(err, tenancy.ErrOwner) {
 		t.Fatalf("removing the owner: %v", err)
 	}

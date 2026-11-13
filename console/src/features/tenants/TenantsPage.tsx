@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 import { Building2, Plus } from 'lucide-react'
 import { TenantService } from '@/shared/api/gen/hayat/admin/v1/admin_pb'
 import { errorMessage, useClient } from '@/shared/api/client'
-import { usePagedList } from '@/shared/hooks/use-paged-list'
+import { useServerPagination } from '@/shared/ui/table/usePagination'
 import { formatDate } from '@/shared/lib/datetime'
 import { useMe } from '@/features/auth'
 import { EmptyState, ErrorState, Field, LoadingState, SearchInput } from '@/shared/ui/bits'
@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/shared/ui/input'
 import { PageHeader } from '@/shared/ui/page/PageHeader'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
+import { Pagination } from '@/shared/ui/table/Pagination'
 
 const slugify = (name: string) =>
   name
@@ -101,9 +102,9 @@ export default function TenantsPage() {
   const [query, setQuery] = useState('')
   const [creating, setCreating] = useState(false)
 
-  const list = usePagedList(
-    async (token) => {
-      const res = await tenants.listTenants({ query, pageSize: 50, pageToken: token })
+  const list = useServerPagination(
+    async (token, pageSize) => {
+      const res = await tenants.listTenants({ query, pageSize, pageToken: token })
       return { items: res.tenants, next: res.nextPageToken }
     },
     [tenants, query],
@@ -137,40 +138,32 @@ export default function TenantsPage() {
             {!query && (isAdmin ? 'Create the first one to group people and the resources they share.' : "You don't belong to any tenant yet.")}
           </EmptyState>
         ) : (
-          <>
-            <div className="overflow-x-auto rounded-xl border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-[11px]">Tenant</TableHead>
-                    <TableHead className="text-[11px]">Members</TableHead>
-                    <TableHead className="text-[11px]">Region</TableHead>
-                    <TableHead className="text-[11px]">Created</TableHead>
+          <div className="overflow-hidden rounded-xl border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-[11px]">Tenant</TableHead>
+                  <TableHead className="text-[11px]">Members</TableHead>
+                  <TableHead className="text-[11px]">Region</TableHead>
+                  <TableHead className="text-[11px]">Created</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {list.items.map((t) => (
+                  <TableRow key={t.id} className="cursor-pointer" onClick={() => navigate(`/tenants/${t.id}`)}>
+                    <TableCell>
+                      <div className="text-[13px] font-semibold">{t.name}</div>
+                      <div className="font-mono text-[12px] text-faint">{t.slug}</div>
+                    </TableCell>
+                    <TableCell className="text-[13px] tabular-nums">{t.memberCount}</TableCell>
+                    <TableCell className="text-[12px] text-muted-foreground">{t.region}</TableCell>
+                    <TableCell className="text-[12px] text-muted-foreground">{formatDate(t.createdAt)}</TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {list.items.map((t) => (
-                    <TableRow key={t.id} className="cursor-pointer" onClick={() => navigate(`/tenants/${t.id}`)}>
-                      <TableCell>
-                        <div className="text-[13px] font-semibold">{t.name}</div>
-                        <div className="font-mono text-[12px] text-faint">{t.slug}</div>
-                      </TableCell>
-                      <TableCell className="text-[13px] tabular-nums">{t.memberCount}</TableCell>
-                      <TableCell className="text-[12px] text-muted-foreground">{t.region}</TableCell>
-                      <TableCell className="text-[12px] text-muted-foreground">{formatDate(t.createdAt)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-            {list.hasMore && (
-              <div className="flex justify-center">
-                <Button variant="outline" onClick={list.loadMore} disabled={list.loading}>
-                  {list.loading ? 'Loading…' : 'Load more'}
-                </Button>
-              </div>
-            )}
-          </>
+                ))}
+              </TableBody>
+            </Table>
+            <Pagination {...list.pager} className="border-t" />
+          </div>
         )}
       </div>
       {creating && <CreateTenantDialog open={creating} onOpenChange={setCreating} />}

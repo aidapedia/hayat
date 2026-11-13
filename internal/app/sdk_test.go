@@ -132,6 +132,66 @@ func TestServiceJourney(t *testing.T) {
 	if err != nil || claims.Subject != admin.ID.String() || claims.SessionID == "" {
 		t.Fatalf("user token: %v %+v", err, claims)
 	}
+
+	// 8. What each member was given, for a members page: Ben's own grant, Ana's
+	//    through Finance, the owner's tenant — and, narrowed to Ben, only his.
+	_, _, err = e.a.Tree.AddGrant(ctx, tree.GrantInput{NodeID: ledgerNode.ID, PrincipalType: tree.PrincipalGroup, PrincipalID: finance.ID, RoleID: accountant}, "test")
+	must(t, err)
+	all, err := hz.Directory.ListTenantGrants(ctx, connect.NewRequest(&authzv1.ListTenantGrantsRequest{TenantId: tn.ID.String()}))
+	must(t, err)
+	got := map[string]string{}
+	for _, g := range all.Msg.Grants {
+		got[g.UserId+" "+g.Resource.Name+" "+g.Via] = g.RoleName + "|" + g.GroupName
+	}
+	for key, want := range map[string]string{
+		ben.ID.String() + " Ledger 1 user":  "Accountant|",
+		ana.ID.String() + " Ledger 1 group": "Accountant|Finance",
+		admin.ID.String() + " Acme owner":   "|",
+	} {
+		if got[key] != want {
+			t.Fatalf("ListTenantGrants: %q = %q, want %q (all: %v)", key, got[key], want, got)
+		}
+	}
+	if len(got) != 3 {
+		t.Fatalf("ListTenantGrants: expected exactly three, got %v", got)
+	}
+	bens, err := hz.Directory.ListTenantGrants(ctx, connect.NewRequest(&authzv1.ListTenantGrantsRequest{TenantId: tn.ID.String(), UserIds: []string{ben.ID.String()}}))
+	must(t, err)
+	if len(bens.Msg.Grants) != 1 || bens.Msg.Grants[0].UserId != ben.ID.String() {
+		t.Fatalf("narrowed to Ben: %v", bens.Msg.Grants)
+	}
+
+	// 9. Who reaches the ledger, for the console's tree: the tenant's owner,
+	//    Ben's own grant, Finance's grant and placement for Ana, and a grant to
+	//    everyone inherited from Finance. Ben's tenant grant stops at the tenant.
+	_, _, err = e.a.Tree.AddGrant(ctx, tree.GrantInput{NodeID: finance.ID, PrincipalType: tree.PrincipalGroup, PrincipalID: tenantNode.ID, RoleID: catalog.RoleGroupManager, Inherit: true}, "test")
+	must(t, err)
+	_, _, err = e.a.Tree.AddGrant(ctx, tree.GrantInput{NodeID: tenantNode.ID, PrincipalType: tree.PrincipalUser, PrincipalID: ben.ID, RoleID: catalog.RoleTenantAdmin}, "test")
+	must(t, err)
+	treeAdmin := adminv1connect.NewTreeAdminServiceClient(http.DefaultClient, e.admin, bearer(token))
+	access, err := treeAdmin.ListNodeAccess(ctx, connect.NewRequest(&adminv1.ListNodeAccessRequest{NodeId: ledgerNode.ID.String()}))
+	must(t, err)
+	reach := map[string]bool{}
+	for _, a := range access.Msg.Entries {
+		reach[a.User.Email+" "+a.Via+" "+a.Source.Name+" "+a.RoleName+" "+a.GroupName] = true
+	}
+	want := []string{
+		"root@example.com owner Acme  ",
+		"ben@example.com user Ledger 1 Accountant ",
+		"ana@example.com group Ledger 1 Accountant Finance",
+		"ana@example.com placement Finance  Finance",
+		"root@example.com everyone Finance Group manager ",
+		"ana@example.com everyone Finance Group manager ",
+		"ben@example.com everyone Finance Group manager ",
+	}
+	for _, key := range want {
+		if !reach[key] {
+			t.Fatalf("ListNodeAccess: missing %q (got %v)", key, reach)
+		}
+	}
+	if len(access.Msg.Entries) != len(want) {
+		t.Fatalf("ListNodeAccess: expected %d entries, got %v", len(want), reach)
+	}
 }
 
 func must(t *testing.T, err error) {

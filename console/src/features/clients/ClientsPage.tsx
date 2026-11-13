@@ -5,11 +5,13 @@ import { AppWindow, Plus } from 'lucide-react'
 import { ClientService } from '@/shared/api/gen/hayat/admin/v1/admin_pb'
 import { errorMessage, useClient } from '@/shared/api/client'
 import { useQuery } from '@/shared/hooks/use-query'
+import { usePagination } from '@/shared/ui/table/usePagination'
 import { EmptyState, ErrorState, LoadingState, Pill, StatusBadge } from '@/shared/ui/bits'
 import { Button } from '@/shared/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
 import { PageHeader } from '@/shared/ui/page/PageHeader'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
+import { Pagination } from '@/shared/ui/table/Pagination'
 import { ClientForm } from './ClientForm'
 import { SecretDialog } from './SecretDialog'
 
@@ -23,6 +25,7 @@ export default function ClientsPage() {
   const clients = useClient(ClientService)
   const navigate = useNavigate()
   const { data, error, loading, reload } = useQuery(() => clients.listClients({}).then((r) => r.clients), [clients])
+  const { pageRows: items, pager } = usePagination(data ?? [])
   const [creating, setCreating] = useState(false)
   const [created, setCreated] = useState<{ id: string; secret: string } | null>(null)
 
@@ -45,7 +48,7 @@ export default function ClientsPage() {
         ) : !data || data.length === 0 ? (
           <EmptyState icon={AppWindow} title="No clients yet" />
         ) : (
-          <div className="overflow-x-auto rounded-xl border">
+          <div className="overflow-hidden rounded-xl border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -56,7 +59,7 @@ export default function ClientsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {data.map((c) => (
+                {items.map((c) => (
                   <TableRow key={c.id} className="cursor-pointer" onClick={() => navigate(`/clients/${c.id}`)}>
                     <TableCell>
                       <div className="flex items-center gap-2 text-[13px] font-semibold">
@@ -74,6 +77,7 @@ export default function ClientsPage() {
                 ))}
               </TableBody>
             </Table>
+            <Pagination {...pager} className="border-t" />
           </div>
         )}
       </div>

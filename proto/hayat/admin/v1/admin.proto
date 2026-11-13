@@ -245,6 +245,8 @@ service TenantService {
   rpc ListTenants(ListTenantsRequest) returns (ListTenantsResponse);
   // Members, and anyone holding a permission on the tenant.
   rpc GetTenant(GetTenantRequest) returns (GetTenantResponse);
+  // The roster, a page at a time, in the order people joined. Allowed like GetTenant.
+  rpc ListMembers(ListMembersRequest) returns (ListMembersResponse);
   // Instance admin only.
   rpc CreateTenant(CreateTenantRequest) returns (CreateTenantResponse);
   // hayat.tenant.manage.
@@ -274,10 +276,22 @@ message GetTenantRequest {
 }
 message GetTenantResponse {
   Tenant tenant = 1;
-  repeated Member members = 2;
+  // The roster moved to ListMembers, which pages.
+  reserved 2;
+  reserved "members";
   // What the caller may do on the tenant node, so the console shows only
   // the actions the server would allow.
   repeated string my_permissions = 3;
+}
+
+message ListMembersRequest {
+  string tenant_id = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+}
+message ListMembersResponse {
+  repeated Member members = 1;
+  string next_page_token = 2;
 }
 
 message CreateTenantRequest {

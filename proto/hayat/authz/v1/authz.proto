@@ -189,6 +189,11 @@ service DirectoryService {
   // A tenant's roster with each person's profile. Belonging, not permission:
   // ask PermissionsAt for what someone may do.
   rpc ListTenantMembers(ListTenantMembersRequest) returns (ListTenantMembersResponse);
+  // What each member was given in a tenant: grants made to them, to a group
+  // they are on, or to the whole tenant, and the nodes they own. What was
+  // granted, not what it adds up to: ask PermissionsAt for that. Only the
+  // tenant, its groups and the calling service's own resource types are listed.
+  rpc ListTenantGrants(ListTenantGrantsRequest) returns (ListTenantGrantsResponse);
 }
 
 message Tenant {
@@ -221,6 +226,33 @@ message TenantMember {
 
 message ListTenantMembersResponse {
   repeated TenantMember members = 1;
+}
+
+message ListTenantGrantsRequest {
+  string tenant_id = 1;
+  // Only these members; empty for everyone on the roster.
+  repeated string user_ids = 2;
+}
+
+message MemberGrant {
+  string user_id = 1;
+  // Where it was granted, or the node they own.
+  Resource resource = 2;
+  // How it reaches the member: "owner" (they own the node), "user" (granted to
+  // them), "group" (to a group they are on) or "everyone" (to the tenant).
+  string via = 3;
+  // The role's slug and display name; empty when via is "owner".
+  string role = 4;
+  string role_name = 5;
+  // Reaches the nodes below as well.
+  bool inherit = 6;
+  // The group it was granted to, when via is "group".
+  string group_id = 7;
+  string group_name = 8;
+}
+
+message ListTenantGrantsResponse {
+  repeated MemberGrant grants = 1;
 }
 
 message User {

@@ -91,6 +91,9 @@ const (
 	TenantServiceListTenantsProcedure = "/hayat.admin.v1.TenantService/ListTenants"
 	// TenantServiceGetTenantProcedure is the fully-qualified name of the TenantService's GetTenant RPC.
 	TenantServiceGetTenantProcedure = "/hayat.admin.v1.TenantService/GetTenant"
+	// TenantServiceListMembersProcedure is the fully-qualified name of the TenantService's ListMembers
+	// RPC.
+	TenantServiceListMembersProcedure = "/hayat.admin.v1.TenantService/ListMembers"
 	// TenantServiceCreateTenantProcedure is the fully-qualified name of the TenantService's
 	// CreateTenant RPC.
 	TenantServiceCreateTenantProcedure = "/hayat.admin.v1.TenantService/CreateTenant"
@@ -644,6 +647,8 @@ type TenantServiceClient interface {
 	ListTenants(context.Context, *connect.Request[v1.ListTenantsRequest]) (*connect.Response[v1.ListTenantsResponse], error)
 	// Members, and anyone holding a permission on the tenant.
 	GetTenant(context.Context, *connect.Request[v1.GetTenantRequest]) (*connect.Response[v1.GetTenantResponse], error)
+	// The roster, a page at a time, in the order people joined. Allowed like GetTenant.
+	ListMembers(context.Context, *connect.Request[v1.ListMembersRequest]) (*connect.Response[v1.ListMembersResponse], error)
 	// Instance admin only.
 	CreateTenant(context.Context, *connect.Request[v1.CreateTenantRequest]) (*connect.Response[v1.CreateTenantResponse], error)
 	// hayat.tenant.manage.
@@ -679,6 +684,12 @@ func NewTenantServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			httpClient,
 			baseURL+TenantServiceGetTenantProcedure,
 			connect.WithSchema(tenantServiceMethods.ByName("GetTenant")),
+			connect.WithClientOptions(opts...),
+		),
+		listMembers: connect.NewClient[v1.ListMembersRequest, v1.ListMembersResponse](
+			httpClient,
+			baseURL+TenantServiceListMembersProcedure,
+			connect.WithSchema(tenantServiceMethods.ByName("ListMembers")),
 			connect.WithClientOptions(opts...),
 		),
 		createTenant: connect.NewClient[v1.CreateTenantRequest, v1.CreateTenantResponse](
@@ -724,6 +735,7 @@ func NewTenantServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 type tenantServiceClient struct {
 	listTenants       *connect.Client[v1.ListTenantsRequest, v1.ListTenantsResponse]
 	getTenant         *connect.Client[v1.GetTenantRequest, v1.GetTenantResponse]
+	listMembers       *connect.Client[v1.ListMembersRequest, v1.ListMembersResponse]
 	createTenant      *connect.Client[v1.CreateTenantRequest, v1.CreateTenantResponse]
 	renameTenant      *connect.Client[v1.RenameTenantRequest, v1.RenameTenantResponse]
 	deleteTenant      *connect.Client[v1.DeleteTenantRequest, v1.DeleteTenantResponse]
@@ -740,6 +752,11 @@ func (c *tenantServiceClient) ListTenants(ctx context.Context, req *connect.Requ
 // GetTenant calls hayat.admin.v1.TenantService.GetTenant.
 func (c *tenantServiceClient) GetTenant(ctx context.Context, req *connect.Request[v1.GetTenantRequest]) (*connect.Response[v1.GetTenantResponse], error) {
 	return c.getTenant.CallUnary(ctx, req)
+}
+
+// ListMembers calls hayat.admin.v1.TenantService.ListMembers.
+func (c *tenantServiceClient) ListMembers(ctx context.Context, req *connect.Request[v1.ListMembersRequest]) (*connect.Response[v1.ListMembersResponse], error) {
+	return c.listMembers.CallUnary(ctx, req)
 }
 
 // CreateTenant calls hayat.admin.v1.TenantService.CreateTenant.
@@ -778,6 +795,8 @@ type TenantServiceHandler interface {
 	ListTenants(context.Context, *connect.Request[v1.ListTenantsRequest]) (*connect.Response[v1.ListTenantsResponse], error)
 	// Members, and anyone holding a permission on the tenant.
 	GetTenant(context.Context, *connect.Request[v1.GetTenantRequest]) (*connect.Response[v1.GetTenantResponse], error)
+	// The roster, a page at a time, in the order people joined. Allowed like GetTenant.
+	ListMembers(context.Context, *connect.Request[v1.ListMembersRequest]) (*connect.Response[v1.ListMembersResponse], error)
 	// Instance admin only.
 	CreateTenant(context.Context, *connect.Request[v1.CreateTenantRequest]) (*connect.Response[v1.CreateTenantResponse], error)
 	// hayat.tenant.manage.
@@ -809,6 +828,12 @@ func NewTenantServiceHandler(svc TenantServiceHandler, opts ...connect.HandlerOp
 		TenantServiceGetTenantProcedure,
 		svc.GetTenant,
 		connect.WithSchema(tenantServiceMethods.ByName("GetTenant")),
+		connect.WithHandlerOptions(opts...),
+	)
+	tenantServiceListMembersHandler := connect.NewUnaryHandler(
+		TenantServiceListMembersProcedure,
+		svc.ListMembers,
+		connect.WithSchema(tenantServiceMethods.ByName("ListMembers")),
 		connect.WithHandlerOptions(opts...),
 	)
 	tenantServiceCreateTenantHandler := connect.NewUnaryHandler(
@@ -853,6 +878,8 @@ func NewTenantServiceHandler(svc TenantServiceHandler, opts ...connect.HandlerOp
 			tenantServiceListTenantsHandler.ServeHTTP(w, r)
 		case TenantServiceGetTenantProcedure:
 			tenantServiceGetTenantHandler.ServeHTTP(w, r)
+		case TenantServiceListMembersProcedure:
+			tenantServiceListMembersHandler.ServeHTTP(w, r)
 		case TenantServiceCreateTenantProcedure:
 			tenantServiceCreateTenantHandler.ServeHTTP(w, r)
 		case TenantServiceRenameTenantProcedure:
@@ -880,6 +907,10 @@ func (UnimplementedTenantServiceHandler) ListTenants(context.Context, *connect.R
 
 func (UnimplementedTenantServiceHandler) GetTenant(context.Context, *connect.Request[v1.GetTenantRequest]) (*connect.Response[v1.GetTenantResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.TenantService.GetTenant is not implemented"))
+}
+
+func (UnimplementedTenantServiceHandler) ListMembers(context.Context, *connect.Request[v1.ListMembersRequest]) (*connect.Response[v1.ListMembersResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.TenantService.ListMembers is not implemented"))
 }
 
 func (UnimplementedTenantServiceHandler) CreateTenant(context.Context, *connect.Request[v1.CreateTenantRequest]) (*connect.Response[v1.CreateTenantResponse], error) {

@@ -236,7 +236,8 @@ export function ResourceTree({
                 count={count}
                 selected={selected}
                 // Unknown until loaded, so a tenant offers to open; once loaded, only if something is inside.
-                expandable={count === undefined || count > 0 || !!tree?.error}
+                // An open one always offers to close — an empty tenant stays open on "Nothing filed here yet".
+                expandable={expanded || count === undefined || count > 0 || !!tree?.error}
                 expanded={expanded}
                 busy={expanded && tree?.loading && !tree.nodes}
                 onToggle={() => setTenant(t.id, !expanded)}

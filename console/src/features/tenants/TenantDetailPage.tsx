@@ -5,6 +5,7 @@ import { Crown, FolderTree, MoreHorizontal, Pencil, Trash2, UserMinus, UserPlus 
 import { TenantService, type Member } from '@/shared/api/gen/hayat/admin/v1/admin_pb'
 import { useMe } from '@/features/auth'
 import { errorMessage, useClient } from '@/shared/api/client'
+import { useServerPagination } from '@/shared/ui/table/usePagination'
 import { useQuery } from '@/shared/hooks/use-query'
 import { formatDate, formatDateTime } from '@/shared/lib/datetime'
 import { CopyField, DetailList, ErrorState, Field, LoadingState, PersonRow, Pill, StatusBadge } from '@/shared/ui/bits'
@@ -15,6 +16,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Input } from '@/shared/ui/input'
 import { PageHeader, Section } from '@/shared/ui/page/PageHeader'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
+import { Pagination } from '@/shared/ui/table/Pagination'
 
 function AddMemberDialog({ tenantId, open, onOpenChange, onAdded }: { tenantId: string; open: boolean; onOpenChange: (o: boolean) => void; onAdded: () => void }) {
   const tenants = useClient(TenantService)
@@ -132,6 +134,14 @@ export default function TenantDetailPage() {
   const tenants = useClient(TenantService)
   const navigate = useNavigate()
   const { data, error, loading, reload } = useQuery(() => tenants.getTenant({ id }), [tenants, id])
+  const members = useServerPagination(
+    (token, pageSize) => tenants.listMembers({ tenantId: id, pageSize, pageToken: token }).then((r) => ({ items: r.members, next: r.nextPageToken })),
+    [tenants, id],
+  )
+  // A roster change moves the count (and maybe the owner) too, so both re-read.
+  const reloadAll = async () => {
+    await Promise.all([reload(), members.reload()])
+  }
   const [adding, setAdding] = useState(false)
   const [renaming, setRenaming] = useState(false)
   const [pending, setPending] = useState<Pending | null>(null)
@@ -205,85 +215,92 @@ export default function TenantDetailPage() {
             )
           }
         >
-          <div className="overflow-x-auto rounded-xl border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-[11px]">Person</TableHead>
-                  <TableHead className="text-[11px]">Status</TableHead>
-                  <TableHead className="text-[11px]">Joined</TableHead>
-                  <TableHead className="w-12" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.members.map((m) => (
-                  <TableRow key={m.user?.id}>
-                    <TableCell>
-                      <MemberPerson member={m} link={isAdmin} />
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge status={m.user?.status ?? ''} />
-                    </TableCell>
-                    <TableCell className="text-[12px] text-muted-foreground">{formatDate(m.joinedAt)}</TableCell>
-                    <TableCell className="text-right">
-                      {!m.isOwner && (canTransfer || canManageMembers) && (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon-sm" aria-label={`Actions for ${memberName(m)}`}>
-                              <MoreHorizontal />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-52">
-                            {canTransfer && (
-                              <DropdownMenuItem
-                                className="text-[13px]"
-                                disabled={m.user?.status !== 'active'}
-                                onSelect={() =>
-                                  setPending({
-                                    title: `Make ${memberName(m)} the owner?`,
-                                    body: 'A tenant has exactly one owner. The current owner stays a member.',
-                                    confirm: 'Transfer ownership',
-                                    run: async () => {
-                                      await tenants.transferOwnership({ tenantId: id, userId: m.user!.id })
-                                      toast.success('Ownership transferred')
-                                      await reload()
-                                    },
-                                  })
-                                }
-                              >
-                                <Crown /> Make owner
-                              </DropdownMenuItem>
-                            )}
-                            {canManageMembers && (
-                              <DropdownMenuItem
-                                variant="destructive"
-                                className="text-[13px]"
-                                onSelect={() =>
-                                  setPending({
-                                    title: `Remove ${memberName(m)}?`,
-                                    body: `They stop belonging to ${t.name}. Their account is kept.`,
-                                    confirm: 'Remove member',
-                                    destructive: true,
-                                    run: async () => {
-                                      await tenants.removeMember({ tenantId: id, userId: m.user!.id })
-                                      toast.success('Member removed')
-                                      await reload()
-                                    },
-                                  })
-                                }
-                              >
-                                <UserMinus /> Remove from tenant
-                              </DropdownMenuItem>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      )}
-                    </TableCell>
+          {members.error ? (
+            <ErrorState message={members.error} onRetry={members.reload} />
+          ) : members.loading && members.items.length === 0 ? (
+            <LoadingState />
+          ) : (
+            <div className="overflow-hidden rounded-xl border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-[11px]">Person</TableHead>
+                    <TableHead className="text-[11px]">Status</TableHead>
+                    <TableHead className="text-[11px]">Joined</TableHead>
+                    <TableHead className="w-12" />
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {members.items.map((m) => (
+                    <TableRow key={m.user?.id}>
+                      <TableCell>
+                        <MemberPerson member={m} link={isAdmin} />
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge status={m.user?.status ?? ''} />
+                      </TableCell>
+                      <TableCell className="text-[12px] text-muted-foreground">{formatDate(m.joinedAt)}</TableCell>
+                      <TableCell className="text-right">
+                        {!m.isOwner && (canTransfer || canManageMembers) && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon-sm" aria-label={`Actions for ${memberName(m)}`}>
+                                <MoreHorizontal />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-52">
+                              {canTransfer && (
+                                <DropdownMenuItem
+                                  className="text-[13px]"
+                                  disabled={m.user?.status !== 'active'}
+                                  onSelect={() =>
+                                    setPending({
+                                      title: `Make ${memberName(m)} the owner?`,
+                                      body: 'A tenant has exactly one owner. The current owner stays a member.',
+                                      confirm: 'Transfer ownership',
+                                      run: async () => {
+                                        await tenants.transferOwnership({ tenantId: id, userId: m.user!.id })
+                                        toast.success('Ownership transferred')
+                                        await reloadAll()
+                                      },
+                                    })
+                                  }
+                                >
+                                  <Crown /> Make owner
+                                </DropdownMenuItem>
+                              )}
+                              {canManageMembers && (
+                                <DropdownMenuItem
+                                  variant="destructive"
+                                  className="text-[13px]"
+                                  onSelect={() =>
+                                    setPending({
+                                      title: `Remove ${memberName(m)}?`,
+                                      body: `They stop belonging to ${t.name}. Their account is kept.`,
+                                      confirm: 'Remove member',
+                                      destructive: true,
+                                      run: async () => {
+                                        await tenants.removeMember({ tenantId: id, userId: m.user!.id })
+                                        toast.success('Member removed')
+                                        await reloadAll()
+                                      },
+                                    })
+                                  }
+                                >
+                                  <UserMinus /> Remove from tenant
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <Pagination {...members.pager} total={t.memberCount} className="border-t" />
+            </div>
+          )}
         </Section>
         </div>
         <div className="min-w-0 max-[1000px]:mt-9">
@@ -304,7 +321,7 @@ export default function TenantDetailPage() {
         </div>
       </div>
 
-      <AddMemberDialog tenantId={id} open={adding} onOpenChange={setAdding} onAdded={reload} />
+      <AddMemberDialog tenantId={id} open={adding} onOpenChange={setAdding} onAdded={reloadAll} />
       {renaming && <RenameDialog id={id} current={t.name} open={renaming} onOpenChange={setRenaming} onDone={reload} />}
       <ConfirmDialog
         open={!!pending}

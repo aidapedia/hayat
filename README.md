@@ -32,15 +32,22 @@ Design: <https://claude.ai/artifact/AceR8JGbXjPdNE2mz8WHck>
   owner of every namespace they touch approves.
 - **Service API** (gRPC, gRPC-Web and Connect on one port): Check, BatchCheck,
   PermissionsAt, LookupResources, LookupSubjects, resource writes, user
-  profiles, a user's tenants and a tenant's roster, a Watch stream of policy
+  profiles, a user's tenants, a tenant's roster and what each member was granted, a Watch stream of policy
   changes, contract publishing.
 - **Import** (`hayat import`): moves another system's people and access in —
   tabletsgo writes the bundle when it hands identity over to Hayat.
 - **SDKs**: Go (`sdk/go/hayat`) and Node (`sdk/node`), with client credentials,
   a decision cache emptied by Watch, read-your-writes and token verification.
-- **Console**: services and contract approval, roles, and a Resource Tree page
+- **Console**: services and contract approval; roles (each one in plain words
+  — what it lets someone do, grouped by service, where it can be granted and
+  who holds it — a By service view that sets every permission against every
+  role, and a full-page editor that starts from a copy, previews the role live
+  and warns when a permission can't take effect where the role can be
+  granted); and a Resource Tree page
   (every tenant, its groups and resources; right-click to add a group or move a
-  node) with grants, rosters, "who has access" and "check a person". A
+  node) with one access list per node (a row per role with a count and faces;
+  it opens a modal of everyone it reaches and how, searchable and paged, that
+  marks who can be ungranted there and ungrants them together) and rosters. A
   tenant's owner signs in to the same console and runs their tenant (members,
   rename, its Resource Tree) without being an instance admin; members see their
   tenants read-only unless granted more.
@@ -132,14 +139,16 @@ Every role also serves `/healthz` and `/readyz` on 9090. `serve` without
        # Placement: everyone on the roster of a group above a ledger may view it.
        access: { permission: ledger.view, via_placement: true, requires_membership: true }
    permissions:
-     - { key: ledger.view, scope: ledger, description: See entries and balances }
-     - { key: ledger.post, scope: ledger, description: Post journal entries }
+     - { key: ledger.view, scope: ledger, label: View ledgers, description: See entries and balances }
+     - { key: ledger.post, scope: ledger, label: Post entries, description: Post journal entries }
    default_roles:
      - { slug: accountant, name: Accountant, permissions: [ledger.view, ledger.post] }
    ```
 
-   Short names are qualified: `billing/ledger`, `billing.ledger.view`. A later
-   version may only add. Placing your types under another service's types needs
+   Short names are qualified: `billing/ledger`, `billing.ledger.view`. `label` is
+   the short name admins read on the Roles pages (without one they see the key).
+   A later version may only add; labels and descriptions are display text and
+   may change. Placing your types under another service's types needs
    that service's owners to approve too.
 3. **An owner approves it** on the service's page.
 4. **Mirror resources and ask for decisions:**

@@ -1,7 +1,8 @@
 import { useCallback, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { FolderTree, RefreshCw, ShieldCheck } from 'lucide-react'
-import { TenantService } from '@/shared/api/gen/hayat/admin/v1/admin_pb'
+import type { Client } from '@connectrpc/connect'
+import { TenantService, type Member } from '@/shared/api/gen/hayat/admin/v1/admin_pb'
 import { TreeAdminService, type Node } from '@/shared/api/gen/hayat/admin/v1/policy_pb'
 import { useMe } from '@/features/auth'
 import { errorMessage, useClient } from '@/shared/api/client'
@@ -16,6 +17,18 @@ import { ResourceTree, type TenantTree } from './ResourceTree'
 import { nodeHref, TENANT } from './tree'
 
 type TreeDialog = { kind: 'group' | 'move'; tenantId: string; node: Node }
+
+/** The whole roster, every page of it: the grant and group pickers choose from all of it. */
+async function allMembers(api: Client<typeof TenantService>, tenantId: string) {
+  const out: Member[] = []
+  let pageToken = ''
+  do {
+    const res = await api.listMembers({ tenantId, pageSize: 200, pageToken })
+    out.push(...res.members)
+    pageToken = res.nextPageToken
+  } while (pageToken)
+  return out
+}
 
 /**
  * The Resource Tree: every tenant with the groups and resources filed in it on
@@ -52,7 +65,7 @@ export default function ResourceTreePage() {
   )
 
   const members = useQuery(
-    () => (tenantId ? tenantsApi.getTenant({ id: tenantId }).then((r) => r.members) : Promise.resolve([])),
+    () => (tenantId ? allMembers(tenantsApi, tenantId) : Promise.resolve([])),
     [tenantsApi, tenantId],
   )
 

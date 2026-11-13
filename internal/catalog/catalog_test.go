@@ -143,3 +143,40 @@ func TestRoles(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestPermissionLabels(t *testing.T) {
+	c, ctx, ids := setup(t)
+	snap, _ := c.Snapshot(ctx, true)
+	if snap.Permissions[catalog.PermMembersManage].Label != "Manage members" {
+		t.Fatalf("platform label: %+v", snap.Permissions[catalog.PermMembersManage])
+	}
+
+	owner, _ := ids.CreateAdmin(ctx, "owner@example.com", "Owner", "a long enough password")
+	if _, err := c.RegisterService(ctx, "billing", "Billing", "", "c_billing", owner.ID, "test"); err != nil {
+		t.Fatal(err)
+	}
+	labelled := strings.Replace(billingV1, "{ key: ledger.view, scope: ledger }", "{ key: ledger.view, scope: ledger, label: See ledgers }", 1)
+	if _, err := c.Publish(ctx, "billing", []byte(labelled), "test"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := c.Approve(ctx, "billing", 1, []string{"billing"}, owner.ID); err != nil {
+		t.Fatal(err)
+	}
+	snap, _ = c.Snapshot(ctx, true)
+	if snap.Permissions["billing.ledger.view"].Label != "See ledgers" || snap.Permissions["billing.ledger.post"].Label != "" {
+		t.Fatalf("contract labels: %+v %+v", snap.Permissions["billing.ledger.view"], snap.Permissions["billing.ledger.post"])
+	}
+
+	// A label is display text: a later version may change it.
+	v2 := strings.Replace(strings.Replace(labelled, "version: 1", "version: 2", 1), "label: See ledgers", "label: Read ledgers", 1)
+	if _, err := c.Publish(ctx, "billing", []byte(v2), "test"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := c.Approve(ctx, "billing", 2, []string{"billing"}, owner.ID); err != nil {
+		t.Fatal(err)
+	}
+	snap, _ = c.Snapshot(ctx, true)
+	if snap.Permissions["billing.ledger.view"].Label != "Read ledgers" {
+		t.Fatalf("relabelled: %+v", snap.Permissions["billing.ledger.view"])
+	}
+}

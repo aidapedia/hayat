@@ -81,6 +81,9 @@ const (
 	// DirectoryServiceListTenantMembersProcedure is the fully-qualified name of the DirectoryService's
 	// ListTenantMembers RPC.
 	DirectoryServiceListTenantMembersProcedure = "/hayat.authz.v1.DirectoryService/ListTenantMembers"
+	// DirectoryServiceListTenantGrantsProcedure is the fully-qualified name of the DirectoryService's
+	// ListTenantGrants RPC.
+	DirectoryServiceListTenantGrantsProcedure = "/hayat.authz.v1.DirectoryService/ListTenantGrants"
 	// WatchServiceWatchProcedure is the fully-qualified name of the WatchService's Watch RPC.
 	WatchServiceWatchProcedure = "/hayat.authz.v1.WatchService/Watch"
 	// SchemaServicePublishContractProcedure is the fully-qualified name of the SchemaService's
@@ -405,6 +408,11 @@ type DirectoryServiceClient interface {
 	// A tenant's roster with each person's profile. Belonging, not permission:
 	// ask PermissionsAt for what someone may do.
 	ListTenantMembers(context.Context, *connect.Request[v1.ListTenantMembersRequest]) (*connect.Response[v1.ListTenantMembersResponse], error)
+	// What each member was given in a tenant: grants made to them, to a group
+	// they are on, or to the whole tenant, and the nodes they own. What was
+	// granted, not what it adds up to: ask PermissionsAt for that. Only the
+	// tenant, its groups and the calling service's own resource types are listed.
+	ListTenantGrants(context.Context, *connect.Request[v1.ListTenantGrantsRequest]) (*connect.Response[v1.ListTenantGrantsResponse], error)
 }
 
 // NewDirectoryServiceClient constructs a client for the hayat.authz.v1.DirectoryService service. By
@@ -442,6 +450,12 @@ func NewDirectoryServiceClient(httpClient connect.HTTPClient, baseURL string, op
 			connect.WithSchema(directoryServiceMethods.ByName("ListTenantMembers")),
 			connect.WithClientOptions(opts...),
 		),
+		listTenantGrants: connect.NewClient[v1.ListTenantGrantsRequest, v1.ListTenantGrantsResponse](
+			httpClient,
+			baseURL+DirectoryServiceListTenantGrantsProcedure,
+			connect.WithSchema(directoryServiceMethods.ByName("ListTenantGrants")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -451,6 +465,7 @@ type directoryServiceClient struct {
 	batchGetUsers     *connect.Client[v1.BatchGetUsersRequest, v1.BatchGetUsersResponse]
 	listUserTenants   *connect.Client[v1.ListUserTenantsRequest, v1.ListUserTenantsResponse]
 	listTenantMembers *connect.Client[v1.ListTenantMembersRequest, v1.ListTenantMembersResponse]
+	listTenantGrants  *connect.Client[v1.ListTenantGrantsRequest, v1.ListTenantGrantsResponse]
 }
 
 // GetUser calls hayat.authz.v1.DirectoryService.GetUser.
@@ -473,6 +488,11 @@ func (c *directoryServiceClient) ListTenantMembers(ctx context.Context, req *con
 	return c.listTenantMembers.CallUnary(ctx, req)
 }
 
+// ListTenantGrants calls hayat.authz.v1.DirectoryService.ListTenantGrants.
+func (c *directoryServiceClient) ListTenantGrants(ctx context.Context, req *connect.Request[v1.ListTenantGrantsRequest]) (*connect.Response[v1.ListTenantGrantsResponse], error) {
+	return c.listTenantGrants.CallUnary(ctx, req)
+}
+
 // DirectoryServiceHandler is an implementation of the hayat.authz.v1.DirectoryService service.
 type DirectoryServiceHandler interface {
 	GetUser(context.Context, *connect.Request[v1.GetUserRequest]) (*connect.Response[v1.GetUserResponse], error)
@@ -482,6 +502,11 @@ type DirectoryServiceHandler interface {
 	// A tenant's roster with each person's profile. Belonging, not permission:
 	// ask PermissionsAt for what someone may do.
 	ListTenantMembers(context.Context, *connect.Request[v1.ListTenantMembersRequest]) (*connect.Response[v1.ListTenantMembersResponse], error)
+	// What each member was given in a tenant: grants made to them, to a group
+	// they are on, or to the whole tenant, and the nodes they own. What was
+	// granted, not what it adds up to: ask PermissionsAt for that. Only the
+	// tenant, its groups and the calling service's own resource types are listed.
+	ListTenantGrants(context.Context, *connect.Request[v1.ListTenantGrantsRequest]) (*connect.Response[v1.ListTenantGrantsResponse], error)
 }
 
 // NewDirectoryServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -515,6 +540,12 @@ func NewDirectoryServiceHandler(svc DirectoryServiceHandler, opts ...connect.Han
 		connect.WithSchema(directoryServiceMethods.ByName("ListTenantMembers")),
 		connect.WithHandlerOptions(opts...),
 	)
+	directoryServiceListTenantGrantsHandler := connect.NewUnaryHandler(
+		DirectoryServiceListTenantGrantsProcedure,
+		svc.ListTenantGrants,
+		connect.WithSchema(directoryServiceMethods.ByName("ListTenantGrants")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/hayat.authz.v1.DirectoryService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case DirectoryServiceGetUserProcedure:
@@ -525,6 +556,8 @@ func NewDirectoryServiceHandler(svc DirectoryServiceHandler, opts ...connect.Han
 			directoryServiceListUserTenantsHandler.ServeHTTP(w, r)
 		case DirectoryServiceListTenantMembersProcedure:
 			directoryServiceListTenantMembersHandler.ServeHTTP(w, r)
+		case DirectoryServiceListTenantGrantsProcedure:
+			directoryServiceListTenantGrantsHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -548,6 +581,10 @@ func (UnimplementedDirectoryServiceHandler) ListUserTenants(context.Context, *co
 
 func (UnimplementedDirectoryServiceHandler) ListTenantMembers(context.Context, *connect.Request[v1.ListTenantMembersRequest]) (*connect.Response[v1.ListTenantMembersResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.authz.v1.DirectoryService.ListTenantMembers is not implemented"))
+}
+
+func (UnimplementedDirectoryServiceHandler) ListTenantGrants(context.Context, *connect.Request[v1.ListTenantGrantsRequest]) (*connect.Response[v1.ListTenantGrantsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.authz.v1.DirectoryService.ListTenantGrants is not implemented"))
 }
 
 // WatchServiceClient is a client for the hayat.authz.v1.WatchService service.

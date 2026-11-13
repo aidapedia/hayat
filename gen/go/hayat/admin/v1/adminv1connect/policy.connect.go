@@ -58,6 +58,9 @@ const (
 	// CatalogServiceDeleteRoleProcedure is the fully-qualified name of the CatalogService's DeleteRole
 	// RPC.
 	CatalogServiceDeleteRoleProcedure = "/hayat.admin.v1.CatalogService/DeleteRole"
+	// CatalogServiceListRoleGrantsProcedure is the fully-qualified name of the CatalogService's
+	// ListRoleGrants RPC.
+	CatalogServiceListRoleGrantsProcedure = "/hayat.admin.v1.CatalogService/ListRoleGrants"
 	// RegistryServiceListServicesProcedure is the fully-qualified name of the RegistryService's
 	// ListServices RPC.
 	RegistryServiceListServicesProcedure = "/hayat.admin.v1.RegistryService/ListServices"
@@ -115,6 +118,9 @@ const (
 	// TreeAdminServiceRemoveGroupMemberProcedure is the fully-qualified name of the TreeAdminService's
 	// RemoveGroupMember RPC.
 	TreeAdminServiceRemoveGroupMemberProcedure = "/hayat.admin.v1.TreeAdminService/RemoveGroupMember"
+	// TreeAdminServiceListNodeAccessProcedure is the fully-qualified name of the TreeAdminService's
+	// ListNodeAccess RPC.
+	TreeAdminServiceListNodeAccessProcedure = "/hayat.admin.v1.TreeAdminService/ListNodeAccess"
 	// TreeAdminServiceWhoHasAccessProcedure is the fully-qualified name of the TreeAdminService's
 	// WhoHasAccess RPC.
 	TreeAdminServiceWhoHasAccessProcedure = "/hayat.admin.v1.TreeAdminService/WhoHasAccess"
@@ -130,6 +136,8 @@ type CatalogServiceClient interface {
 	CreateRole(context.Context, *connect.Request[v1.CreateRoleRequest]) (*connect.Response[v1.CreateRoleResponse], error)
 	UpdateRole(context.Context, *connect.Request[v1.UpdateRoleRequest]) (*connect.Response[v1.UpdateRoleResponse], error)
 	DeleteRole(context.Context, *connect.Request[v1.DeleteRoleRequest]) (*connect.Response[v1.DeleteRoleResponse], error)
+	// Where a role is granted, across every tenant: who holds it and on which node.
+	ListRoleGrants(context.Context, *connect.Request[v1.ListRoleGrantsRequest]) (*connect.Response[v1.ListRoleGrantsResponse], error)
 }
 
 // NewCatalogServiceClient constructs a client for the hayat.admin.v1.CatalogService service. By
@@ -173,16 +181,23 @@ func NewCatalogServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(catalogServiceMethods.ByName("DeleteRole")),
 			connect.WithClientOptions(opts...),
 		),
+		listRoleGrants: connect.NewClient[v1.ListRoleGrantsRequest, v1.ListRoleGrantsResponse](
+			httpClient,
+			baseURL+CatalogServiceListRoleGrantsProcedure,
+			connect.WithSchema(catalogServiceMethods.ByName("ListRoleGrants")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // catalogServiceClient implements CatalogServiceClient.
 type catalogServiceClient struct {
-	getCatalog *connect.Client[v1.GetCatalogRequest, v1.GetCatalogResponse]
-	listRoles  *connect.Client[v1.ListRolesRequest, v1.ListRolesResponse]
-	createRole *connect.Client[v1.CreateRoleRequest, v1.CreateRoleResponse]
-	updateRole *connect.Client[v1.UpdateRoleRequest, v1.UpdateRoleResponse]
-	deleteRole *connect.Client[v1.DeleteRoleRequest, v1.DeleteRoleResponse]
+	getCatalog     *connect.Client[v1.GetCatalogRequest, v1.GetCatalogResponse]
+	listRoles      *connect.Client[v1.ListRolesRequest, v1.ListRolesResponse]
+	createRole     *connect.Client[v1.CreateRoleRequest, v1.CreateRoleResponse]
+	updateRole     *connect.Client[v1.UpdateRoleRequest, v1.UpdateRoleResponse]
+	deleteRole     *connect.Client[v1.DeleteRoleRequest, v1.DeleteRoleResponse]
+	listRoleGrants *connect.Client[v1.ListRoleGrantsRequest, v1.ListRoleGrantsResponse]
 }
 
 // GetCatalog calls hayat.admin.v1.CatalogService.GetCatalog.
@@ -210,6 +225,11 @@ func (c *catalogServiceClient) DeleteRole(ctx context.Context, req *connect.Requ
 	return c.deleteRole.CallUnary(ctx, req)
 }
 
+// ListRoleGrants calls hayat.admin.v1.CatalogService.ListRoleGrants.
+func (c *catalogServiceClient) ListRoleGrants(ctx context.Context, req *connect.Request[v1.ListRoleGrantsRequest]) (*connect.Response[v1.ListRoleGrantsResponse], error) {
+	return c.listRoleGrants.CallUnary(ctx, req)
+}
+
 // CatalogServiceHandler is an implementation of the hayat.admin.v1.CatalogService service.
 type CatalogServiceHandler interface {
 	GetCatalog(context.Context, *connect.Request[v1.GetCatalogRequest]) (*connect.Response[v1.GetCatalogResponse], error)
@@ -217,6 +237,8 @@ type CatalogServiceHandler interface {
 	CreateRole(context.Context, *connect.Request[v1.CreateRoleRequest]) (*connect.Response[v1.CreateRoleResponse], error)
 	UpdateRole(context.Context, *connect.Request[v1.UpdateRoleRequest]) (*connect.Response[v1.UpdateRoleResponse], error)
 	DeleteRole(context.Context, *connect.Request[v1.DeleteRoleRequest]) (*connect.Response[v1.DeleteRoleResponse], error)
+	// Where a role is granted, across every tenant: who holds it and on which node.
+	ListRoleGrants(context.Context, *connect.Request[v1.ListRoleGrantsRequest]) (*connect.Response[v1.ListRoleGrantsResponse], error)
 }
 
 // NewCatalogServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -256,6 +278,12 @@ func NewCatalogServiceHandler(svc CatalogServiceHandler, opts ...connect.Handler
 		connect.WithSchema(catalogServiceMethods.ByName("DeleteRole")),
 		connect.WithHandlerOptions(opts...),
 	)
+	catalogServiceListRoleGrantsHandler := connect.NewUnaryHandler(
+		CatalogServiceListRoleGrantsProcedure,
+		svc.ListRoleGrants,
+		connect.WithSchema(catalogServiceMethods.ByName("ListRoleGrants")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/hayat.admin.v1.CatalogService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case CatalogServiceGetCatalogProcedure:
@@ -268,6 +296,8 @@ func NewCatalogServiceHandler(svc CatalogServiceHandler, opts ...connect.Handler
 			catalogServiceUpdateRoleHandler.ServeHTTP(w, r)
 		case CatalogServiceDeleteRoleProcedure:
 			catalogServiceDeleteRoleHandler.ServeHTTP(w, r)
+		case CatalogServiceListRoleGrantsProcedure:
+			catalogServiceListRoleGrantsHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -295,6 +325,10 @@ func (UnimplementedCatalogServiceHandler) UpdateRole(context.Context, *connect.R
 
 func (UnimplementedCatalogServiceHandler) DeleteRole(context.Context, *connect.Request[v1.DeleteRoleRequest]) (*connect.Response[v1.DeleteRoleResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.CatalogService.DeleteRole is not implemented"))
+}
+
+func (UnimplementedCatalogServiceHandler) ListRoleGrants(context.Context, *connect.Request[v1.ListRoleGrantsRequest]) (*connect.Response[v1.ListRoleGrantsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.CatalogService.ListRoleGrants is not implemented"))
 }
 
 // RegistryServiceClient is a client for the hayat.admin.v1.RegistryService service.
@@ -592,6 +626,11 @@ type TreeAdminServiceClient interface {
 	RemoveGrant(context.Context, *connect.Request[v1.RemoveGrantRequest]) (*connect.Response[v1.RemoveGrantResponse], error)
 	AddGroupMember(context.Context, *connect.Request[v1.AddGroupMemberRequest]) (*connect.Response[v1.AddGroupMemberResponse], error)
 	RemoveGroupMember(context.Context, *connect.Request[v1.RemoveGroupMemberRequest]) (*connect.Response[v1.RemoveGroupMemberResponse], error)
+	// Everyone who reaches this node, one row per way: owners on the chain,
+	// grants here or inherited from above (to a group or the whole tenant,
+	// listed per person on its roster), and placement under a group. What was
+	// given, not what it adds up to: WhoHasAccess answers for one permission.
+	ListNodeAccess(context.Context, *connect.Request[v1.ListNodeAccessRequest]) (*connect.Response[v1.ListNodeAccessResponse], error)
 	// Who really holds a permission here, and through what.
 	WhoHasAccess(context.Context, *connect.Request[v1.WhoHasAccessRequest]) (*connect.Response[v1.WhoHasAccessResponse], error)
 	// Why a person may (or may not) do something here.
@@ -669,6 +708,12 @@ func NewTreeAdminServiceClient(httpClient connect.HTTPClient, baseURL string, op
 			connect.WithSchema(treeAdminServiceMethods.ByName("RemoveGroupMember")),
 			connect.WithClientOptions(opts...),
 		),
+		listNodeAccess: connect.NewClient[v1.ListNodeAccessRequest, v1.ListNodeAccessResponse](
+			httpClient,
+			baseURL+TreeAdminServiceListNodeAccessProcedure,
+			connect.WithSchema(treeAdminServiceMethods.ByName("ListNodeAccess")),
+			connect.WithClientOptions(opts...),
+		),
 		whoHasAccess: connect.NewClient[v1.WhoHasAccessRequest, v1.WhoHasAccessResponse](
 			httpClient,
 			baseURL+TreeAdminServiceWhoHasAccessProcedure,
@@ -696,6 +741,7 @@ type treeAdminServiceClient struct {
 	removeGrant       *connect.Client[v1.RemoveGrantRequest, v1.RemoveGrantResponse]
 	addGroupMember    *connect.Client[v1.AddGroupMemberRequest, v1.AddGroupMemberResponse]
 	removeGroupMember *connect.Client[v1.RemoveGroupMemberRequest, v1.RemoveGroupMemberResponse]
+	listNodeAccess    *connect.Client[v1.ListNodeAccessRequest, v1.ListNodeAccessResponse]
 	whoHasAccess      *connect.Client[v1.WhoHasAccessRequest, v1.WhoHasAccessResponse]
 	explainAccess     *connect.Client[v1.ExplainAccessRequest, v1.ExplainAccessResponse]
 }
@@ -750,6 +796,11 @@ func (c *treeAdminServiceClient) RemoveGroupMember(ctx context.Context, req *con
 	return c.removeGroupMember.CallUnary(ctx, req)
 }
 
+// ListNodeAccess calls hayat.admin.v1.TreeAdminService.ListNodeAccess.
+func (c *treeAdminServiceClient) ListNodeAccess(ctx context.Context, req *connect.Request[v1.ListNodeAccessRequest]) (*connect.Response[v1.ListNodeAccessResponse], error) {
+	return c.listNodeAccess.CallUnary(ctx, req)
+}
+
 // WhoHasAccess calls hayat.admin.v1.TreeAdminService.WhoHasAccess.
 func (c *treeAdminServiceClient) WhoHasAccess(ctx context.Context, req *connect.Request[v1.WhoHasAccessRequest]) (*connect.Response[v1.WhoHasAccessResponse], error) {
 	return c.whoHasAccess.CallUnary(ctx, req)
@@ -773,6 +824,11 @@ type TreeAdminServiceHandler interface {
 	RemoveGrant(context.Context, *connect.Request[v1.RemoveGrantRequest]) (*connect.Response[v1.RemoveGrantResponse], error)
 	AddGroupMember(context.Context, *connect.Request[v1.AddGroupMemberRequest]) (*connect.Response[v1.AddGroupMemberResponse], error)
 	RemoveGroupMember(context.Context, *connect.Request[v1.RemoveGroupMemberRequest]) (*connect.Response[v1.RemoveGroupMemberResponse], error)
+	// Everyone who reaches this node, one row per way: owners on the chain,
+	// grants here or inherited from above (to a group or the whole tenant,
+	// listed per person on its roster), and placement under a group. What was
+	// given, not what it adds up to: WhoHasAccess answers for one permission.
+	ListNodeAccess(context.Context, *connect.Request[v1.ListNodeAccessRequest]) (*connect.Response[v1.ListNodeAccessResponse], error)
 	// Who really holds a permission here, and through what.
 	WhoHasAccess(context.Context, *connect.Request[v1.WhoHasAccessRequest]) (*connect.Response[v1.WhoHasAccessResponse], error)
 	// Why a person may (or may not) do something here.
@@ -846,6 +902,12 @@ func NewTreeAdminServiceHandler(svc TreeAdminServiceHandler, opts ...connect.Han
 		connect.WithSchema(treeAdminServiceMethods.ByName("RemoveGroupMember")),
 		connect.WithHandlerOptions(opts...),
 	)
+	treeAdminServiceListNodeAccessHandler := connect.NewUnaryHandler(
+		TreeAdminServiceListNodeAccessProcedure,
+		svc.ListNodeAccess,
+		connect.WithSchema(treeAdminServiceMethods.ByName("ListNodeAccess")),
+		connect.WithHandlerOptions(opts...),
+	)
 	treeAdminServiceWhoHasAccessHandler := connect.NewUnaryHandler(
 		TreeAdminServiceWhoHasAccessProcedure,
 		svc.WhoHasAccess,
@@ -880,6 +942,8 @@ func NewTreeAdminServiceHandler(svc TreeAdminServiceHandler, opts ...connect.Han
 			treeAdminServiceAddGroupMemberHandler.ServeHTTP(w, r)
 		case TreeAdminServiceRemoveGroupMemberProcedure:
 			treeAdminServiceRemoveGroupMemberHandler.ServeHTTP(w, r)
+		case TreeAdminServiceListNodeAccessProcedure:
+			treeAdminServiceListNodeAccessHandler.ServeHTTP(w, r)
 		case TreeAdminServiceWhoHasAccessProcedure:
 			treeAdminServiceWhoHasAccessHandler.ServeHTTP(w, r)
 		case TreeAdminServiceExplainAccessProcedure:
@@ -931,6 +995,10 @@ func (UnimplementedTreeAdminServiceHandler) AddGroupMember(context.Context, *con
 
 func (UnimplementedTreeAdminServiceHandler) RemoveGroupMember(context.Context, *connect.Request[v1.RemoveGroupMemberRequest]) (*connect.Response[v1.RemoveGroupMemberResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.TreeAdminService.RemoveGroupMember is not implemented"))
+}
+
+func (UnimplementedTreeAdminServiceHandler) ListNodeAccess(context.Context, *connect.Request[v1.ListNodeAccessRequest]) (*connect.Response[v1.ListNodeAccessResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.TreeAdminService.ListNodeAccess is not implemented"))
 }
 
 func (UnimplementedTreeAdminServiceHandler) WhoHasAccess(context.Context, *connect.Request[v1.WhoHasAccessRequest]) (*connect.Response[v1.WhoHasAccessResponse], error) {

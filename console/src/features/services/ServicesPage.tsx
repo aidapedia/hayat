@@ -5,6 +5,7 @@ import { Boxes, Plus } from 'lucide-react'
 import { RegistryService } from '@/shared/api/gen/hayat/admin/v1/policy_pb'
 import { errorMessage, useClient } from '@/shared/api/client'
 import { useQuery } from '@/shared/hooks/use-query'
+import { usePagination } from '@/shared/ui/table/usePagination'
 import { useMe } from '@/features/auth'
 import { EmptyState, ErrorState, Field, LoadingState, Pill } from '@/shared/ui/bits'
 import { Button } from '@/shared/ui/button'
@@ -12,6 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/shared/ui/input'
 import { PageHeader } from '@/shared/ui/page/PageHeader'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
+import { Pagination } from '@/shared/ui/table/Pagination'
 import { CredentialsDialog } from './CredentialsDialog'
 
 function RegisterDialog({ onClose, onDone }: { onClose: () => void; onDone: (r: { id: string; clientId: string; secret: string }) => void }) {
@@ -78,6 +80,7 @@ export default function ServicesPage() {
   const navigate = useNavigate()
   const { isAdmin } = useMe()
   const { data, error, loading, reload } = useQuery(() => registry.listServices({}).then((r) => r.services), [registry])
+  const { pageRows: items, pager } = usePagination(data ?? [])
   const [registering, setRegistering] = useState(false)
   const [creds, setCreds] = useState<{ id: string; clientId: string; secret: string } | null>(null)
 
@@ -104,7 +107,7 @@ export default function ServicesPage() {
             Register one to give it API credentials and a namespace for its contract.
           </EmptyState>
         ) : (
-          <div className="overflow-x-auto rounded-xl border">
+          <div className="overflow-hidden rounded-xl border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -114,7 +117,7 @@ export default function ServicesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {data.map((s) => (
+                {items.map((s) => (
                   <TableRow key={s.id} className="cursor-pointer" onClick={() => navigate(`/services/${s.id}`)}>
                     <TableCell>
                       <div className="flex items-center gap-2 text-[13px] font-semibold">
@@ -129,6 +132,7 @@ export default function ServicesPage() {
                 ))}
               </TableBody>
             </Table>
+            <Pagination {...pager} className="border-t" />
           </div>
         )}
       </div>

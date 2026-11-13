@@ -19,6 +19,8 @@ const KeysPage = lazy(() => import('@/features/keys/KeysPage'))
 const AuditPage = lazy(() => import('@/features/audit/AuditPage'))
 const AccountPage = lazy(() => import('@/features/account/AccountPage'))
 const RolesPage = lazy(() => import('@/features/roles/RolesPage'))
+const RolesByServicePage = lazy(() => import('@/features/roles/RolesByServicePage'))
+const RoleEditorPage = lazy(() => import('@/features/roles/RoleEditorPage'))
 const ServicesPage = lazy(() => import('@/features/services/ServicesPage'))
 const ServiceDetailPage = lazy(() => import('@/features/services/ServiceDetailPage'))
 const ResourceTreePage = lazy(() => import('@/features/resource-tree/ResourceTreePage'))
@@ -80,6 +82,9 @@ export default function App() {
                     ['/users', <UsersPage key="u" />],
                     ['/users/:id', <UserDetailPage key="ud" />],
                     ['/roles', <RolesPage key="r" />],
+                    ['/roles/by-service/:service?', <RolesByServicePage key="rs" />],
+                    ['/roles/new', <RoleEditorPage key="rn" />],
+                    ['/roles/:id/edit', <RoleEditorPage key="re" />],
                     ['/services', <ServicesPage key="s" />],
                     ['/services/:id', <ServiceDetailPage key="sd" />],
                     ['/clients', <ClientsPage key="c" />],

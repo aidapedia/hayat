@@ -28,6 +28,8 @@ message PermissionInfo {
   string service = 2;
   string scope = 3;
   string description = 4;
+  // The short name people read ("Manage members"); empty when none was given.
+  string label = 5;
 }
 
 message Role {
@@ -124,6 +126,8 @@ service CatalogService {
   rpc CreateRole(CreateRoleRequest) returns (CreateRoleResponse);
   rpc UpdateRole(UpdateRoleRequest) returns (UpdateRoleResponse);
   rpc DeleteRole(DeleteRoleRequest) returns (DeleteRoleResponse);
+  // Where a role is granted, across every tenant: who holds it and on which node.
+  rpc ListRoleGrants(ListRoleGrantsRequest) returns (ListRoleGrantsResponse);
 }
 
 message GetCatalogRequest {}
@@ -162,6 +166,24 @@ message DeleteRoleRequest {
   string id = 1;
 }
 message DeleteRoleResponse {}
+
+message ListRoleGrantsRequest {
+  string role_id = 1;
+}
+// One grant of the role, with the node it sits on and that node's ancestors.
+message RoleGrant {
+  Grant grant = 1;
+  string node_type = 2;
+  string node_name = 3;
+  string tenant_id = 4;
+  // Names from the tenant down to the node's parent ("Acme", "Engineering").
+  repeated string path = 5;
+}
+message ListRoleGrantsResponse {
+  repeated RoleGrant grants = 1;
+  // True when there are more grants than were returned.
+  bool truncated = 2;
+}
 
 // ---------- Services and contracts ----------
 
@@ -270,6 +292,11 @@ service TreeAdminService {
   rpc RemoveGrant(RemoveGrantRequest) returns (RemoveGrantResponse);
   rpc AddGroupMember(AddGroupMemberRequest) returns (AddGroupMemberResponse);
   rpc RemoveGroupMember(RemoveGroupMemberRequest) returns (RemoveGroupMemberResponse);
+  // Everyone who reaches this node, one row per way: owners on the chain,
+  // grants here or inherited from above (to a group or the whole tenant,
+  // listed per person on its roster), and placement under a group. What was
+  // given, not what it adds up to: WhoHasAccess answers for one permission.
+  rpc ListNodeAccess(ListNodeAccessRequest) returns (ListNodeAccessResponse);
   // Who really holds a permission here, and through what.
   rpc WhoHasAccess(WhoHasAccessRequest) returns (WhoHasAccessResponse);
   // Why a person may (or may not) do something here.
@@ -357,6 +384,33 @@ message RemoveGroupMemberRequest {
   string user_id = 2;
 }
 message RemoveGroupMemberResponse {}
+
+message ListNodeAccessRequest {
+  string node_id = 1;
+}
+message NodeAccess {
+  User user = 1;
+  // owner (owns this node or one above), user (granted to them), group (to a
+  // group they are on), everyone (to the tenant) or placement (on the roster
+  // of a group this is filed under).
+  string via = 2;
+  // Where it comes from: the node owned, the node granted on, or the group.
+  Node source = 3;
+  // The role granted; empty for owner and placement.
+  string role_id = 4;
+  string role_name = 5;
+  // The grant reaches below its node.
+  bool inherit = 6;
+  google.protobuf.Timestamp expires_at = 7;
+  // The group, when via is group or placement.
+  string group_id = 8;
+  string group_name = 9;
+  // What placement gives: the type's access permission.
+  string permission = 10;
+}
+message ListNodeAccessResponse {
+  repeated NodeAccess entries = 1;
+}
 
 message WhoHasAccessRequest {
   string node_id = 1;

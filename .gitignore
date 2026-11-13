@@ -5,3 +5,4 @@ console/dist/
 /hayat
 *.log
 .DS_Store
+graphify-out/

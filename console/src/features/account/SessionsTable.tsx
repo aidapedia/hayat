@@ -5,7 +5,9 @@ import { formatDateTime, formatRelative } from '@/shared/lib/datetime'
 import { EmptyState, Pill } from '@/shared/ui/bits'
 import { Button } from '@/shared/ui/button'
 import { ConfirmDialog } from '@/shared/ui/confirm-dialog'
+import { usePagination } from '@/shared/ui/table/usePagination'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
+import { Pagination } from '@/shared/ui/table/Pagination'
 
 /** A readable device name from a user agent, good enough to recognise a browser. */
 function device(ua: string) {
@@ -17,10 +19,11 @@ function device(ua: string) {
 
 export function SessionsTable({ sessions, onRevoke }: { sessions: Session[]; onRevoke: (s: Session) => Promise<void> }) {
   const [target, setTarget] = useState<Session | null>(null)
+  const { pageRows: items, pager } = usePagination(sessions)
   if (sessions.length === 0) return <EmptyState icon={MonitorSmartphone} title="No signed-in sessions" />
   return (
     <>
-      <div className="overflow-x-auto rounded-xl border">
+      <div className="overflow-hidden rounded-xl border">
         <Table>
           <TableHeader>
             <TableRow>
@@ -31,7 +34,7 @@ export function SessionsTable({ sessions, onRevoke }: { sessions: Session[]; onR
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sessions.map((s) => (
+            {items.map((s) => (
               <TableRow key={s.id}>
                 <TableCell>
                   <div className="flex items-center gap-2 text-[13px] font-medium">
@@ -51,6 +54,7 @@ export function SessionsTable({ sessions, onRevoke }: { sessions: Session[]; onR
             ))}
           </TableBody>
         </Table>
+        <Pagination {...pager} className="border-t" />
       </div>
       <ConfirmDialog
         open={!!target}

@@ -170,7 +170,7 @@ func (c *catalogService) GetCatalog(ctx context.Context, _ *connect.Request[admi
 			ViaPlacement: t.ViaPlacement, RequiresMembership: t.RequiresMembership, Degradable: t.Degradable, Description: t.Description})
 	}
 	for _, p := range snap.Permissions {
-		resp.Permissions = append(resp.Permissions, &adminv1.PermissionInfo{Key: p.Key, Service: p.Service, Scope: p.Scope, Description: p.Description})
+		resp.Permissions = append(resp.Permissions, &adminv1.PermissionInfo{Key: p.Key, Service: p.Service, Scope: p.Scope, Label: p.Label, Description: p.Description})
 	}
 	slices.SortFunc(resp.Types, func(a, b *adminv1.NodeType) int { return strings.Compare(a.Key, b.Key) })
 	slices.SortFunc(resp.Permissions, func(a, b *adminv1.PermissionInfo) int { return strings.Compare(a.Key, b.Key) })
@@ -233,6 +233,65 @@ func (c *catalogService) DeleteRole(ctx context.Context, req *connect.Request[ad
 		return nil, c.s.fail(err)
 	}
 	return connect.NewResponse(&adminv1.DeleteRoleResponse{}), nil
+}
+
+// roleGrantLimit caps one ListRoleGrants answer; the console says when there are more.
+const roleGrantLimit = 200
+
+func (c *catalogService) ListRoleGrants(ctx context.Context, req *connect.Request[adminv1.ListRoleGrantsRequest]) (*connect.Response[adminv1.ListRoleGrantsResponse], error) {
+	// It names who holds access in every tenant, so only an instance admin may ask.
+	if err := c.s.requireAdmin(ctx); err != nil {
+		return nil, err
+	}
+	id, err := parseID(req.Msg.RoleId, "role id")
+	if err != nil {
+		return nil, err
+	}
+	grants, err := c.s.tree.RoleGrants(ctx, id, roleGrantLimit+1)
+	if err != nil {
+		return nil, c.s.fail(err)
+	}
+	resp := &adminv1.ListRoleGrantsResponse{}
+	if len(grants) > roleGrantLimit {
+		grants, resp.Truncated = grants[:roleGrantLimit], true
+	}
+	converted, err := c.s.toGrants(ctx, grants)
+	if err != nil {
+		return nil, c.s.fail(err)
+	}
+	// Several grants often sit on one node; read each node's chain once.
+	type place struct {
+		node tree.Node
+		path []string
+	}
+	places := map[uuid.UUID]place{}
+	for i, g := range grants {
+		p, ok := places[g.NodeID]
+		if !ok {
+			n, err := c.s.tree.Get(ctx, g.NodeID)
+			if err != nil {
+				return nil, c.s.fail(err)
+			}
+			chain, err := c.s.tree.Ancestors(ctx, n)
+			if err != nil {
+				return nil, c.s.fail(err)
+			}
+			p = place{node: n}
+			for _, a := range chain {
+				// The root is implied; the node itself is named on its own.
+				if a.ID != catalog.RootID && a.ID != n.ID {
+					p.path = append(p.path, a.Name)
+				}
+			}
+			places[g.NodeID] = p
+		}
+		rg := &adminv1.RoleGrant{Grant: converted[i], NodeType: p.node.Type, NodeName: p.node.Name, Path: p.path}
+		if p.node.TenantID != nil {
+			rg.TenantId = p.node.TenantID.String()
+		}
+		resp.Grants = append(resp.Grants, rg)
+	}
+	return connect.NewResponse(resp), nil
 }
 
 // ---------- RegistryService ----------
@@ -809,6 +868,57 @@ func (t *treeAdminService) RemoveGroupMember(ctx context.Context, req *connect.R
 		return nil, t.s.fail(err)
 	}
 	return connect.NewResponse(&adminv1.RemoveGroupMemberResponse{}), nil
+}
+
+// ListNodeAccess is open to whoever may see the node: the grants, owners and
+// rosters it adds up are each readable there already, node by node.
+// Accounts that aren't active reach nothing, so they are left out.
+func (t *treeAdminService) ListNodeAccess(ctx context.Context, req *connect.Request[adminv1.ListNodeAccessRequest]) (*connect.Response[adminv1.ListNodeAccessResponse], error) {
+	n, err := t.s.node(ctx, req.Msg.NodeId)
+	if err != nil {
+		return nil, err
+	}
+	if err := t.canSee(ctx, n); err != nil {
+		return nil, err
+	}
+	entries, err := t.s.tree.NodeAccess(ctx, n)
+	if err != nil {
+		return nil, t.s.fail(err)
+	}
+	ids := make([]uuid.UUID, 0, len(entries))
+	for _, a := range entries {
+		ids = append(ids, a.UserID)
+	}
+	users, err := t.s.ids.GetUsers(ctx, ids)
+	if err != nil {
+		return nil, t.s.fail(err)
+	}
+	byID := map[uuid.UUID]identity.User{}
+	for _, u := range users {
+		if u.Status == identity.StatusActive {
+			byID[u.ID] = u
+		}
+	}
+	resp := &adminv1.ListNodeAccessResponse{}
+	for _, a := range entries {
+		u, ok := byID[a.UserID]
+		if !ok {
+			continue
+		}
+		out := &adminv1.NodeAccess{User: toUser(u), Via: a.Via, Source: toNode(a.Source), RoleName: a.RoleName,
+			Inherit: a.Inherit, GroupName: a.GroupName, Permission: a.Permission}
+		if a.RoleID != uuid.Nil {
+			out.RoleId = a.RoleID.String()
+		}
+		if a.GroupID != uuid.Nil {
+			out.GroupId = a.GroupID.String()
+		}
+		if a.ExpiresAt != nil {
+			out.ExpiresAt = ts(*a.ExpiresAt)
+		}
+		resp.Entries = append(resp.Entries, out)
+	}
+	return connect.NewResponse(resp), nil
 }
 
 func (t *treeAdminService) WhoHasAccess(ctx context.Context, req *connect.Request[adminv1.WhoHasAccessRequest]) (*connect.Response[adminv1.WhoHasAccessResponse], error) {

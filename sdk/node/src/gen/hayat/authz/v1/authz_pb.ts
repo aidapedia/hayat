@@ -19,7 +19,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file hayat/authz/v1/authz.proto.
  */
 export const file_hayat_authz_v1_authz: GenFile = /*@__PURE__*/
-  fileDesc("ChpoYXlhdC9hdXRoei92MS9hdXRoei5wcm90bxIOaGF5YXQuYXV0aHoudjEiQQoLUmVzb3VyY2VSZWYSDAoEdHlwZRgBIAEoCRITCgtleHRlcm5hbF9pZBgCIAEoCRIPCgdub2RlX2lkGAMgASgJIj0KC0NvbnNpc3RlbmN5EhQKDGF0X2xlYXN0X3JldhgBIAEoAxIYChBmdWxseV9jb25zaXN0ZW50GAIgASgIIpcBCgZSZWFzb24SDAoEa2luZBgBIAEoCRIPCgdub2RlX2lkGAIgASgJEhEKCW5vZGVfdHlwZRgDIAEoCRIRCglub2RlX25hbWUYBCABKAkSDAoEcm9sZRgFIAEoCRIWCg5wcmluY2lwYWxfdHlwZRgGIAEoCRIUCgxwcmluY2lwYWxfaWQYByABKAkSDAoEdGV4dBgIIAEoCSKOAQoIUmVzb3VyY2USDwoHbm9kZV9pZBgBIAEoCRIMCgR0eXBlGAIgASgJEhMKC2V4dGVybmFsX2lkGAMgASgJEgwKBG5hbWUYBCABKAkSEQoJdGVuYW50X2lkGAUgASgJEhYKDnBhcmVudF9ub2RlX2lkGAYgASgJEhUKDW93bmVyX3VzZXJfaWQYByABKAkipQEKDENoZWNrUmVxdWVzdBIPCgd1c2VyX2lkGAEgASgJEhIKCnBlcm1pc3Npb24YAiABKAkSLQoIcmVzb3VyY2UYAyABKAsyGy5oYXlhdC5hdXRoei52MS5SZXNvdXJjZVJlZhIwCgtjb25zaXN0ZW5jeRgEIAEoCzIbLmhheWF0LmF1dGh6LnYxLkNvbnNpc3RlbmN5Eg8KB2V4cGxhaW4YBSABKAgiaAoNQ2hlY2tSZXNwb25zZRIPCgdhbGxvd2VkGAEgASgIEgsKA3JldhgCIAEoAxIRCgl0ZW5hbnRfaWQYAyABKAkSJgoGcmVhc29uGAQgASgLMhYuaGF5YXQuYXV0aHoudjEuUmVhc29uIkEKEUJhdGNoQ2hlY2tSZXF1ZXN0EiwKBmNoZWNrcxgBIAMoCzIcLmhheWF0LmF1dGh6LnYxLkNoZWNrUmVxdWVzdCJEChJCYXRjaENoZWNrUmVzcG9uc2USLgoHcmVzdWx0cxgBIAMoCzIdLmhheWF0LmF1dGh6LnYxLkNoZWNrUmVzcG9uc2UiiAEKFFBlcm1pc3Npb25zQXRSZXF1ZXN0Eg8KB3VzZXJfaWQYASABKAkSLQoIcmVzb3VyY2UYAiABKAsyGy5oYXlhdC5hdXRoei52MS5SZXNvdXJjZVJlZhIwCgtjb25zaXN0ZW5jeRgDIAEoCzIbLmhheWF0LmF1dGh6LnYxLkNvbnNpc3RlbmN5IkwKFVBlcm1pc3Npb25zQXRSZXNwb25zZRITCgtwZXJtaXNzaW9ucxgBIAMoCRILCgNyZXYYAiABKAMSEQoJdGVuYW50X2lkGAMgASgJIrcBChZMb29rdXBSZXNvdXJjZXNSZXF1ZXN0Eg8KB3VzZXJfaWQYASABKAkSEgoKcGVybWlzc2lvbhgCIAEoCRIMCgR0eXBlGAMgASgJEhEKCXRlbmFudF9pZBgEIAEoCRIRCglwYWdlX3NpemUYBSABKAUSEgoKcGFnZV90b2tlbhgGIAEoCRIwCgtjb25zaXN0ZW5jeRgHIAEoCzIbLmhheWF0LmF1dGh6LnYxLkNvbnNpc3RlbmN5Il8KF0xvb2t1cFJlc291cmNlc1Jlc3BvbnNlEisKCXJlc291cmNlcxgBIAMoCzIYLmhheWF0LmF1dGh6LnYxLlJlc291cmNlEhcKD25leHRfcGFnZV90b2tlbhgCIAEoCSKMAQoVTG9va3VwU3ViamVjdHNSZXF1ZXN0EhIKCnBlcm1pc3Npb24YASABKAkSLQoIcmVzb3VyY2UYAiABKAsyGy5oYXlhdC5hdXRoei52MS5SZXNvdXJjZVJlZhIwCgtjb25zaXN0ZW5jeRgDIAEoCzIbLmhheWF0LmF1dGh6LnYxLkNvbnNpc3RlbmN5IkIKB1N1YmplY3QSDwoHdXNlcl9pZBgBIAEoCRImCgZyZWFzb24YAiABKAsyFi5oYXlhdC5hdXRoei52MS5SZWFzb24iQwoWTG9va3VwU3ViamVjdHNSZXNwb25zZRIpCghzdWJqZWN0cxgBIAMoCzIXLmhheWF0LmF1dGh6LnYxLlN1YmplY3QijAEKFVVwc2VydFJlc291cmNlUmVxdWVzdBIMCgR0eXBlGAEgASgJEhMKC2V4dGVybmFsX2lkGAIgASgJEgwKBG5hbWUYAyABKAkSKwoGcGFyZW50GAQgASgLMhsuaGF5YXQuYXV0aHoudjEuUmVzb3VyY2VSZWYSFQoNb3duZXJfdXNlcl9pZBgFIAEoCSI6ChVEZWxldGVSZXNvdXJjZVJlcXVlc3QSDAoEdHlwZRgBIAEoCRITCgtleHRlcm5hbF9pZBgCIAEoCSJDChJHZXRSZXNvdXJjZVJlcXVlc3QSLQoIcmVzb3VyY2UYASABKAsyGy5oYXlhdC5hdXRoei52MS5SZXNvdXJjZVJlZiJkChZVcHNlcnRSZXNvdXJjZVJlc3BvbnNlEgsKA3JldhgBIAEoAxIRCgl0ZW5hbnRfaWQYAiABKAkSKgoIcmVzb3VyY2UYAyABKAsyGC5oYXlhdC5hdXRoei52MS5SZXNvdXJjZSI4ChZEZWxldGVSZXNvdXJjZVJlc3BvbnNlEgsKA3JldhgBIAEoAxIRCgl0ZW5hbnRfaWQYAiABKAkiQQoTR2V0UmVzb3VyY2VSZXNwb25zZRIqCghyZXNvdXJjZRgBIAEoCzIYLmhheWF0LmF1dGh6LnYxLlJlc291cmNlIm4KBlRlbmFudBIKCgJpZBgBIAEoCRIMCgRzbHVnGAIgASgJEgwKBG5hbWUYAyABKAkSFQoNb3duZXJfdXNlcl9pZBgEIAEoCRIPCgdub2RlX2lkGAUgASgJEhQKDG1lbWJlcl9jb3VudBgGIAEoBSIpChZMaXN0VXNlclRlbmFudHNSZXF1ZXN0Eg8KB3VzZXJfaWQYASABKAkiQgoXTGlzdFVzZXJUZW5hbnRzUmVzcG9uc2USJwoHdGVuYW50cxgBIAMoCzIWLmhheWF0LmF1dGh6LnYxLlRlbmFudCItChhMaXN0VGVuYW50TWVtYmVyc1JlcXVlc3QSEQoJdGVuYW50X2lkGAEgASgJInMKDFRlbmFudE1lbWJlchIiCgR1c2VyGAEgASgLMhQuaGF5YXQuYXV0aHoudjEuVXNlchIQCghpc19vd25lchgCIAEoCBItCglqb2luZWRfYXQYAyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIkoKGUxpc3RUZW5hbnRNZW1iZXJzUmVzcG9uc2USLQoHbWVtYmVycxgBIAMoCzIcLmhheWF0LmF1dGh6LnYxLlRlbmFudE1lbWJlciKKAQoEVXNlchIKCgJpZBgBIAEoCRINCgVlbWFpbBgCIAEoCRIWCg5lbWFpbF92ZXJpZmllZBgDIAEoCBIMCgRuYW1lGAQgASgJEg8KB3BpY3R1cmUYBSABKAkSDgoGbG9jYWxlGAYgASgJEhAKCHpvbmVpbmZvGAcgASgJEg4KBnN0YXR1cxgIIAEoCSIcCg5HZXRVc2VyUmVxdWVzdBIKCgJpZBgBIAEoCSI1Cg9HZXRVc2VyUmVzcG9uc2USIgoEdXNlchgBIAEoCzIULmhheWF0LmF1dGh6LnYxLlVzZXIiIwoUQmF0Y2hHZXRVc2Vyc1JlcXVlc3QSCwoDaWRzGAEgAygJIjwKFUJhdGNoR2V0VXNlcnNSZXNwb25zZRIjCgV1c2VycxgBIAMoCzIULmhheWF0LmF1dGh6LnYxLlVzZXIiHgoMV2F0Y2hSZXF1ZXN0Eg4KBmN1cnNvchgBIAEoCSI7Cg1XYXRjaFJlc3BvbnNlEioKBWV2ZW50GAEgASgLMhsuaGF5YXQuYXV0aHoudjEuUG9saWN5RXZlbnQibwoLUG9saWN5RXZlbnQSCgoCaWQYASABKAkSEQoJdGVuYW50X2lkGAIgASgJEgsKA3JldhgDIAEoAxIMCgRraW5kGAQgASgJEiYKAmF0GAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCIqChZQdWJsaXNoQ29udHJhY3RSZXF1ZXN0EhAKCG1hbmlmZXN0GAEgASgJIk4KF1B1Ymxpc2hDb250cmFjdFJlc3BvbnNlEg8KB3ZlcnNpb24YASABKAUSDgoGc3RhdHVzGAIgASgJEhIKCm5hbWVzcGFjZXMYAyADKAkyzAMKDEF1dGh6U2VydmljZRJECgVDaGVjaxIcLmhheWF0LmF1dGh6LnYxLkNoZWNrUmVxdWVzdBodLmhheWF0LmF1dGh6LnYxLkNoZWNrUmVzcG9uc2USUwoKQmF0Y2hDaGVjaxIhLmhheWF0LmF1dGh6LnYxLkJhdGNoQ2hlY2tSZXF1ZXN0GiIuaGF5YXQuYXV0aHoudjEuQmF0Y2hDaGVja1Jlc3BvbnNlElwKDVBlcm1pc3Npb25zQXQSJC5oYXlhdC5hdXRoei52MS5QZXJtaXNzaW9uc0F0UmVxdWVzdBolLmhheWF0LmF1dGh6LnYxLlBlcm1pc3Npb25zQXRSZXNwb25zZRJiCg9Mb29rdXBSZXNvdXJjZXMSJi5oYXlhdC5hdXRoei52MS5Mb29rdXBSZXNvdXJjZXNSZXF1ZXN0GicuaGF5YXQuYXV0aHoudjEuTG9va3VwUmVzb3VyY2VzUmVzcG9uc2USXwoOTG9va3VwU3ViamVjdHMSJS5oYXlhdC5hdXRoei52MS5Mb29rdXBTdWJqZWN0c1JlcXVlc3QaJi5oYXlhdC5hdXRoei52MS5Mb29rdXBTdWJqZWN0c1Jlc3BvbnNlMqcCCgtUcmVlU2VydmljZRJfCg5VcHNlcnRSZXNvdXJjZRIlLmhheWF0LmF1dGh6LnYxLlVwc2VydFJlc291cmNlUmVxdWVzdBomLmhheWF0LmF1dGh6LnYxLlVwc2VydFJlc291cmNlUmVzcG9uc2USXwoORGVsZXRlUmVzb3VyY2USJS5oYXlhdC5hdXRoei52MS5EZWxldGVSZXNvdXJjZVJlcXVlc3QaJi5oYXlhdC5hdXRoei52MS5EZWxldGVSZXNvdXJjZVJlc3BvbnNlElYKC0dldFJlc291cmNlEiIuaGF5YXQuYXV0aHoudjEuR2V0UmVzb3VyY2VSZXF1ZXN0GiMuaGF5YXQuYXV0aHoudjEuR2V0UmVzb3VyY2VSZXNwb25zZTKKAwoQRGlyZWN0b3J5U2VydmljZRJKCgdHZXRVc2VyEh4uaGF5YXQuYXV0aHoudjEuR2V0VXNlclJlcXVlc3QaHy5oYXlhdC5hdXRoei52MS5HZXRVc2VyUmVzcG9uc2USXAoNQmF0Y2hHZXRVc2VycxIkLmhheWF0LmF1dGh6LnYxLkJhdGNoR2V0VXNlcnNSZXF1ZXN0GiUuaGF5YXQuYXV0aHoudjEuQmF0Y2hHZXRVc2Vyc1Jlc3BvbnNlEmIKD0xpc3RVc2VyVGVuYW50cxImLmhheWF0LmF1dGh6LnYxLkxpc3RVc2VyVGVuYW50c1JlcXVlc3QaJy5oYXlhdC5hdXRoei52MS5MaXN0VXNlclRlbmFudHNSZXNwb25zZRJoChFMaXN0VGVuYW50TWVtYmVycxIoLmhheWF0LmF1dGh6LnYxLkxpc3RUZW5hbnRNZW1iZXJzUmVxdWVzdBopLmhheWF0LmF1dGh6LnYxLkxpc3RUZW5hbnRNZW1iZXJzUmVzcG9uc2UyVgoMV2F0Y2hTZXJ2aWNlEkYKBVdhdGNoEhwuaGF5YXQuYXV0aHoudjEuV2F0Y2hSZXF1ZXN0Gh0uaGF5YXQuYXV0aHoudjEuV2F0Y2hSZXNwb25zZTABMnMKDVNjaGVtYVNlcnZpY2USYgoPUHVibGlzaENvbnRyYWN0EiYuaGF5YXQuYXV0aHoudjEuUHVibGlzaENvbnRyYWN0UmVxdWVzdBonLmhheWF0LmF1dGh6LnYxLlB1Ymxpc2hDb250cmFjdFJlc3BvbnNlQjpaOGdpdGh1Yi5jb20vYWlkYXBlZGlhL2hheWF0L2dlbi9nby9oYXlhdC9hdXRoei92MTthdXRoenYxYgZwcm90bzM", [file_google_protobuf_timestamp]);
+  fileDesc("ChpoYXlhdC9hdXRoei92MS9hdXRoei5wcm90bxIOaGF5YXQuYXV0aHoudjEiQQoLUmVzb3VyY2VSZWYSDAoEdHlwZRgBIAEoCRITCgtleHRlcm5hbF9pZBgCIAEoCRIPCgdub2RlX2lkGAMgASgJIj0KC0NvbnNpc3RlbmN5EhQKDGF0X2xlYXN0X3JldhgBIAEoAxIYChBmdWxseV9jb25zaXN0ZW50GAIgASgIIpcBCgZSZWFzb24SDAoEa2luZBgBIAEoCRIPCgdub2RlX2lkGAIgASgJEhEKCW5vZGVfdHlwZRgDIAEoCRIRCglub2RlX25hbWUYBCABKAkSDAoEcm9sZRgFIAEoCRIWCg5wcmluY2lwYWxfdHlwZRgGIAEoCRIUCgxwcmluY2lwYWxfaWQYByABKAkSDAoEdGV4dBgIIAEoCSKOAQoIUmVzb3VyY2USDwoHbm9kZV9pZBgBIAEoCRIMCgR0eXBlGAIgASgJEhMKC2V4dGVybmFsX2lkGAMgASgJEgwKBG5hbWUYBCABKAkSEQoJdGVuYW50X2lkGAUgASgJEhYKDnBhcmVudF9ub2RlX2lkGAYgASgJEhUKDW93bmVyX3VzZXJfaWQYByABKAkipQEKDENoZWNrUmVxdWVzdBIPCgd1c2VyX2lkGAEgASgJEhIKCnBlcm1pc3Npb24YAiABKAkSLQoIcmVzb3VyY2UYAyABKAsyGy5oYXlhdC5hdXRoei52MS5SZXNvdXJjZVJlZhIwCgtjb25zaXN0ZW5jeRgEIAEoCzIbLmhheWF0LmF1dGh6LnYxLkNvbnNpc3RlbmN5Eg8KB2V4cGxhaW4YBSABKAgiaAoNQ2hlY2tSZXNwb25zZRIPCgdhbGxvd2VkGAEgASgIEgsKA3JldhgCIAEoAxIRCgl0ZW5hbnRfaWQYAyABKAkSJgoGcmVhc29uGAQgASgLMhYuaGF5YXQuYXV0aHoudjEuUmVhc29uIkEKEUJhdGNoQ2hlY2tSZXF1ZXN0EiwKBmNoZWNrcxgBIAMoCzIcLmhheWF0LmF1dGh6LnYxLkNoZWNrUmVxdWVzdCJEChJCYXRjaENoZWNrUmVzcG9uc2USLgoHcmVzdWx0cxgBIAMoCzIdLmhheWF0LmF1dGh6LnYxLkNoZWNrUmVzcG9uc2UiiAEKFFBlcm1pc3Npb25zQXRSZXF1ZXN0Eg8KB3VzZXJfaWQYASABKAkSLQoIcmVzb3VyY2UYAiABKAsyGy5oYXlhdC5hdXRoei52MS5SZXNvdXJjZVJlZhIwCgtjb25zaXN0ZW5jeRgDIAEoCzIbLmhheWF0LmF1dGh6LnYxLkNvbnNpc3RlbmN5IkwKFVBlcm1pc3Npb25zQXRSZXNwb25zZRITCgtwZXJtaXNzaW9ucxgBIAMoCRILCgNyZXYYAiABKAMSEQoJdGVuYW50X2lkGAMgASgJIrcBChZMb29rdXBSZXNvdXJjZXNSZXF1ZXN0Eg8KB3VzZXJfaWQYASABKAkSEgoKcGVybWlzc2lvbhgCIAEoCRIMCgR0eXBlGAMgASgJEhEKCXRlbmFudF9pZBgEIAEoCRIRCglwYWdlX3NpemUYBSABKAUSEgoKcGFnZV90b2tlbhgGIAEoCRIwCgtjb25zaXN0ZW5jeRgHIAEoCzIbLmhheWF0LmF1dGh6LnYxLkNvbnNpc3RlbmN5Il8KF0xvb2t1cFJlc291cmNlc1Jlc3BvbnNlEisKCXJlc291cmNlcxgBIAMoCzIYLmhheWF0LmF1dGh6LnYxLlJlc291cmNlEhcKD25leHRfcGFnZV90b2tlbhgCIAEoCSKMAQoVTG9va3VwU3ViamVjdHNSZXF1ZXN0EhIKCnBlcm1pc3Npb24YASABKAkSLQoIcmVzb3VyY2UYAiABKAsyGy5oYXlhdC5hdXRoei52MS5SZXNvdXJjZVJlZhIwCgtjb25zaXN0ZW5jeRgDIAEoCzIbLmhheWF0LmF1dGh6LnYxLkNvbnNpc3RlbmN5IkIKB1N1YmplY3QSDwoHdXNlcl9pZBgBIAEoCRImCgZyZWFzb24YAiABKAsyFi5oYXlhdC5hdXRoei52MS5SZWFzb24iQwoWTG9va3VwU3ViamVjdHNSZXNwb25zZRIpCghzdWJqZWN0cxgBIAMoCzIXLmhheWF0LmF1dGh6LnYxLlN1YmplY3QijAEKFVVwc2VydFJlc291cmNlUmVxdWVzdBIMCgR0eXBlGAEgASgJEhMKC2V4dGVybmFsX2lkGAIgASgJEgwKBG5hbWUYAyABKAkSKwoGcGFyZW50GAQgASgLMhsuaGF5YXQuYXV0aHoudjEuUmVzb3VyY2VSZWYSFQoNb3duZXJfdXNlcl9pZBgFIAEoCSI6ChVEZWxldGVSZXNvdXJjZVJlcXVlc3QSDAoEdHlwZRgBIAEoCRITCgtleHRlcm5hbF9pZBgCIAEoCSJDChJHZXRSZXNvdXJjZVJlcXVlc3QSLQoIcmVzb3VyY2UYASABKAsyGy5oYXlhdC5hdXRoei52MS5SZXNvdXJjZVJlZiJkChZVcHNlcnRSZXNvdXJjZVJlc3BvbnNlEgsKA3JldhgBIAEoAxIRCgl0ZW5hbnRfaWQYAiABKAkSKgoIcmVzb3VyY2UYAyABKAsyGC5oYXlhdC5hdXRoei52MS5SZXNvdXJjZSI4ChZEZWxldGVSZXNvdXJjZVJlc3BvbnNlEgsKA3JldhgBIAEoAxIRCgl0ZW5hbnRfaWQYAiABKAkiQQoTR2V0UmVzb3VyY2VSZXNwb25zZRIqCghyZXNvdXJjZRgBIAEoCzIYLmhheWF0LmF1dGh6LnYxLlJlc291cmNlIm4KBlRlbmFudBIKCgJpZBgBIAEoCRIMCgRzbHVnGAIgASgJEgwKBG5hbWUYAyABKAkSFQoNb3duZXJfdXNlcl9pZBgEIAEoCRIPCgdub2RlX2lkGAUgASgJEhQKDG1lbWJlcl9jb3VudBgGIAEoBSIpChZMaXN0VXNlclRlbmFudHNSZXF1ZXN0Eg8KB3VzZXJfaWQYASABKAkiQgoXTGlzdFVzZXJUZW5hbnRzUmVzcG9uc2USJwoHdGVuYW50cxgBIAMoCzIWLmhheWF0LmF1dGh6LnYxLlRlbmFudCItChhMaXN0VGVuYW50TWVtYmVyc1JlcXVlc3QSEQoJdGVuYW50X2lkGAEgASgJInMKDFRlbmFudE1lbWJlchIiCgR1c2VyGAEgASgLMhQuaGF5YXQuYXV0aHoudjEuVXNlchIQCghpc19vd25lchgCIAEoCBItCglqb2luZWRfYXQYAyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIkoKGUxpc3RUZW5hbnRNZW1iZXJzUmVzcG9uc2USLQoHbWVtYmVycxgBIAMoCzIcLmhheWF0LmF1dGh6LnYxLlRlbmFudE1lbWJlciI+ChdMaXN0VGVuYW50R3JhbnRzUmVxdWVzdBIRCgl0ZW5hbnRfaWQYASABKAkSEAoIdXNlcl9pZHMYAiADKAkirwEKC01lbWJlckdyYW50Eg8KB3VzZXJfaWQYASABKAkSKgoIcmVzb3VyY2UYAiABKAsyGC5oYXlhdC5hdXRoei52MS5SZXNvdXJjZRILCgN2aWEYAyABKAkSDAoEcm9sZRgEIAEoCRIRCglyb2xlX25hbWUYBSABKAkSDwoHaW5oZXJpdBgGIAEoCBIQCghncm91cF9pZBgHIAEoCRISCgpncm91cF9uYW1lGAggASgJIkcKGExpc3RUZW5hbnRHcmFudHNSZXNwb25zZRIrCgZncmFudHMYASADKAsyGy5oYXlhdC5hdXRoei52MS5NZW1iZXJHcmFudCKKAQoEVXNlchIKCgJpZBgBIAEoCRINCgVlbWFpbBgCIAEoCRIWCg5lbWFpbF92ZXJpZmllZBgDIAEoCBIMCgRuYW1lGAQgASgJEg8KB3BpY3R1cmUYBSABKAkSDgoGbG9jYWxlGAYgASgJEhAKCHpvbmVpbmZvGAcgASgJEg4KBnN0YXR1cxgIIAEoCSIcCg5HZXRVc2VyUmVxdWVzdBIKCgJpZBgBIAEoCSI1Cg9HZXRVc2VyUmVzcG9uc2USIgoEdXNlchgBIAEoCzIULmhheWF0LmF1dGh6LnYxLlVzZXIiIwoUQmF0Y2hHZXRVc2Vyc1JlcXVlc3QSCwoDaWRzGAEgAygJIjwKFUJhdGNoR2V0VXNlcnNSZXNwb25zZRIjCgV1c2VycxgBIAMoCzIULmhheWF0LmF1dGh6LnYxLlVzZXIiHgoMV2F0Y2hSZXF1ZXN0Eg4KBmN1cnNvchgBIAEoCSI7Cg1XYXRjaFJlc3BvbnNlEioKBWV2ZW50GAEgASgLMhsuaGF5YXQuYXV0aHoudjEuUG9saWN5RXZlbnQibwoLUG9saWN5RXZlbnQSCgoCaWQYASABKAkSEQoJdGVuYW50X2lkGAIgASgJEgsKA3JldhgDIAEoAxIMCgRraW5kGAQgASgJEiYKAmF0GAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCIqChZQdWJsaXNoQ29udHJhY3RSZXF1ZXN0EhAKCG1hbmlmZXN0GAEgASgJIk4KF1B1Ymxpc2hDb250cmFjdFJlc3BvbnNlEg8KB3ZlcnNpb24YASABKAUSDgoGc3RhdHVzGAIgASgJEhIKCm5hbWVzcGFjZXMYAyADKAkyzAMKDEF1dGh6U2VydmljZRJECgVDaGVjaxIcLmhheWF0LmF1dGh6LnYxLkNoZWNrUmVxdWVzdBodLmhheWF0LmF1dGh6LnYxLkNoZWNrUmVzcG9uc2USUwoKQmF0Y2hDaGVjaxIhLmhheWF0LmF1dGh6LnYxLkJhdGNoQ2hlY2tSZXF1ZXN0GiIuaGF5YXQuYXV0aHoudjEuQmF0Y2hDaGVja1Jlc3BvbnNlElwKDVBlcm1pc3Npb25zQXQSJC5oYXlhdC5hdXRoei52MS5QZXJtaXNzaW9uc0F0UmVxdWVzdBolLmhheWF0LmF1dGh6LnYxLlBlcm1pc3Npb25zQXRSZXNwb25zZRJiCg9Mb29rdXBSZXNvdXJjZXMSJi5oYXlhdC5hdXRoei52MS5Mb29rdXBSZXNvdXJjZXNSZXF1ZXN0GicuaGF5YXQuYXV0aHoudjEuTG9va3VwUmVzb3VyY2VzUmVzcG9uc2USXwoOTG9va3VwU3ViamVjdHMSJS5oYXlhdC5hdXRoei52MS5Mb29rdXBTdWJqZWN0c1JlcXVlc3QaJi5oYXlhdC5hdXRoei52MS5Mb29rdXBTdWJqZWN0c1Jlc3BvbnNlMqcCCgtUcmVlU2VydmljZRJfCg5VcHNlcnRSZXNvdXJjZRIlLmhheWF0LmF1dGh6LnYxLlVwc2VydFJlc291cmNlUmVxdWVzdBomLmhheWF0LmF1dGh6LnYxLlVwc2VydFJlc291cmNlUmVzcG9uc2USXwoORGVsZXRlUmVzb3VyY2USJS5oYXlhdC5hdXRoei52MS5EZWxldGVSZXNvdXJjZVJlcXVlc3QaJi5oYXlhdC5hdXRoei52MS5EZWxldGVSZXNvdXJjZVJlc3BvbnNlElYKC0dldFJlc291cmNlEiIuaGF5YXQuYXV0aHoudjEuR2V0UmVzb3VyY2VSZXF1ZXN0GiMuaGF5YXQuYXV0aHoudjEuR2V0UmVzb3VyY2VSZXNwb25zZTLxAwoQRGlyZWN0b3J5U2VydmljZRJKCgdHZXRVc2VyEh4uaGF5YXQuYXV0aHoudjEuR2V0VXNlclJlcXVlc3QaHy5oYXlhdC5hdXRoei52MS5HZXRVc2VyUmVzcG9uc2USXAoNQmF0Y2hHZXRVc2VycxIkLmhheWF0LmF1dGh6LnYxLkJhdGNoR2V0VXNlcnNSZXF1ZXN0GiUuaGF5YXQuYXV0aHoudjEuQmF0Y2hHZXRVc2Vyc1Jlc3BvbnNlEmIKD0xpc3RVc2VyVGVuYW50cxImLmhheWF0LmF1dGh6LnYxLkxpc3RVc2VyVGVuYW50c1JlcXVlc3QaJy5oYXlhdC5hdXRoei52MS5MaXN0VXNlclRlbmFudHNSZXNwb25zZRJoChFMaXN0VGVuYW50TWVtYmVycxIoLmhheWF0LmF1dGh6LnYxLkxpc3RUZW5hbnRNZW1iZXJzUmVxdWVzdBopLmhheWF0LmF1dGh6LnYxLkxpc3RUZW5hbnRNZW1iZXJzUmVzcG9uc2USZQoQTGlzdFRlbmFudEdyYW50cxInLmhheWF0LmF1dGh6LnYxLkxpc3RUZW5hbnRHcmFudHNSZXF1ZXN0GiguaGF5YXQuYXV0aHoudjEuTGlzdFRlbmFudEdyYW50c1Jlc3BvbnNlMlYKDFdhdGNoU2VydmljZRJGCgVXYXRjaBIcLmhheWF0LmF1dGh6LnYxLldhdGNoUmVxdWVzdBodLmhheWF0LmF1dGh6LnYxLldhdGNoUmVzcG9uc2UwATJzCg1TY2hlbWFTZXJ2aWNlEmIKD1B1Ymxpc2hDb250cmFjdBImLmhheWF0LmF1dGh6LnYxLlB1Ymxpc2hDb250cmFjdFJlcXVlc3QaJy5oYXlhdC5hdXRoei52MS5QdWJsaXNoQ29udHJhY3RSZXNwb25zZUI6WjhnaXRodWIuY29tL2FpZGFwZWRpYS9oYXlhdC9nZW4vZ28vaGF5YXQvYXV0aHovdjE7YXV0aHp2MWIGcHJvdG8z", [file_google_protobuf_timestamp]);
 
 /**
  * Names a node: a service resource by (type, external_id), a tenant by
@@ -769,6 +769,110 @@ export const ListTenantMembersResponseSchema: GenMessage<ListTenantMembersRespon
   messageDesc(file_hayat_authz_v1_authz, 26);
 
 /**
+ * @generated from message hayat.authz.v1.ListTenantGrantsRequest
+ */
+export type ListTenantGrantsRequest = Message<"hayat.authz.v1.ListTenantGrantsRequest"> & {
+  /**
+   * @generated from field: string tenant_id = 1;
+   */
+  tenantId: string;
+
+  /**
+   * Only these members; empty for everyone on the roster.
+   *
+   * @generated from field: repeated string user_ids = 2;
+   */
+  userIds: string[];
+};
+
+/**
+ * Describes the message hayat.authz.v1.ListTenantGrantsRequest.
+ * Use `create(ListTenantGrantsRequestSchema)` to create a new message.
+ */
+export const ListTenantGrantsRequestSchema: GenMessage<ListTenantGrantsRequest> = /*@__PURE__*/
+  messageDesc(file_hayat_authz_v1_authz, 27);
+
+/**
+ * @generated from message hayat.authz.v1.MemberGrant
+ */
+export type MemberGrant = Message<"hayat.authz.v1.MemberGrant"> & {
+  /**
+   * @generated from field: string user_id = 1;
+   */
+  userId: string;
+
+  /**
+   * Where it was granted, or the node they own.
+   *
+   * @generated from field: hayat.authz.v1.Resource resource = 2;
+   */
+  resource?: Resource | undefined;
+
+  /**
+   * How it reaches the member: "owner" (they own the node), "user" (granted to
+   * them), "group" (to a group they are on) or "everyone" (to the tenant).
+   *
+   * @generated from field: string via = 3;
+   */
+  via: string;
+
+  /**
+   * The role's slug and display name; empty when via is "owner".
+   *
+   * @generated from field: string role = 4;
+   */
+  role: string;
+
+  /**
+   * @generated from field: string role_name = 5;
+   */
+  roleName: string;
+
+  /**
+   * Reaches the nodes below as well.
+   *
+   * @generated from field: bool inherit = 6;
+   */
+  inherit: boolean;
+
+  /**
+   * The group it was granted to, when via is "group".
+   *
+   * @generated from field: string group_id = 7;
+   */
+  groupId: string;
+
+  /**
+   * @generated from field: string group_name = 8;
+   */
+  groupName: string;
+};
+
+/**
+ * Describes the message hayat.authz.v1.MemberGrant.
+ * Use `create(MemberGrantSchema)` to create a new message.
+ */
+export const MemberGrantSchema: GenMessage<MemberGrant> = /*@__PURE__*/
+  messageDesc(file_hayat_authz_v1_authz, 28);
+
+/**
+ * @generated from message hayat.authz.v1.ListTenantGrantsResponse
+ */
+export type ListTenantGrantsResponse = Message<"hayat.authz.v1.ListTenantGrantsResponse"> & {
+  /**
+   * @generated from field: repeated hayat.authz.v1.MemberGrant grants = 1;
+   */
+  grants: MemberGrant[];
+};
+
+/**
+ * Describes the message hayat.authz.v1.ListTenantGrantsResponse.
+ * Use `create(ListTenantGrantsResponseSchema)` to create a new message.
+ */
+export const ListTenantGrantsResponseSchema: GenMessage<ListTenantGrantsResponse> = /*@__PURE__*/
+  messageDesc(file_hayat_authz_v1_authz, 29);
+
+/**
  * @generated from message hayat.authz.v1.User
  */
 export type User = Message<"hayat.authz.v1.User"> & {
@@ -820,7 +924,7 @@ export type User = Message<"hayat.authz.v1.User"> & {
  * Use `create(UserSchema)` to create a new message.
  */
 export const UserSchema: GenMessage<User> = /*@__PURE__*/
-  messageDesc(file_hayat_authz_v1_authz, 27);
+  messageDesc(file_hayat_authz_v1_authz, 30);
 
 /**
  * @generated from message hayat.authz.v1.GetUserRequest
@@ -837,7 +941,7 @@ export type GetUserRequest = Message<"hayat.authz.v1.GetUserRequest"> & {
  * Use `create(GetUserRequestSchema)` to create a new message.
  */
 export const GetUserRequestSchema: GenMessage<GetUserRequest> = /*@__PURE__*/
-  messageDesc(file_hayat_authz_v1_authz, 28);
+  messageDesc(file_hayat_authz_v1_authz, 31);
 
 /**
  * @generated from message hayat.authz.v1.GetUserResponse
@@ -854,7 +958,7 @@ export type GetUserResponse = Message<"hayat.authz.v1.GetUserResponse"> & {
  * Use `create(GetUserResponseSchema)` to create a new message.
  */
 export const GetUserResponseSchema: GenMessage<GetUserResponse> = /*@__PURE__*/
-  messageDesc(file_hayat_authz_v1_authz, 29);
+  messageDesc(file_hayat_authz_v1_authz, 32);
 
 /**
  * @generated from message hayat.authz.v1.BatchGetUsersRequest
@@ -871,7 +975,7 @@ export type BatchGetUsersRequest = Message<"hayat.authz.v1.BatchGetUsersRequest"
  * Use `create(BatchGetUsersRequestSchema)` to create a new message.
  */
 export const BatchGetUsersRequestSchema: GenMessage<BatchGetUsersRequest> = /*@__PURE__*/
-  messageDesc(file_hayat_authz_v1_authz, 30);
+  messageDesc(file_hayat_authz_v1_authz, 33);
 
 /**
  * @generated from message hayat.authz.v1.BatchGetUsersResponse
@@ -890,7 +994,7 @@ export type BatchGetUsersResponse = Message<"hayat.authz.v1.BatchGetUsersRespons
  * Use `create(BatchGetUsersResponseSchema)` to create a new message.
  */
 export const BatchGetUsersResponseSchema: GenMessage<BatchGetUsersResponse> = /*@__PURE__*/
-  messageDesc(file_hayat_authz_v1_authz, 31);
+  messageDesc(file_hayat_authz_v1_authz, 34);
 
 /**
  * @generated from message hayat.authz.v1.WatchRequest
@@ -909,7 +1013,7 @@ export type WatchRequest = Message<"hayat.authz.v1.WatchRequest"> & {
  * Use `create(WatchRequestSchema)` to create a new message.
  */
 export const WatchRequestSchema: GenMessage<WatchRequest> = /*@__PURE__*/
-  messageDesc(file_hayat_authz_v1_authz, 32);
+  messageDesc(file_hayat_authz_v1_authz, 35);
 
 /**
  * @generated from message hayat.authz.v1.WatchResponse
@@ -926,7 +1030,7 @@ export type WatchResponse = Message<"hayat.authz.v1.WatchResponse"> & {
  * Use `create(WatchResponseSchema)` to create a new message.
  */
 export const WatchResponseSchema: GenMessage<WatchResponse> = /*@__PURE__*/
-  messageDesc(file_hayat_authz_v1_authz, 33);
+  messageDesc(file_hayat_authz_v1_authz, 36);
 
 /**
  * @generated from message hayat.authz.v1.PolicyEvent
@@ -965,7 +1069,7 @@ export type PolicyEvent = Message<"hayat.authz.v1.PolicyEvent"> & {
  * Use `create(PolicyEventSchema)` to create a new message.
  */
 export const PolicyEventSchema: GenMessage<PolicyEvent> = /*@__PURE__*/
-  messageDesc(file_hayat_authz_v1_authz, 34);
+  messageDesc(file_hayat_authz_v1_authz, 37);
 
 /**
  * @generated from message hayat.authz.v1.PublishContractRequest
@@ -984,7 +1088,7 @@ export type PublishContractRequest = Message<"hayat.authz.v1.PublishContractRequ
  * Use `create(PublishContractRequestSchema)` to create a new message.
  */
 export const PublishContractRequestSchema: GenMessage<PublishContractRequest> = /*@__PURE__*/
-  messageDesc(file_hayat_authz_v1_authz, 35);
+  messageDesc(file_hayat_authz_v1_authz, 38);
 
 /**
  * @generated from message hayat.authz.v1.PublishContractResponse
@@ -1011,7 +1115,7 @@ export type PublishContractResponse = Message<"hayat.authz.v1.PublishContractRes
  * Use `create(PublishContractResponseSchema)` to create a new message.
  */
 export const PublishContractResponseSchema: GenMessage<PublishContractResponse> = /*@__PURE__*/
-  messageDesc(file_hayat_authz_v1_authz, 36);
+  messageDesc(file_hayat_authz_v1_authz, 39);
 
 /**
  * @generated from service hayat.authz.v1.AuthzService
@@ -1142,6 +1246,19 @@ export const DirectoryService: GenService<{
     methodKind: "unary";
     input: typeof ListTenantMembersRequestSchema;
     output: typeof ListTenantMembersResponseSchema;
+  },
+  /**
+   * What each member was given in a tenant: grants made to them, to a group
+   * they are on, or to the whole tenant, and the nodes they own. What was
+   * granted, not what it adds up to: ask PermissionsAt for that. Only the
+   * tenant, its groups and the calling service's own resource types are listed.
+   *
+   * @generated from rpc hayat.authz.v1.DirectoryService.ListTenantGrants
+   */
+  listTenantGrants: {
+    methodKind: "unary";
+    input: typeof ListTenantGrantsRequestSchema;
+    output: typeof ListTenantGrantsResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_hayat_authz_v1_authz, 2);

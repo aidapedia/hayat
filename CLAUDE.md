@@ -108,4 +108,8 @@ deploy/compose/       docker-compose + .env.example
   lucide icons, collapses to a 56px rail. Buttons `text-xs` semibold.
 - Anything a user can look at has an address (`/users/:id`, `/clients/:id`).
 - Times go through `shared/lib/datetime` (viewer's account time zone).
+- Every table pages, with tabletsgo's footer: `shared/ui/table/Pagination` inside the
+  table card (`overflow-hidden rounded-xl border`, pager `className="border-t"`).
+  `usePagination(rows)` for a list already loaded, `useServerPagination(fetchPage, deps)`
+  for an API paged by `page_token` (no total: it offers the pages reached so far).
 - Calls go through `useClient(Service)`; show `errorMessage(err)` in a toast.

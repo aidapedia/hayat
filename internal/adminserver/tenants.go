@@ -94,11 +94,50 @@ func (t *tenantService) GetTenant(ctx context.Context, req *connect.Request[admi
 	if err != nil {
 		return nil, err
 	}
-	members, err := t.members(ctx, id)
+	return connect.NewResponse(&adminv1.GetTenantResponse{Tenant: toTenant(tn), MyPermissions: perms}), nil
+}
+
+func (t *tenantService) ListMembers(ctx context.Context, req *connect.Request[adminv1.ListMembersRequest]) (*connect.Response[adminv1.ListMembersResponse], error) {
+	id, err := parseID(req.Msg.TenantId, "tenant_id")
+	if err != nil {
+		return nil, err
+	}
+	n, err := t.node(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := t.s.visible(ctx, n); err != nil {
+		return nil, err
+	}
+	size := pageSize(req.Msg.PageSize)
+	list, err := t.s.tenants.MembersPage(ctx, id, parseMemberToken(req.Msg.PageToken), size+1)
 	if err != nil {
 		return nil, t.s.fail(err)
 	}
-	return connect.NewResponse(&adminv1.GetTenantResponse{Tenant: toTenant(tn), Members: members, MyPermissions: perms}), nil
+	resp := &adminv1.ListMembersResponse{}
+	if len(list) > size {
+		list = list[:size]
+		last := list[size-1]
+		resp.NextPageToken = pageToken(last.JoinedAt) + "." + last.UserID.String()
+	}
+	if resp.Members, err = t.toMembers(ctx, list); err != nil {
+		return nil, t.s.fail(err)
+	}
+	return connect.NewResponse(resp), nil
+}
+
+// parseMemberToken reads ListMembers' page token: the last member's join time
+// and user id. A malformed token starts from the beginning.
+func parseMemberToken(raw string) tenancy.MemberCursor {
+	at, id, ok := strings.Cut(raw, ".")
+	if !ok {
+		return tenancy.MemberCursor{}
+	}
+	userID, err := uuid.Parse(id)
+	if err != nil {
+		return tenancy.MemberCursor{}
+	}
+	return tenancy.MemberCursor{JoinedAt: parsePageToken(at), UserID: userID}
 }
 
 func (t *tenantService) members(ctx context.Context, tenantID uuid.UUID) ([]*adminv1.Member, error) {
@@ -106,6 +145,10 @@ func (t *tenantService) members(ctx context.Context, tenantID uuid.UUID) ([]*adm
 	if err != nil {
 		return nil, err
 	}
+	return t.toMembers(ctx, list)
+}
+
+func (t *tenantService) toMembers(ctx context.Context, list []tenancy.Member) ([]*adminv1.Member, error) {
 	ids := make([]uuid.UUID, len(list))
 	for i, m := range list {
 		ids[i] = m.UserID

@@ -1648,6 +1648,209 @@ func (x *ListTenantMembersResponse) GetMembers() []*TenantMember {
 	return nil
 }
 
+type ListTenantGrantsRequest struct {
+	state    protoimpl.MessageState `protogen:"open.v1"`
+	TenantId string                 `protobuf:"bytes,1,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
+	// Only these members; empty for everyone on the roster.
+	UserIds       []string `protobuf:"bytes,2,rep,name=user_ids,json=userIds,proto3" json:"user_ids,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListTenantGrantsRequest) Reset() {
+	*x = ListTenantGrantsRequest{}
+	mi := &file_hayat_authz_v1_authz_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListTenantGrantsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListTenantGrantsRequest) ProtoMessage() {}
+
+func (x *ListTenantGrantsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_hayat_authz_v1_authz_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListTenantGrantsRequest.ProtoReflect.Descriptor instead.
+func (*ListTenantGrantsRequest) Descriptor() ([]byte, []int) {
+	return file_hayat_authz_v1_authz_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *ListTenantGrantsRequest) GetTenantId() string {
+	if x != nil {
+		return x.TenantId
+	}
+	return ""
+}
+
+func (x *ListTenantGrantsRequest) GetUserIds() []string {
+	if x != nil {
+		return x.UserIds
+	}
+	return nil
+}
+
+type MemberGrant struct {
+	state  protoimpl.MessageState `protogen:"open.v1"`
+	UserId string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	// Where it was granted, or the node they own.
+	Resource *Resource `protobuf:"bytes,2,opt,name=resource,proto3" json:"resource,omitempty"`
+	// How it reaches the member: "owner" (they own the node), "user" (granted to
+	// them), "group" (to a group they are on) or "everyone" (to the tenant).
+	Via string `protobuf:"bytes,3,opt,name=via,proto3" json:"via,omitempty"`
+	// The role's slug and display name; empty when via is "owner".
+	Role     string `protobuf:"bytes,4,opt,name=role,proto3" json:"role,omitempty"`
+	RoleName string `protobuf:"bytes,5,opt,name=role_name,json=roleName,proto3" json:"role_name,omitempty"`
+	// Reaches the nodes below as well.
+	Inherit bool `protobuf:"varint,6,opt,name=inherit,proto3" json:"inherit,omitempty"`
+	// The group it was granted to, when via is "group".
+	GroupId       string `protobuf:"bytes,7,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	GroupName     string `protobuf:"bytes,8,opt,name=group_name,json=groupName,proto3" json:"group_name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MemberGrant) Reset() {
+	*x = MemberGrant{}
+	mi := &file_hayat_authz_v1_authz_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MemberGrant) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MemberGrant) ProtoMessage() {}
+
+func (x *MemberGrant) ProtoReflect() protoreflect.Message {
+	mi := &file_hayat_authz_v1_authz_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MemberGrant.ProtoReflect.Descriptor instead.
+func (*MemberGrant) Descriptor() ([]byte, []int) {
+	return file_hayat_authz_v1_authz_proto_rawDescGZIP(), []int{28}
+}
+
+func (x *MemberGrant) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *MemberGrant) GetResource() *Resource {
+	if x != nil {
+		return x.Resource
+	}
+	return nil
+}
+
+func (x *MemberGrant) GetVia() string {
+	if x != nil {
+		return x.Via
+	}
+	return ""
+}
+
+func (x *MemberGrant) GetRole() string {
+	if x != nil {
+		return x.Role
+	}
+	return ""
+}
+
+func (x *MemberGrant) GetRoleName() string {
+	if x != nil {
+		return x.RoleName
+	}
+	return ""
+}
+
+func (x *MemberGrant) GetInherit() bool {
+	if x != nil {
+		return x.Inherit
+	}
+	return false
+}
+
+func (x *MemberGrant) GetGroupId() string {
+	if x != nil {
+		return x.GroupId
+	}
+	return ""
+}
+
+func (x *MemberGrant) GetGroupName() string {
+	if x != nil {
+		return x.GroupName
+	}
+	return ""
+}
+
+type ListTenantGrantsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Grants        []*MemberGrant         `protobuf:"bytes,1,rep,name=grants,proto3" json:"grants,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListTenantGrantsResponse) Reset() {
+	*x = ListTenantGrantsResponse{}
+	mi := &file_hayat_authz_v1_authz_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListTenantGrantsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListTenantGrantsResponse) ProtoMessage() {}
+
+func (x *ListTenantGrantsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_hayat_authz_v1_authz_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListTenantGrantsResponse.ProtoReflect.Descriptor instead.
+func (*ListTenantGrantsResponse) Descriptor() ([]byte, []int) {
+	return file_hayat_authz_v1_authz_proto_rawDescGZIP(), []int{29}
+}
+
+func (x *ListTenantGrantsResponse) GetGrants() []*MemberGrant {
+	if x != nil {
+		return x.Grants
+	}
+	return nil
+}
+
 type User struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -1665,7 +1868,7 @@ type User struct {
 
 func (x *User) Reset() {
 	*x = User{}
-	mi := &file_hayat_authz_v1_authz_proto_msgTypes[27]
+	mi := &file_hayat_authz_v1_authz_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1677,7 +1880,7 @@ func (x *User) String() string {
 func (*User) ProtoMessage() {}
 
 func (x *User) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_authz_v1_authz_proto_msgTypes[27]
+	mi := &file_hayat_authz_v1_authz_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1690,7 +1893,7 @@ func (x *User) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use User.ProtoReflect.Descriptor instead.
 func (*User) Descriptor() ([]byte, []int) {
-	return file_hayat_authz_v1_authz_proto_rawDescGZIP(), []int{27}
+	return file_hayat_authz_v1_authz_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *User) GetId() string {
@@ -1758,7 +1961,7 @@ type GetUserRequest struct {
 
 func (x *GetUserRequest) Reset() {
 	*x = GetUserRequest{}
-	mi := &file_hayat_authz_v1_authz_proto_msgTypes[28]
+	mi := &file_hayat_authz_v1_authz_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1770,7 +1973,7 @@ func (x *GetUserRequest) String() string {
 func (*GetUserRequest) ProtoMessage() {}
 
 func (x *GetUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_authz_v1_authz_proto_msgTypes[28]
+	mi := &file_hayat_authz_v1_authz_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1783,7 +1986,7 @@ func (x *GetUserRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUserRequest.ProtoReflect.Descriptor instead.
 func (*GetUserRequest) Descriptor() ([]byte, []int) {
-	return file_hayat_authz_v1_authz_proto_rawDescGZIP(), []int{28}
+	return file_hayat_authz_v1_authz_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *GetUserRequest) GetId() string {
@@ -1802,7 +2005,7 @@ type GetUserResponse struct {
 
 func (x *GetUserResponse) Reset() {
 	*x = GetUserResponse{}
-	mi := &file_hayat_authz_v1_authz_proto_msgTypes[29]
+	mi := &file_hayat_authz_v1_authz_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1814,7 +2017,7 @@ func (x *GetUserResponse) String() string {
 func (*GetUserResponse) ProtoMessage() {}
 
 func (x *GetUserResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_authz_v1_authz_proto_msgTypes[29]
+	mi := &file_hayat_authz_v1_authz_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1827,7 +2030,7 @@ func (x *GetUserResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUserResponse.ProtoReflect.Descriptor instead.
 func (*GetUserResponse) Descriptor() ([]byte, []int) {
-	return file_hayat_authz_v1_authz_proto_rawDescGZIP(), []int{29}
+	return file_hayat_authz_v1_authz_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *GetUserResponse) GetUser() *User {
@@ -1846,7 +2049,7 @@ type BatchGetUsersRequest struct {
 
 func (x *BatchGetUsersRequest) Reset() {
 	*x = BatchGetUsersRequest{}
-	mi := &file_hayat_authz_v1_authz_proto_msgTypes[30]
+	mi := &file_hayat_authz_v1_authz_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1858,7 +2061,7 @@ func (x *BatchGetUsersRequest) String() string {
 func (*BatchGetUsersRequest) ProtoMessage() {}
 
 func (x *BatchGetUsersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_authz_v1_authz_proto_msgTypes[30]
+	mi := &file_hayat_authz_v1_authz_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1871,7 +2074,7 @@ func (x *BatchGetUsersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BatchGetUsersRequest.ProtoReflect.Descriptor instead.
 func (*BatchGetUsersRequest) Descriptor() ([]byte, []int) {
-	return file_hayat_authz_v1_authz_proto_rawDescGZIP(), []int{30}
+	return file_hayat_authz_v1_authz_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *BatchGetUsersRequest) GetIds() []string {
@@ -1891,7 +2094,7 @@ type BatchGetUsersResponse struct {
 
 func (x *BatchGetUsersResponse) Reset() {
 	*x = BatchGetUsersResponse{}
-	mi := &file_hayat_authz_v1_authz_proto_msgTypes[31]
+	mi := &file_hayat_authz_v1_authz_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1903,7 +2106,7 @@ func (x *BatchGetUsersResponse) String() string {
 func (*BatchGetUsersResponse) ProtoMessage() {}
 
 func (x *BatchGetUsersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_authz_v1_authz_proto_msgTypes[31]
+	mi := &file_hayat_authz_v1_authz_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1916,7 +2119,7 @@ func (x *BatchGetUsersResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BatchGetUsersResponse.ProtoReflect.Descriptor instead.
 func (*BatchGetUsersResponse) Descriptor() ([]byte, []int) {
-	return file_hayat_authz_v1_authz_proto_rawDescGZIP(), []int{31}
+	return file_hayat_authz_v1_authz_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *BatchGetUsersResponse) GetUsers() []*User {
@@ -1936,7 +2139,7 @@ type WatchRequest struct {
 
 func (x *WatchRequest) Reset() {
 	*x = WatchRequest{}
-	mi := &file_hayat_authz_v1_authz_proto_msgTypes[32]
+	mi := &file_hayat_authz_v1_authz_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1948,7 +2151,7 @@ func (x *WatchRequest) String() string {
 func (*WatchRequest) ProtoMessage() {}
 
 func (x *WatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_authz_v1_authz_proto_msgTypes[32]
+	mi := &file_hayat_authz_v1_authz_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1961,7 +2164,7 @@ func (x *WatchRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WatchRequest.ProtoReflect.Descriptor instead.
 func (*WatchRequest) Descriptor() ([]byte, []int) {
-	return file_hayat_authz_v1_authz_proto_rawDescGZIP(), []int{32}
+	return file_hayat_authz_v1_authz_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *WatchRequest) GetCursor() string {
@@ -1980,7 +2183,7 @@ type WatchResponse struct {
 
 func (x *WatchResponse) Reset() {
 	*x = WatchResponse{}
-	mi := &file_hayat_authz_v1_authz_proto_msgTypes[33]
+	mi := &file_hayat_authz_v1_authz_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1992,7 +2195,7 @@ func (x *WatchResponse) String() string {
 func (*WatchResponse) ProtoMessage() {}
 
 func (x *WatchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_authz_v1_authz_proto_msgTypes[33]
+	mi := &file_hayat_authz_v1_authz_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2005,7 +2208,7 @@ func (x *WatchResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WatchResponse.ProtoReflect.Descriptor instead.
 func (*WatchResponse) Descriptor() ([]byte, []int) {
-	return file_hayat_authz_v1_authz_proto_rawDescGZIP(), []int{33}
+	return file_hayat_authz_v1_authz_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *WatchResponse) GetEvent() *PolicyEvent {
@@ -2029,7 +2232,7 @@ type PolicyEvent struct {
 
 func (x *PolicyEvent) Reset() {
 	*x = PolicyEvent{}
-	mi := &file_hayat_authz_v1_authz_proto_msgTypes[34]
+	mi := &file_hayat_authz_v1_authz_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2041,7 +2244,7 @@ func (x *PolicyEvent) String() string {
 func (*PolicyEvent) ProtoMessage() {}
 
 func (x *PolicyEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_authz_v1_authz_proto_msgTypes[34]
+	mi := &file_hayat_authz_v1_authz_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2054,7 +2257,7 @@ func (x *PolicyEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PolicyEvent.ProtoReflect.Descriptor instead.
 func (*PolicyEvent) Descriptor() ([]byte, []int) {
-	return file_hayat_authz_v1_authz_proto_rawDescGZIP(), []int{34}
+	return file_hayat_authz_v1_authz_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *PolicyEvent) GetId() string {
@@ -2102,7 +2305,7 @@ type PublishContractRequest struct {
 
 func (x *PublishContractRequest) Reset() {
 	*x = PublishContractRequest{}
-	mi := &file_hayat_authz_v1_authz_proto_msgTypes[35]
+	mi := &file_hayat_authz_v1_authz_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2114,7 +2317,7 @@ func (x *PublishContractRequest) String() string {
 func (*PublishContractRequest) ProtoMessage() {}
 
 func (x *PublishContractRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_authz_v1_authz_proto_msgTypes[35]
+	mi := &file_hayat_authz_v1_authz_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2127,7 +2330,7 @@ func (x *PublishContractRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PublishContractRequest.ProtoReflect.Descriptor instead.
 func (*PublishContractRequest) Descriptor() ([]byte, []int) {
-	return file_hayat_authz_v1_authz_proto_rawDescGZIP(), []int{35}
+	return file_hayat_authz_v1_authz_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *PublishContractRequest) GetManifest() string {
@@ -2148,7 +2351,7 @@ type PublishContractResponse struct {
 
 func (x *PublishContractResponse) Reset() {
 	*x = PublishContractResponse{}
-	mi := &file_hayat_authz_v1_authz_proto_msgTypes[36]
+	mi := &file_hayat_authz_v1_authz_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2160,7 +2363,7 @@ func (x *PublishContractResponse) String() string {
 func (*PublishContractResponse) ProtoMessage() {}
 
 func (x *PublishContractResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_authz_v1_authz_proto_msgTypes[36]
+	mi := &file_hayat_authz_v1_authz_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2173,7 +2376,7 @@ func (x *PublishContractResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PublishContractResponse.ProtoReflect.Descriptor instead.
 func (*PublishContractResponse) Descriptor() ([]byte, []int) {
-	return file_hayat_authz_v1_authz_proto_rawDescGZIP(), []int{36}
+	return file_hayat_authz_v1_authz_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *PublishContractResponse) GetVersion() int32 {
@@ -2319,7 +2522,22 @@ const file_hayat_authz_v1_authz_proto_rawDesc = "" +
 	"\bis_owner\x18\x02 \x01(\bR\aisOwner\x127\n" +
 	"\tjoined_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\bjoinedAt\"S\n" +
 	"\x19ListTenantMembersResponse\x126\n" +
-	"\amembers\x18\x01 \x03(\v2\x1c.hayat.authz.v1.TenantMemberR\amembers\"\xcd\x01\n" +
+	"\amembers\x18\x01 \x03(\v2\x1c.hayat.authz.v1.TenantMemberR\amembers\"Q\n" +
+	"\x17ListTenantGrantsRequest\x12\x1b\n" +
+	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x19\n" +
+	"\buser_ids\x18\x02 \x03(\tR\auserIds\"\xf3\x01\n" +
+	"\vMemberGrant\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x124\n" +
+	"\bresource\x18\x02 \x01(\v2\x18.hayat.authz.v1.ResourceR\bresource\x12\x10\n" +
+	"\x03via\x18\x03 \x01(\tR\x03via\x12\x12\n" +
+	"\x04role\x18\x04 \x01(\tR\x04role\x12\x1b\n" +
+	"\trole_name\x18\x05 \x01(\tR\broleName\x12\x18\n" +
+	"\ainherit\x18\x06 \x01(\bR\ainherit\x12\x19\n" +
+	"\bgroup_id\x18\a \x01(\tR\agroupId\x12\x1d\n" +
+	"\n" +
+	"group_name\x18\b \x01(\tR\tgroupName\"O\n" +
+	"\x18ListTenantGrantsResponse\x123\n" +
+	"\x06grants\x18\x01 \x03(\v2\x1b.hayat.authz.v1.MemberGrantR\x06grants\"\xcd\x01\n" +
 	"\x04User\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05email\x18\x02 \x01(\tR\x05email\x12%\n" +
@@ -2365,12 +2583,13 @@ const file_hayat_authz_v1_authz_proto_rawDesc = "" +
 	"\vTreeService\x12_\n" +
 	"\x0eUpsertResource\x12%.hayat.authz.v1.UpsertResourceRequest\x1a&.hayat.authz.v1.UpsertResourceResponse\x12_\n" +
 	"\x0eDeleteResource\x12%.hayat.authz.v1.DeleteResourceRequest\x1a&.hayat.authz.v1.DeleteResourceResponse\x12V\n" +
-	"\vGetResource\x12\".hayat.authz.v1.GetResourceRequest\x1a#.hayat.authz.v1.GetResourceResponse2\x8a\x03\n" +
+	"\vGetResource\x12\".hayat.authz.v1.GetResourceRequest\x1a#.hayat.authz.v1.GetResourceResponse2\xf1\x03\n" +
 	"\x10DirectoryService\x12J\n" +
 	"\aGetUser\x12\x1e.hayat.authz.v1.GetUserRequest\x1a\x1f.hayat.authz.v1.GetUserResponse\x12\\\n" +
 	"\rBatchGetUsers\x12$.hayat.authz.v1.BatchGetUsersRequest\x1a%.hayat.authz.v1.BatchGetUsersResponse\x12b\n" +
 	"\x0fListUserTenants\x12&.hayat.authz.v1.ListUserTenantsRequest\x1a'.hayat.authz.v1.ListUserTenantsResponse\x12h\n" +
-	"\x11ListTenantMembers\x12(.hayat.authz.v1.ListTenantMembersRequest\x1a).hayat.authz.v1.ListTenantMembersResponse2V\n" +
+	"\x11ListTenantMembers\x12(.hayat.authz.v1.ListTenantMembersRequest\x1a).hayat.authz.v1.ListTenantMembersResponse\x12e\n" +
+	"\x10ListTenantGrants\x12'.hayat.authz.v1.ListTenantGrantsRequest\x1a(.hayat.authz.v1.ListTenantGrantsResponse2V\n" +
 	"\fWatchService\x12F\n" +
 	"\x05Watch\x12\x1c.hayat.authz.v1.WatchRequest\x1a\x1d.hayat.authz.v1.WatchResponse0\x012s\n" +
 	"\rSchemaService\x12b\n" +
@@ -2388,7 +2607,7 @@ func file_hayat_authz_v1_authz_proto_rawDescGZIP() []byte {
 	return file_hayat_authz_v1_authz_proto_rawDescData
 }
 
-var file_hayat_authz_v1_authz_proto_msgTypes = make([]protoimpl.MessageInfo, 37)
+var file_hayat_authz_v1_authz_proto_msgTypes = make([]protoimpl.MessageInfo, 40)
 var file_hayat_authz_v1_authz_proto_goTypes = []any{
 	(*ResourceRef)(nil),               // 0: hayat.authz.v1.ResourceRef
 	(*Consistency)(nil),               // 1: hayat.authz.v1.Consistency
@@ -2417,17 +2636,20 @@ var file_hayat_authz_v1_authz_proto_goTypes = []any{
 	(*ListTenantMembersRequest)(nil),  // 24: hayat.authz.v1.ListTenantMembersRequest
 	(*TenantMember)(nil),              // 25: hayat.authz.v1.TenantMember
 	(*ListTenantMembersResponse)(nil), // 26: hayat.authz.v1.ListTenantMembersResponse
-	(*User)(nil),                      // 27: hayat.authz.v1.User
-	(*GetUserRequest)(nil),            // 28: hayat.authz.v1.GetUserRequest
-	(*GetUserResponse)(nil),           // 29: hayat.authz.v1.GetUserResponse
-	(*BatchGetUsersRequest)(nil),      // 30: hayat.authz.v1.BatchGetUsersRequest
-	(*BatchGetUsersResponse)(nil),     // 31: hayat.authz.v1.BatchGetUsersResponse
-	(*WatchRequest)(nil),              // 32: hayat.authz.v1.WatchRequest
-	(*WatchResponse)(nil),             // 33: hayat.authz.v1.WatchResponse
-	(*PolicyEvent)(nil),               // 34: hayat.authz.v1.PolicyEvent
-	(*PublishContractRequest)(nil),    // 35: hayat.authz.v1.PublishContractRequest
-	(*PublishContractResponse)(nil),   // 36: hayat.authz.v1.PublishContractResponse
-	(*timestamppb.Timestamp)(nil),     // 37: google.protobuf.Timestamp
+	(*ListTenantGrantsRequest)(nil),   // 27: hayat.authz.v1.ListTenantGrantsRequest
+	(*MemberGrant)(nil),               // 28: hayat.authz.v1.MemberGrant
+	(*ListTenantGrantsResponse)(nil),  // 29: hayat.authz.v1.ListTenantGrantsResponse
+	(*User)(nil),                      // 30: hayat.authz.v1.User
+	(*GetUserRequest)(nil),            // 31: hayat.authz.v1.GetUserRequest
+	(*GetUserResponse)(nil),           // 32: hayat.authz.v1.GetUserResponse
+	(*BatchGetUsersRequest)(nil),      // 33: hayat.authz.v1.BatchGetUsersRequest
+	(*BatchGetUsersResponse)(nil),     // 34: hayat.authz.v1.BatchGetUsersResponse
+	(*WatchRequest)(nil),              // 35: hayat.authz.v1.WatchRequest
+	(*WatchResponse)(nil),             // 36: hayat.authz.v1.WatchResponse
+	(*PolicyEvent)(nil),               // 37: hayat.authz.v1.PolicyEvent
+	(*PublishContractRequest)(nil),    // 38: hayat.authz.v1.PublishContractRequest
+	(*PublishContractResponse)(nil),   // 39: hayat.authz.v1.PublishContractResponse
+	(*timestamppb.Timestamp)(nil),     // 40: google.protobuf.Timestamp
 }
 var file_hayat_authz_v1_authz_proto_depIdxs = []int32{
 	0,  // 0: hayat.authz.v1.CheckRequest.resource:type_name -> hayat.authz.v1.ResourceRef
@@ -2448,46 +2670,50 @@ var file_hayat_authz_v1_authz_proto_depIdxs = []int32{
 	3,  // 15: hayat.authz.v1.UpsertResourceResponse.resource:type_name -> hayat.authz.v1.Resource
 	3,  // 16: hayat.authz.v1.GetResourceResponse.resource:type_name -> hayat.authz.v1.Resource
 	21, // 17: hayat.authz.v1.ListUserTenantsResponse.tenants:type_name -> hayat.authz.v1.Tenant
-	27, // 18: hayat.authz.v1.TenantMember.user:type_name -> hayat.authz.v1.User
-	37, // 19: hayat.authz.v1.TenantMember.joined_at:type_name -> google.protobuf.Timestamp
+	30, // 18: hayat.authz.v1.TenantMember.user:type_name -> hayat.authz.v1.User
+	40, // 19: hayat.authz.v1.TenantMember.joined_at:type_name -> google.protobuf.Timestamp
 	25, // 20: hayat.authz.v1.ListTenantMembersResponse.members:type_name -> hayat.authz.v1.TenantMember
-	27, // 21: hayat.authz.v1.GetUserResponse.user:type_name -> hayat.authz.v1.User
-	27, // 22: hayat.authz.v1.BatchGetUsersResponse.users:type_name -> hayat.authz.v1.User
-	34, // 23: hayat.authz.v1.WatchResponse.event:type_name -> hayat.authz.v1.PolicyEvent
-	37, // 24: hayat.authz.v1.PolicyEvent.at:type_name -> google.protobuf.Timestamp
-	4,  // 25: hayat.authz.v1.AuthzService.Check:input_type -> hayat.authz.v1.CheckRequest
-	6,  // 26: hayat.authz.v1.AuthzService.BatchCheck:input_type -> hayat.authz.v1.BatchCheckRequest
-	8,  // 27: hayat.authz.v1.AuthzService.PermissionsAt:input_type -> hayat.authz.v1.PermissionsAtRequest
-	10, // 28: hayat.authz.v1.AuthzService.LookupResources:input_type -> hayat.authz.v1.LookupResourcesRequest
-	12, // 29: hayat.authz.v1.AuthzService.LookupSubjects:input_type -> hayat.authz.v1.LookupSubjectsRequest
-	15, // 30: hayat.authz.v1.TreeService.UpsertResource:input_type -> hayat.authz.v1.UpsertResourceRequest
-	16, // 31: hayat.authz.v1.TreeService.DeleteResource:input_type -> hayat.authz.v1.DeleteResourceRequest
-	17, // 32: hayat.authz.v1.TreeService.GetResource:input_type -> hayat.authz.v1.GetResourceRequest
-	28, // 33: hayat.authz.v1.DirectoryService.GetUser:input_type -> hayat.authz.v1.GetUserRequest
-	30, // 34: hayat.authz.v1.DirectoryService.BatchGetUsers:input_type -> hayat.authz.v1.BatchGetUsersRequest
-	22, // 35: hayat.authz.v1.DirectoryService.ListUserTenants:input_type -> hayat.authz.v1.ListUserTenantsRequest
-	24, // 36: hayat.authz.v1.DirectoryService.ListTenantMembers:input_type -> hayat.authz.v1.ListTenantMembersRequest
-	32, // 37: hayat.authz.v1.WatchService.Watch:input_type -> hayat.authz.v1.WatchRequest
-	35, // 38: hayat.authz.v1.SchemaService.PublishContract:input_type -> hayat.authz.v1.PublishContractRequest
-	5,  // 39: hayat.authz.v1.AuthzService.Check:output_type -> hayat.authz.v1.CheckResponse
-	7,  // 40: hayat.authz.v1.AuthzService.BatchCheck:output_type -> hayat.authz.v1.BatchCheckResponse
-	9,  // 41: hayat.authz.v1.AuthzService.PermissionsAt:output_type -> hayat.authz.v1.PermissionsAtResponse
-	11, // 42: hayat.authz.v1.AuthzService.LookupResources:output_type -> hayat.authz.v1.LookupResourcesResponse
-	14, // 43: hayat.authz.v1.AuthzService.LookupSubjects:output_type -> hayat.authz.v1.LookupSubjectsResponse
-	18, // 44: hayat.authz.v1.TreeService.UpsertResource:output_type -> hayat.authz.v1.UpsertResourceResponse
-	19, // 45: hayat.authz.v1.TreeService.DeleteResource:output_type -> hayat.authz.v1.DeleteResourceResponse
-	20, // 46: hayat.authz.v1.TreeService.GetResource:output_type -> hayat.authz.v1.GetResourceResponse
-	29, // 47: hayat.authz.v1.DirectoryService.GetUser:output_type -> hayat.authz.v1.GetUserResponse
-	31, // 48: hayat.authz.v1.DirectoryService.BatchGetUsers:output_type -> hayat.authz.v1.BatchGetUsersResponse
-	23, // 49: hayat.authz.v1.DirectoryService.ListUserTenants:output_type -> hayat.authz.v1.ListUserTenantsResponse
-	26, // 50: hayat.authz.v1.DirectoryService.ListTenantMembers:output_type -> hayat.authz.v1.ListTenantMembersResponse
-	33, // 51: hayat.authz.v1.WatchService.Watch:output_type -> hayat.authz.v1.WatchResponse
-	36, // 52: hayat.authz.v1.SchemaService.PublishContract:output_type -> hayat.authz.v1.PublishContractResponse
-	39, // [39:53] is the sub-list for method output_type
-	25, // [25:39] is the sub-list for method input_type
-	25, // [25:25] is the sub-list for extension type_name
-	25, // [25:25] is the sub-list for extension extendee
-	0,  // [0:25] is the sub-list for field type_name
+	3,  // 21: hayat.authz.v1.MemberGrant.resource:type_name -> hayat.authz.v1.Resource
+	28, // 22: hayat.authz.v1.ListTenantGrantsResponse.grants:type_name -> hayat.authz.v1.MemberGrant
+	30, // 23: hayat.authz.v1.GetUserResponse.user:type_name -> hayat.authz.v1.User
+	30, // 24: hayat.authz.v1.BatchGetUsersResponse.users:type_name -> hayat.authz.v1.User
+	37, // 25: hayat.authz.v1.WatchResponse.event:type_name -> hayat.authz.v1.PolicyEvent
+	40, // 26: hayat.authz.v1.PolicyEvent.at:type_name -> google.protobuf.Timestamp
+	4,  // 27: hayat.authz.v1.AuthzService.Check:input_type -> hayat.authz.v1.CheckRequest
+	6,  // 28: hayat.authz.v1.AuthzService.BatchCheck:input_type -> hayat.authz.v1.BatchCheckRequest
+	8,  // 29: hayat.authz.v1.AuthzService.PermissionsAt:input_type -> hayat.authz.v1.PermissionsAtRequest
+	10, // 30: hayat.authz.v1.AuthzService.LookupResources:input_type -> hayat.authz.v1.LookupResourcesRequest
+	12, // 31: hayat.authz.v1.AuthzService.LookupSubjects:input_type -> hayat.authz.v1.LookupSubjectsRequest
+	15, // 32: hayat.authz.v1.TreeService.UpsertResource:input_type -> hayat.authz.v1.UpsertResourceRequest
+	16, // 33: hayat.authz.v1.TreeService.DeleteResource:input_type -> hayat.authz.v1.DeleteResourceRequest
+	17, // 34: hayat.authz.v1.TreeService.GetResource:input_type -> hayat.authz.v1.GetResourceRequest
+	31, // 35: hayat.authz.v1.DirectoryService.GetUser:input_type -> hayat.authz.v1.GetUserRequest
+	33, // 36: hayat.authz.v1.DirectoryService.BatchGetUsers:input_type -> hayat.authz.v1.BatchGetUsersRequest
+	22, // 37: hayat.authz.v1.DirectoryService.ListUserTenants:input_type -> hayat.authz.v1.ListUserTenantsRequest
+	24, // 38: hayat.authz.v1.DirectoryService.ListTenantMembers:input_type -> hayat.authz.v1.ListTenantMembersRequest
+	27, // 39: hayat.authz.v1.DirectoryService.ListTenantGrants:input_type -> hayat.authz.v1.ListTenantGrantsRequest
+	35, // 40: hayat.authz.v1.WatchService.Watch:input_type -> hayat.authz.v1.WatchRequest
+	38, // 41: hayat.authz.v1.SchemaService.PublishContract:input_type -> hayat.authz.v1.PublishContractRequest
+	5,  // 42: hayat.authz.v1.AuthzService.Check:output_type -> hayat.authz.v1.CheckResponse
+	7,  // 43: hayat.authz.v1.AuthzService.BatchCheck:output_type -> hayat.authz.v1.BatchCheckResponse
+	9,  // 44: hayat.authz.v1.AuthzService.PermissionsAt:output_type -> hayat.authz.v1.PermissionsAtResponse
+	11, // 45: hayat.authz.v1.AuthzService.LookupResources:output_type -> hayat.authz.v1.LookupResourcesResponse
+	14, // 46: hayat.authz.v1.AuthzService.LookupSubjects:output_type -> hayat.authz.v1.LookupSubjectsResponse
+	18, // 47: hayat.authz.v1.TreeService.UpsertResource:output_type -> hayat.authz.v1.UpsertResourceResponse
+	19, // 48: hayat.authz.v1.TreeService.DeleteResource:output_type -> hayat.authz.v1.DeleteResourceResponse
+	20, // 49: hayat.authz.v1.TreeService.GetResource:output_type -> hayat.authz.v1.GetResourceResponse
+	32, // 50: hayat.authz.v1.DirectoryService.GetUser:output_type -> hayat.authz.v1.GetUserResponse
+	34, // 51: hayat.authz.v1.DirectoryService.BatchGetUsers:output_type -> hayat.authz.v1.BatchGetUsersResponse
+	23, // 52: hayat.authz.v1.DirectoryService.ListUserTenants:output_type -> hayat.authz.v1.ListUserTenantsResponse
+	26, // 53: hayat.authz.v1.DirectoryService.ListTenantMembers:output_type -> hayat.authz.v1.ListTenantMembersResponse
+	29, // 54: hayat.authz.v1.DirectoryService.ListTenantGrants:output_type -> hayat.authz.v1.ListTenantGrantsResponse
+	36, // 55: hayat.authz.v1.WatchService.Watch:output_type -> hayat.authz.v1.WatchResponse
+	39, // 56: hayat.authz.v1.SchemaService.PublishContract:output_type -> hayat.authz.v1.PublishContractResponse
+	42, // [42:57] is the sub-list for method output_type
+	27, // [27:42] is the sub-list for method input_type
+	27, // [27:27] is the sub-list for extension type_name
+	27, // [27:27] is the sub-list for extension extendee
+	0,  // [0:27] is the sub-list for field type_name
 }
 
 func init() { file_hayat_authz_v1_authz_proto_init() }
@@ -2501,7 +2727,7 @@ func file_hayat_authz_v1_authz_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_hayat_authz_v1_authz_proto_rawDesc), len(file_hayat_authz_v1_authz_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   37,
+			NumMessages:   40,
 			NumExtensions: 0,
 			NumServices:   5,
 		},

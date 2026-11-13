@@ -56,8 +56,11 @@ type ManifestAccess struct {
 }
 
 type ManifestPerm struct {
-	Key         string `yaml:"key" json:"key"`
-	Scope       string `yaml:"scope" json:"scope"`
+	Key   string `yaml:"key" json:"key"`
+	Scope string `yaml:"scope" json:"scope"`
+	// Label is the short name an admin reads ("Open connections"). Like the
+	// description it is display text, so a later version may change it.
+	Label       string `yaml:"label,omitempty" json:"label,omitempty"`
 	Description string `yaml:"description,omitempty" json:"description,omitempty"`
 }
 
@@ -177,7 +180,7 @@ func compile(m Manifest, snap *Snapshot) (compiled, []string, error) {
 			return compiled{}, nil, errs.Newf("permission %q is listed twice", p.Key)
 		}
 		perms[key] = true
-		out.perms = append(out.perms, Permission{Key: key, Service: svc, Scope: scope, Description: strings.TrimSpace(p.Description)})
+		out.perms = append(out.perms, Permission{Key: key, Service: svc, Scope: scope, Label: strings.TrimSpace(p.Label), Description: strings.TrimSpace(p.Description)})
 	}
 
 	for _, t := range m.ResourceTypes {
@@ -500,8 +503,8 @@ func (c *Service) activate(ctx context.Context, tx pgx.Tx, svc string, version i
 		}
 	}
 	for _, p := range next.perms {
-		if _, err := tx.Exec(ctx, `INSERT INTO permissions (key, service_id, scope, description) VALUES ($1, $2, $3, $4)
-			ON CONFLICT (key) DO UPDATE SET description = EXCLUDED.description`, p.Key, p.Service, p.Scope, p.Description); err != nil {
+		if _, err := tx.Exec(ctx, `INSERT INTO permissions (key, service_id, scope, label, description) VALUES ($1, $2, $3, $4, $5)
+			ON CONFLICT (key) DO UPDATE SET label = EXCLUDED.label, description = EXCLUDED.description`, p.Key, p.Service, p.Scope, p.Label, p.Description); err != nil {
 			return err
 		}
 	}

@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState } from 'react'
 import { useParams } from 'react-router'
 import { toast } from 'sonner'
 import { Check, FileCode2, KeyRound, UserMinus, UserPlus, X } from 'lucide-react'
@@ -13,54 +13,18 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/shared/ui/input'
 import { PageHeader, Section } from '@/shared/ui/page/PageHeader'
 import { Textarea } from '@/shared/ui/textarea'
+import { ContractEditor } from './contract/ContractEditor'
+import { manifestYaml, type Manifest } from './contract/manifest'
+import { SummaryJson } from './contract/SummaryList'
 import { CredentialsDialog } from './CredentialsDialog'
 
-const EXAMPLE = `service: billing
-version: 1
-resource_types:
-  - name: ledger
-    parents: [hayat/tenant, hayat/group]
-    access: { permission: ledger.view, via_placement: true, requires_membership: true }
-permissions:
-  - { key: ledger.view, scope: ledger, description: See entries and balances }
-  - { key: ledger.post, scope: ledger, description: Post journal entries }
-default_roles:
-  - { slug: accountant, name: Accountant, permissions: [ledger.view, ledger.post] }
-`
-
-type Summary = {
-  added_types?: string[]
-  added_permissions?: string[]
-  added_roles?: string[]
-  added_parents?: Record<string, string[]>
-  added_role_permissions?: Record<string, string[]>
-}
-
-function SummaryLines({ json }: { json: string }) {
-  let s: Summary = {}
+/** A stored manifest as YAML, the way it was written; the raw JSON if it can't be. */
+function manifestText(json: string): string {
   try {
-    s = JSON.parse(json)
+    return manifestYaml(JSON.parse(json) as Manifest)
   } catch {
-    /* shown as nothing */
+    return json
   }
-  const lines: [string, string[]][] = [
-    ['Adds types', s.added_types ?? []],
-    ['Adds permissions', s.added_permissions ?? []],
-    ['Adds roles', s.added_roles ?? []],
-    ...Object.entries(s.added_parents ?? {}).map(([t, ps]): [string, string[]] => [`New parents for ${t}`, ps]),
-    ...Object.entries(s.added_role_permissions ?? {}).map(([r, ps]): [string, string[]] => [`More permissions in ${r}`, ps]),
-  ].filter(([, v]) => v.length > 0) as [string, string[]][]
-  if (lines.length === 0) return <p className="text-[12px] text-faint">No changes to the catalog.</p>
-  return (
-    <ul className="flex flex-col gap-1">
-      {lines.map(([label, items]) => (
-        <li key={label} className="text-[12px]">
-          <span className="text-muted-foreground">{label}: </span>
-          <span className="font-mono">{items.join(', ')}</span>
-        </li>
-      ))}
-    </ul>
-  )
 }
 
 function ContractCard({ c, onApprove, onReject, onView }: { c: Contract; onApprove: () => void; onReject: () => void; onView: () => void }) {
@@ -89,7 +53,7 @@ function ContractCard({ c, onApprove, onReject, onView }: { c: Contract; onAppro
           )}
         </div>
       </div>
-      <SummaryLines json={c.summaryJson} />
+      <SummaryJson json={c.summaryJson} />
       <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-faint">
         Needs approval from
         {c.namespaces.map((ns) => (
@@ -109,8 +73,6 @@ export default function ServiceDetailPage() {
   const { id = '' } = useParams()
   const registry = useClient(RegistryService)
   const { data, error, loading, reload } = useQuery(() => registry.getService({ id }), [registry, id])
-  const [manifest, setManifest] = useState('')
-  const [publishing, setPublishing] = useState(false)
   const [viewing, setViewing] = useState<Contract | null>(null)
   const [rejecting, setRejecting] = useState<Contract | null>(null)
   const [reason, setReason] = useState('')
@@ -132,13 +94,6 @@ export default function ServiceDetailPage() {
     } catch (err) {
       toast.error(errorMessage(err))
     }
-  }
-
-  const publish = async (e: FormEvent) => {
-    e.preventDefault()
-    setPublishing(true)
-    await act(() => registry.publishContract({ serviceId: id, manifest }), 'Contract published; it waits for approval')
-    setPublishing(false)
   }
 
   return (
@@ -175,7 +130,7 @@ export default function ServiceDetailPage() {
           <Section title="Contract versions" desc="What this service declares: its resource types, permissions and suggested roles.">
             {data.contracts.length === 0 ? (
               <EmptyState icon={FileCode2} title="No contract yet">
-                Publish one below, or from CI through the API's SchemaService.
+                Fill in the form below, or publish one from CI through the API's SchemaService.
               </EmptyState>
             ) : (
               <div className="divide-y rounded-xl border">
@@ -191,28 +146,7 @@ export default function ServiceDetailPage() {
               </div>
             )}
           </Section>
-          {data.canManage && (
-            <Section title="Publish a version" desc="YAML or JSON. A new version may only add to the last one, and goes live once every namespace it touches approves it.">
-              <form onSubmit={publish} className="flex flex-col gap-3 rounded-xl border p-4">
-                <Textarea
-                  value={manifest}
-                  onChange={(e) => setManifest(e.target.value)}
-                  rows={14}
-                  className="font-mono text-[12px]"
-                  placeholder={EXAMPLE.replace('billing', s.id)}
-                  spellCheck={false}
-                />
-                <div className="flex items-center justify-between gap-3">
-                  <button type="button" className="text-[12px] text-primary hover:underline" onClick={() => setManifest(EXAMPLE.replaceAll('billing', s.id))}>
-                    Start from the example
-                  </button>
-                  <Button type="submit" disabled={publishing || !manifest.trim()}>
-                    {publishing ? 'Publishing…' : 'Publish for approval'}
-                  </Button>
-                </div>
-              </form>
-            </Section>
-          )}
+          {data.canManage && <ContractEditor key={`${data.contracts[0]?.version ?? 0}-${data.contracts[0]?.status ?? ""}`} serviceId={s.id} contracts={data.contracts} onPublished={reload} />}
         </div>
 
         <div className="min-w-0 max-[1000px]:mt-9">
@@ -265,7 +199,7 @@ export default function ServiceDetailPage() {
               {viewing?.serviceId} · version {viewing?.version}
             </DialogTitle>
           </DialogHeader>
-          <pre className="overflow-x-auto rounded-[10px] border bg-muted/50 p-3 font-mono text-[11px]">{viewing?.manifestJson}</pre>
+          <pre className="overflow-x-auto rounded-[10px] border bg-muted/50 p-3 font-mono text-[11px]">{viewing && manifestText(viewing.manifestJson)}</pre>
         </DialogContent>
       </Dialog>
 
