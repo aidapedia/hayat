@@ -64,7 +64,7 @@ func toTenants(list []tenancy.Tenant) []*adminv1.Tenant {
 
 func toClient(c *hoidc.Client) *adminv1.Client {
 	return &adminv1.Client{
-		Id: c.ID, Name: c.Name, Kind: c.Kind, RedirectUris: c.Redirects, PostLogoutRedirectUris: c.PostLogoutRedirects,
+		Id: c.ID, ServiceId: c.ServiceID, Name: c.Name, Kind: c.Kind, RedirectUris: c.Redirects, PostLogoutRedirectUris: c.PostLogoutRedirects,
 		GrantTypes: c.Grants, Builtin: c.Builtin, Disabled: c.DisabledAt != nil, CreatedAt: ts(c.CreatedAt), UpdatedAt: ts(c.UpdatedAt),
 	}
 }

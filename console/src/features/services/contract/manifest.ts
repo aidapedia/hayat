@@ -9,7 +9,7 @@ import { yamlString } from './yaml'
 
 export type ManifestAccess = { permission: string; via_placement?: boolean; requires_membership?: boolean }
 export type ManifestType = { name: string; description?: string; parents: string[]; access?: ManifestAccess; degradable?: boolean }
-export type ManifestPerm = { key: string; scope: string; description?: string }
+export type ManifestPerm = { key: string; scope: string; label?: string; description?: string }
 export type ManifestRole = { slug: string; name?: string; description?: string; permissions: string[]; applies_to?: string[] }
 export type Manifest = {
   service: string

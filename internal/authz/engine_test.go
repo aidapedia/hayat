@@ -73,8 +73,6 @@ func build(t *testing.T) *world {
 	must(t, err)
 	_, err = w.cat.Publish(ctx, "billing", []byte(billing), "test")
 	must(t, err)
-	_, err = w.cat.Approve(ctx, "billing", 1, []string{"billing"}, ada.ID)
-	must(t, err)
 	snap, _ := w.cat.Snapshot(ctx, true)
 	w.accRole = snap.RolesWith("billing.ledger.post")[0]
 

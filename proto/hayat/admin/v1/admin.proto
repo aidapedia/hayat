@@ -71,6 +71,8 @@ message Client {
   bool disabled = 8;
   google.protobuf.Timestamp created_at = 9;
   google.protobuf.Timestamp updated_at = 10;
+  // The service the client belongs to; `hayat` for the console's own.
+  string service_id = 11;
 }
 
 message SigningKey {
@@ -345,67 +347,8 @@ message TransferOwnershipResponse {
   Tenant tenant = 1;
 }
 
-// ---------- OAuth clients ----------
-
-service ClientService {
-  rpc ListClients(ListClientsRequest) returns (ListClientsResponse);
-  rpc GetClient(GetClientRequest) returns (GetClientResponse);
-  // A confidential client's secret is returned here once and never again.
-  rpc CreateClient(CreateClientRequest) returns (CreateClientResponse);
-  rpc UpdateClient(UpdateClientRequest) returns (UpdateClientResponse);
-  rpc RotateClientSecret(RotateClientSecretRequest) returns (RotateClientSecretResponse);
-  rpc SetClientDisabled(SetClientDisabledRequest) returns (SetClientDisabledResponse);
-}
-
-message ListClientsRequest {}
-message ListClientsResponse {
-  repeated Client clients = 1;
-}
-
-message GetClientRequest {
-  string id = 1;
-}
-message GetClientResponse {
-  Client client = 1;
-}
-
-message CreateClientRequest {
-  string name = 1;
-  string kind = 2;
-  repeated string redirect_uris = 3;
-  repeated string post_logout_redirect_uris = 4;
-  repeated string grant_types = 5;
-}
-message CreateClientResponse {
-  Client client = 1;
-  string secret = 2;
-}
-
-message UpdateClientRequest {
-  string id = 1;
-  string name = 2;
-  repeated string redirect_uris = 3;
-  repeated string post_logout_redirect_uris = 4;
-  repeated string grant_types = 5;
-}
-message UpdateClientResponse {
-  Client client = 1;
-}
-
-message RotateClientSecretRequest {
-  string id = 1;
-}
-message RotateClientSecretResponse {
-  string secret = 1;
-}
-
-message SetClientDisabledRequest {
-  string id = 1;
-  bool disabled = 2;
-}
-message SetClientDisabledResponse {
-  Client client = 1;
-}
+// OAuth clients belong to services: RegistryService manages them, so a
+// service's owners manage its clients.
 
 // ---------- Signing keys ----------
 

@@ -49,8 +49,15 @@ enterprise SSO, MFA) is next.
   `policy_events`.
 - **Catalog is code for `hayat.*`, contracts for everything else.** A permission
   exists because a route enforces it. Contracts are additive; a version goes
-  live only when every namespace it touches is approved by an owner
-  (`hayat.contracts.approve` on that service's node).
+  live when published, unless it touches another service's namespace — then it
+  waits until an owner of each such namespace approves
+  (`hayat.contracts.approve` on that service's node). A service's own namespace
+  never needs an approval: only its owners, or the service, can publish for it.
+- **Every OAuth client belongs to a service** (`oauth_clients.service_id`,
+  required). The service's owners manage its sign-in clients through
+  RegistryService; its API credential is its own client. The console's client
+  belongs to the built-in `hayat` service, which instance admins manage. A
+  sign-in token's `aud` names the client and its service.
 - **A grant is valid only where it means something**: the role applies to the
   node's type, every permission's scope is at or below the node, a user grantee
   is on the tenant roster, a group grantee is a group of the same tenant or the
@@ -106,7 +113,7 @@ deploy/compose/       docker-compose + .env.example
   one container (max 1280px); `Section` for titled blocks; `Narrow` for forms.
 - Sidebar: pinned row + titled groups (10px uppercase headers), 13px rows, 16px
   lucide icons, collapses to a 56px rail. Buttons `text-xs` semibold.
-- Anything a user can look at has an address (`/users/:id`, `/clients/:id`).
+- Anything a user can look at has an address (`/users/:id`, `/services/:id/clients/:clientId`).
 - Times go through `shared/lib/datetime` (viewer's account time zone).
 - Every table pages, with tabletsgo's footer: `shared/ui/table/Pagination` inside the
   table card (`overflow-hidden rounded-xl border`, pager `className="border-t"`).

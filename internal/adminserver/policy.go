@@ -319,8 +319,14 @@ func (r *registryService) toService(ctx context.Context, svc catalog.ServiceInfo
 	if err != nil {
 		return nil, err
 	}
+	counts, err := r.s.clients.CountByService(ctx)
+	if err != nil {
+		return nil, err
+	}
 	out := &adminv1.ServiceInfo{Id: svc.ID, DisplayName: svc.DisplayName, Description: svc.Description, ClientId: svc.ClientID,
-		ActiveVersion: int32(svc.ActiveVersion), CreatedAt: ts(svc.CreatedAt)}
+		ActiveVersion: int32(svc.ActiveVersion), CreatedAt: ts(svc.CreatedAt),
+		// Every registered service has one API credential; the rest sign people in.
+		SignInClients: int32(max(counts[svc.ID]-1, 0))}
 	for _, u := range users {
 		out.Owners = append(out.Owners, toUser(u))
 	}
@@ -373,6 +379,13 @@ func (r *registryService) ListServices(ctx context.Context, _ *connect.Request[a
 		return nil, r.s.fail(err)
 	}
 	resp := &adminv1.ListServicesResponse{}
+	if caller(ctx).User.IsAdmin() {
+		platform, err := r.platformService(ctx)
+		if err != nil {
+			return nil, r.s.fail(err)
+		}
+		resp.Services = append(resp.Services, platform)
+	}
 	for _, svc := range list {
 		info, err := r.toService(ctx, svc)
 		if err != nil {
@@ -389,6 +402,16 @@ func (r *registryService) ListServices(ctx context.Context, _ *connect.Request[a
 }
 
 func (r *registryService) GetService(ctx context.Context, req *connect.Request[adminv1.GetServiceRequest]) (*connect.Response[adminv1.GetServiceResponse], error) {
+	if req.Msg.Id == catalog.Platform {
+		if err := r.s.requireAdmin(ctx); err != nil {
+			return nil, err
+		}
+		platform, err := r.platformService(ctx)
+		if err != nil {
+			return nil, r.s.fail(err)
+		}
+		return connect.NewResponse(&adminv1.GetServiceResponse{Service: platform, CanManage: true}), nil
+	}
 	svc, n, err := r.serviceNode(ctx, req.Msg.Id)
 	if err != nil {
 		return nil, err
@@ -444,7 +467,7 @@ func (r *registryService) RegisterService(ctx context.Context, req *connect.Requ
 	if name == "" {
 		name = m.Id
 	}
-	client, secret, err := r.s.clients.Create(ctx, hoidc.ClientInput{Name: name + " (service API)", Kind: hoidc.KindConfidential,
+	client, secret, err := r.s.clients.Create(ctx, hoidc.ClientInput{ServiceID: m.Id, Name: name + " (service API)", Kind: hoidc.KindConfidential,
 		Grants: []string{"client_credentials"}}, actor(ctx))
 	if err != nil {
 		return nil, r.s.fail(err)
@@ -459,6 +482,28 @@ func (r *registryService) RegisterService(ctx context.Context, req *connect.Requ
 		return nil, r.s.fail(err)
 	}
 	return connect.NewResponse(&adminv1.RegisterServiceResponse{Service: info, ClientId: client.ID, ClientSecret: secret}), nil
+}
+
+func (r *registryService) UpdateService(ctx context.Context, req *connect.Request[adminv1.UpdateServiceRequest]) (*connect.Response[adminv1.UpdateServiceResponse], error) {
+	if req.Msg.Id == catalog.Platform {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("the built-in Hayat service can't be renamed"))
+	}
+	_, n, err := r.serviceNode(ctx, req.Msg.Id)
+	if err != nil {
+		return nil, err
+	}
+	if err := r.s.require(ctx, catalog.PermServiceManage, n); err != nil {
+		return nil, err
+	}
+	svc, err := r.s.cat.UpdateService(ctx, req.Msg.Id, req.Msg.DisplayName, req.Msg.Description, actor(ctx))
+	if err != nil {
+		return nil, r.s.fail(err)
+	}
+	info, err := r.toService(ctx, svc)
+	if err != nil {
+		return nil, r.s.fail(err)
+	}
+	return connect.NewResponse(&adminv1.UpdateServiceResponse{Service: info}), nil
 }
 
 func (r *registryService) AddServiceOwner(ctx context.Context, req *connect.Request[adminv1.AddServiceOwnerRequest]) (*connect.Response[adminv1.AddServiceOwnerResponse], error) {

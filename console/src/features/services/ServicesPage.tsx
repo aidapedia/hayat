@@ -1,19 +1,21 @@
-import { useState, type FormEvent } from 'react'
+import { useMemo, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { Boxes, Plus } from 'lucide-react'
 import { RegistryService } from '@/shared/api/gen/hayat/admin/v1/policy_pb'
 import { errorMessage, useClient } from '@/shared/api/client'
 import { useQuery } from '@/shared/hooks/use-query'
+import { formatDate } from '@/shared/lib/datetime'
 import { usePagination } from '@/shared/ui/table/usePagination'
 import { useMe } from '@/features/auth'
-import { EmptyState, ErrorState, Field, LoadingState, Pill } from '@/shared/ui/bits'
+import { EmptyState, ErrorState, Field, LoadingState, PersonAvatar, Pill, SearchInput } from '@/shared/ui/bits'
 import { Button } from '@/shared/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
 import { Input } from '@/shared/ui/input'
 import { PageHeader } from '@/shared/ui/page/PageHeader'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
 import { Pagination } from '@/shared/ui/table/Pagination'
+import { ServiceTile } from './components/ServiceTile'
 import { CredentialsDialog } from './CredentialsDialog'
 
 function RegisterDialog({ onClose, onDone }: { onClose: () => void; onDone: (r: { id: string; clientId: string; secret: string }) => void }) {
@@ -80,7 +82,12 @@ export default function ServicesPage() {
   const navigate = useNavigate()
   const { isAdmin } = useMe()
   const { data, error, loading, reload } = useQuery(() => registry.listServices({}).then((r) => r.services), [registry])
-  const { pageRows: items, pager } = usePagination(data ?? [])
+  const [query, setQuery] = useState('')
+  const rows = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    return q ? (data ?? []).filter((s) => s.displayName.toLowerCase().includes(q) || s.id.includes(q)) : (data ?? [])
+  }, [data, query])
+  const { pageRows: items, pager } = usePagination(rows, { resetKey: query })
   const [registering, setRegistering] = useState(false)
   const [creds, setCreds] = useState<{ id: string; clientId: string; secret: string } | null>(null)
 
@@ -88,7 +95,7 @@ export default function ServicesPage() {
     <>
       <PageHeader
         title="Services"
-        desc="Applications that file their resources in Hayat's tree and ask it for decisions. Each publishes a contract its owners approve."
+        desc="Every application that uses Hayat is a service. It owns a namespace, a contract, an API credential, and the OAuth clients people sign in through."
         action={
           isAdmin && (
             <Button size="lg" onClick={() => setRegistering(true)}>
@@ -97,14 +104,15 @@ export default function ServicesPage() {
           )
         }
       />
-      <div className="mt-7">
+      <div className="mt-7 flex flex-col gap-4">
+        <SearchInput placeholder="Search by name or namespace" value={query} onChange={(e) => setQuery(e.target.value)} className="max-w-sm" />
         {error ? (
           <ErrorState message={error} onRetry={reload} />
         ) : loading && !data ? (
           <LoadingState />
-        ) : !data || data.length === 0 ? (
-          <EmptyState icon={Boxes} title="No services yet">
-            Register one to give it API credentials and a namespace for its contract.
+        ) : rows.length === 0 ? (
+          <EmptyState icon={Boxes} title={query ? 'No service matches that search' : 'No services yet'}>
+            {!query && 'Register one to give it API credentials and a namespace for its contract.'}
           </EmptyState>
         ) : (
           <div className="overflow-hidden rounded-xl border">
@@ -113,21 +121,44 @@ export default function ServicesPage() {
                 <TableRow>
                   <TableHead className="text-[11px]">Service</TableHead>
                   <TableHead className="text-[11px]">Contract</TableHead>
+                  <TableHead className="text-[11px]">Clients</TableHead>
                   <TableHead className="text-[11px]">Owners</TableHead>
+                  <TableHead className="text-[11px]">Registered</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {items.map((s) => (
                   <TableRow key={s.id} className="cursor-pointer" onClick={() => navigate(`/services/${s.id}`)}>
                     <TableCell>
-                      <div className="flex items-center gap-2 text-[13px] font-semibold">
-                        {s.displayName}
-                        {s.awaitingYou && <Pill className="border-warning/30 bg-warning/10 text-warning">Needs your approval</Pill>}
+                      <div className="flex items-center gap-3">
+                        <ServiceTile name={s.displayName} builtin={s.builtin} />
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2 text-[13px] font-semibold">
+                            {s.displayName}
+                            {s.builtin && <Pill>Built-in</Pill>}
+                            {s.awaitingYou && <Pill className="border-warning/30 bg-warning/10 text-warning">Needs your approval</Pill>}
+                          </div>
+                          <div className="font-mono text-[12px] text-faint">{s.id}</div>
+                        </div>
                       </div>
-                      <div className="font-mono text-[12px] text-faint">{s.id}</div>
                     </TableCell>
-                    <TableCell className="text-[12px] text-muted-foreground">{s.activeVersion ? `version ${s.activeVersion}` : 'none active yet'}</TableCell>
-                    <TableCell className="text-[12px] text-muted-foreground">{s.owners.map((o) => o.name || o.email).join(', ')}</TableCell>
+                    <TableCell className="text-[12px] text-muted-foreground">
+                      {s.builtin ? 'Platform catalog, in code' : s.activeVersion ? <Pill className="border-success/30 text-success">v{s.activeVersion} active</Pill> : 'None yet'}
+                    </TableCell>
+                    <TableCell className="text-[12px] text-muted-foreground">{s.builtin ? `${s.signInClients} sign-in` : `API · ${s.signInClients} sign-in`}</TableCell>
+                    <TableCell>
+                      {s.builtin ? (
+                        <span className="text-[12px] text-muted-foreground">Instance admins</span>
+                      ) : (
+                        <div className="flex items-center" title={s.owners.map((o) => o.name || o.email).join(', ')}>
+                          {s.owners.slice(0, 4).map((o, i) => (
+                            <PersonAvatar key={o.id} name={o.name} email={o.email} size={24} className={i > 0 ? '-ml-1.5 ring-2 ring-background' : 'ring-2 ring-background'} />
+                          ))}
+                          {s.owners.length > 4 && <span className="ml-1.5 text-[12px] text-muted-foreground">+{s.owners.length - 4}</span>}
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-[12px] text-muted-foreground">{s.builtin ? '—' : formatDate(s.createdAt)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

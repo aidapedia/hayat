@@ -1,5 +1,5 @@
 import { Link } from 'react-router'
-import { Users } from 'lucide-react'
+import { FolderTree, Users } from 'lucide-react'
 import { CatalogService, type RoleGrant } from '@/shared/api/gen/hayat/admin/v1/policy_pb'
 import { useClient } from '@/shared/api/client'
 import { useQuery } from '@/shared/hooks/use-query'
@@ -61,7 +61,12 @@ export function RoleGrantsList({ grants, limit }: { grants: RoleGrant[]; limit?:
               </span>
             </span>
             {rg.tenantId && (
-              <Link to={`/resource-tree/${rg.tenantId}/${g.nodeId}`} className="shrink-0 text-[12px] font-medium text-primary hover:underline">
+              <Link
+                to={`/resource-tree/${rg.tenantId}/${g.nodeId}`}
+                title="Open this node in the resource tree"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-md border px-2 py-1 text-[12px] font-medium text-primary transition-colors hover:border-primary/40 hover:bg-primary/5"
+              >
+                <FolderTree className="size-3.5" />
                 Open in tree
               </Link>
             )}

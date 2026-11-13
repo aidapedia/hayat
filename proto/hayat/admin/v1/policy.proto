@@ -96,6 +96,11 @@ message ServiceInfo {
   google.protobuf.Timestamp created_at = 7;
   // True when a version waits for an approval the caller can give.
   bool awaiting_you = 8;
+  // Hayat itself (`hayat`): the console's client lives here, and instance
+  // admins manage it. It has no contract, owners or API credential.
+  bool builtin = 9;
+  // Its OAuth clients people sign in through; the API credential isn't one.
+  int32 sign_in_clients = 10;
 }
 
 message Contract {
@@ -192,6 +197,8 @@ service RegistryService {
   rpc GetService(GetServiceRequest) returns (GetServiceResponse);
   // Creates the namespace, its confidential API client and the first owner.
   rpc RegisterService(RegisterServiceRequest) returns (RegisterServiceResponse);
+  // Changes the display name and description; the namespace never changes.
+  rpc UpdateService(UpdateServiceRequest) returns (UpdateServiceResponse);
   rpc AddServiceOwner(AddServiceOwnerRequest) returns (AddServiceOwnerResponse);
   rpc RemoveServiceOwner(RemoveServiceOwnerRequest) returns (RemoveServiceOwnerResponse);
   rpc RotateServiceSecret(RotateServiceSecretRequest) returns (RotateServiceSecretResponse);
@@ -199,6 +206,16 @@ service RegistryService {
   // Approves every namespace of the version the caller may approve.
   rpc ApproveContract(ApproveContractRequest) returns (ApproveContractResponse);
   rpc RejectContract(RejectContractRequest) returns (RejectContractResponse);
+
+  // A service's sign-in clients: the OAuth clients people sign in through.
+  // Its API credential is managed above (RotateServiceSecret), not here.
+  rpc ListServiceClients(ListServiceClientsRequest) returns (ListServiceClientsResponse);
+  rpc GetServiceClient(GetServiceClientRequest) returns (GetServiceClientResponse);
+  // A confidential client's secret is returned here once and never again.
+  rpc CreateServiceClient(CreateServiceClientRequest) returns (CreateServiceClientResponse);
+  rpc UpdateServiceClient(UpdateServiceClientRequest) returns (UpdateServiceClientResponse);
+  rpc RotateServiceClientSecret(RotateServiceClientSecretRequest) returns (RotateServiceClientSecretResponse);
+  rpc SetServiceClientDisabled(SetServiceClientDisabledRequest) returns (SetServiceClientDisabledResponse);
 }
 
 message ListServicesRequest {}
@@ -228,6 +245,15 @@ message RegisterServiceResponse {
   string client_id = 2;
   // Shown once.
   string client_secret = 3;
+}
+
+message UpdateServiceRequest {
+  string id = 1;
+  string display_name = 2;
+  string description = 3;
+}
+message UpdateServiceResponse {
+  ServiceInfo service = 1;
 }
 
 message AddServiceOwnerRequest {
@@ -276,6 +302,67 @@ message RejectContractRequest {
 }
 message RejectContractResponse {
   Contract contract = 1;
+}
+
+message ListServiceClientsRequest {
+  string service_id = 1;
+}
+message ListServiceClientsResponse {
+  repeated Client clients = 1;
+  bool can_manage = 2;
+}
+
+message GetServiceClientRequest {
+  string service_id = 1;
+  string client_id = 2;
+}
+message GetServiceClientResponse {
+  Client client = 1;
+  bool can_manage = 2;
+}
+
+message CreateServiceClientRequest {
+  string service_id = 1;
+  string name = 2;
+  // public | confidential
+  string kind = 3;
+  repeated string redirect_uris = 4;
+  repeated string post_logout_redirect_uris = 5;
+  repeated string grant_types = 6;
+}
+message CreateServiceClientResponse {
+  Client client = 1;
+  // Only for a confidential client. Shown once.
+  string secret = 2;
+}
+
+message UpdateServiceClientRequest {
+  string service_id = 1;
+  string client_id = 2;
+  string name = 3;
+  repeated string redirect_uris = 4;
+  repeated string post_logout_redirect_uris = 5;
+  repeated string grant_types = 6;
+}
+message UpdateServiceClientResponse {
+  Client client = 1;
+}
+
+message RotateServiceClientSecretRequest {
+  string service_id = 1;
+  string client_id = 2;
+}
+message RotateServiceClientSecretResponse {
+  string secret = 1;
+}
+
+message SetServiceClientDisabledRequest {
+  string service_id = 1;
+  string client_id = 2;
+  bool disabled = 3;
+}
+message SetServiceClientDisabledResponse {
+  Client client = 1;
 }
 
 // ---------- The tree ----------

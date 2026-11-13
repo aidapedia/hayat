@@ -1,6 +1,7 @@
 import { Link, useParams } from 'react-router'
-import { ArrowRight, Check } from 'lucide-react'
+import { ArrowUpRight, Check } from 'lucide-react'
 import { ErrorState, LoadingState } from '@/shared/ui/bits'
+import { Button } from '@/shared/ui/button'
 import { cn } from '@/shared/lib/utils'
 import { ServiceMark } from './components/marks'
 import { RolesHeader } from './components/RolesHeader'
@@ -40,7 +41,6 @@ export default function RolesByServicePage() {
   const perms = catalog.permissions.filter((p) => p.service === current.id)
   const keys = new Set(perms.map((p) => p.key))
   const columns = roles.filter((r) => r.permissions.some((p) => keys.has(p)))
-  const types = catalog.types.filter((t) => t.service === current.id)
 
   return (
     <>
@@ -53,21 +53,33 @@ export default function RolesByServicePage() {
           const nRoles = roles.filter((r) => r.permissions.some((p) => sKeys.has(p))).length
           const nTypes = catalog.types.filter((t) => t.service === s.id).length
           return (
-            <Link
+            <div
               key={s.id}
-              to={`/roles/by-service/${s.id}`}
-              aria-current={on ? 'page' : undefined}
               className={cn(
-                'flex flex-col gap-2.5 rounded-2xl border bg-background px-[18px] py-4 transition-colors hover:border-primary/40',
+                'relative flex flex-col gap-2.5 rounded-2xl border bg-background px-[18px] py-4 transition-colors focus-within:border-primary/40 hover:border-primary/40',
                 on && 'border-primary ring-3 ring-primary/12 hover:border-primary',
               )}
             >
               <div className="flex items-center gap-3">
                 <ServiceMark service={s} size="lg" />
-                <div className="flex min-w-0 flex-col">
-                  <span className="text-[15px] font-semibold">{s.name}</span>
+                <div className="flex min-w-0 flex-1 flex-col">
+                  {/* The name's link covers the whole card, so a click anywhere picks the service. */}
+                  <Link
+                    to={`/roles/by-service/${s.id}`}
+                    aria-current={on ? 'page' : undefined}
+                    className="text-[15px] font-semibold outline-none after:absolute after:inset-0 after:rounded-2xl"
+                  >
+                    {s.name}
+                  </Link>
                   <span className="text-[12px] text-muted-foreground">{s.id === PLATFORM ? 'Platform · built in' : `Service · contract v${s.version}`}</span>
                 </div>
+                {s.id !== PLATFORM && (
+                  <Button variant="ghost" size="icon-sm" asChild className="relative z-10 -mt-1 -mr-1.5 self-start text-muted-foreground">
+                    <Link to={`/services/${s.id}`} aria-label={`Open ${s.name} in Services`} title={`Open ${s.name} in Services`}>
+                      <ArrowUpRight />
+                    </Link>
+                  </Button>
+                )}
               </div>
               {s.description && <p className="line-clamp-2 text-[12.5px] text-muted-foreground">{s.description}</p>}
               <div className="flex flex-wrap gap-4 text-[12px] text-muted-foreground">
@@ -81,7 +93,7 @@ export default function RolesByServicePage() {
                   <strong className="font-semibold text-foreground">{nTypes}</strong> node types
                 </span>
               </div>
-            </Link>
+            </div>
           )
         })}
       </div>
@@ -112,7 +124,7 @@ export default function RolesByServicePage() {
                   </th>
                   {columns.map((r) => (
                     <th key={r.id} scope="col" className="min-w-[96px] border-b px-1.5 py-2.5 align-bottom">
-                      <Link to={`/roles?role=${r.id}`} className="flex flex-col items-center gap-1.5 hover:underline">
+                      <Link to={`/roles/${r.id}`} className="flex flex-col items-center gap-1.5 hover:underline">
                         <span className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
                           {sourceOf(r) === 'builtin' ? 'Built-in' : sourceOf(r) === 'custom' ? 'Yours' : (services.find((s) => s.id === r.service)?.name ?? r.service)}
                         </span>
@@ -168,33 +180,6 @@ export default function RolesByServicePage() {
         )}
       </section>
 
-      {types.length > 0 && (
-        <section aria-labelledby="types" className="mt-9">
-          <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <h2 id="types" className="text-[15px] font-semibold tracking-[-0.2px]">
-                Where {current.name} puts things in the tree
-              </h2>
-              <p className="mt-0.5 text-[12px] text-muted-foreground">Node types {current.name} adds. A role granted on one reaches everything filed below it.</p>
-            </div>
-            {current.id !== PLATFORM && (
-              <Link to={`/services/${current.id}`} className="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-primary hover:underline">
-                Open {current.name} in Services <ArrowRight className="size-3.5" />
-              </Link>
-            )}
-          </div>
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-3">
-            {types.map((t) => (
-              <div key={t.key} className="flex flex-col gap-1.5 rounded-xl border px-3.5 py-3">
-                <span className="text-[13px] font-semibold">{typeLabel(t.key)}</span>
-                <span className="font-mono text-[11px] text-muted-foreground">{t.key}</span>
-                {t.description && <span className="text-[12px] text-muted-foreground">{t.description}</span>}
-                <span className="text-[11.5px] text-muted-foreground">Lives under: {t.parents.length ? t.parents.map(typeLabel).join(', ') : 'nothing (a root)'}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
     </>
   )
 }

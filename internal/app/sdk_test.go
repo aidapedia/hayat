@@ -54,16 +54,12 @@ func TestServiceJourney(t *testing.T) {
 	must(t, err)
 	go hz.Watch(ctx)
 
-	// 2. The service publishes its contract; its owner approves it.
+	// 2. The service publishes its contract. It touches only its own
+	// namespace, so it is live at once.
 	pub, err := hz.Schema.PublishContract(ctx, connect.NewRequest(&authzv1.PublishContractRequest{Manifest: billingContract}))
 	must(t, err)
-	if pub.Msg.Status != "pending" {
-		t.Fatalf("a new contract waits for approval, got %s", pub.Msg.Status)
-	}
-	approved, err := registry.ApproveContract(ctx, connect.NewRequest(&adminv1.ApproveContractRequest{ServiceId: "billing", Version: 1}))
-	must(t, err)
-	if approved.Msg.Contract.Status != "active" {
-		t.Fatalf("approved contract: %s", approved.Msg.Contract.Status)
+	if pub.Msg.Status != "active" {
+		t.Fatalf("a contract touching only its own namespace goes live, got %s", pub.Msg.Status)
 	}
 
 	// 3. A tenant with a Finance group; Ana is on its roster, Ben is a member only.

@@ -84,7 +84,6 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle(adminv1connect.NewAccountServiceHandler(&accountService{s}, user))
 	mux.Handle(adminv1connect.NewOverviewServiceHandler(&overviewService{s}, admin))
 	mux.Handle(adminv1connect.NewUserServiceHandler(&userService{s}, admin))
-	mux.Handle(adminv1connect.NewClientServiceHandler(&clientService{s}, admin))
 	mux.Handle(adminv1connect.NewKeyServiceHandler(&keyService{s}, admin))
 	mux.Handle(adminv1connect.NewAuditServiceHandler(&auditService{s}, admin))
 	// Policy calls are allowed by permission: each handler checks its own.

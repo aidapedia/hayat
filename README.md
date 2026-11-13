@@ -28,8 +28,9 @@ Design: <https://claude.ai/artifact/AceR8JGbXjPdNE2mz8WHck>
 - **Decisions**: ownership, inheriting grants, placement under a group, tenant
   membership. Every answer can say why.
 - **Service contracts**: each service declares its resource types, permissions
-  and suggested roles in a YAML manifest. Versions only add, and go live once an
-  owner of every namespace they touch approves.
+  and suggested roles in a YAML manifest. Versions only add, and go live when
+  published — unless they place types under another service's types, which
+  waits for that service's owners to approve.
 - **Service API** (gRPC, gRPC-Web and Connect on one port): Check, BatchCheck,
   PermissionsAt, LookupResources, LookupSubjects, resource writes, user
   profiles, a user's tenants, a tenant's roster and what each member was granted, a Watch stream of policy
@@ -117,12 +118,17 @@ Every role also serves `/healthz` and `/readyz` on 9090. `serve` without
 
 ## Connect an application
 
-1. In the console, **OAuth clients → Register client**. A server is
-   *confidential* (gets a secret); a browser or mobile app is *public* (uses PKCE).
+Every OAuth client belongs to a service (see below).
+
+1. In the console, open the service → **Clients → Add sign-in client**. A
+   server is *confidential* (gets a secret); a browser, mobile or command-line
+   app is *public* (uses PKCE). The service's owners manage its clients.
 2. Point the application's OIDC library at the issuer
    (`<issuer>/.well-known/openid-configuration`) with the client id.
 3. Verify access tokens offline against `<issuer>/keys`. They carry `sub` and
-   `sid` (the Hayat session) and never carry permissions.
+   `sid` (the Hayat session) and never carry permissions. Their `aud` names
+   the client and its service, so a service checking its own namespace
+   accepts any of its sign-in clients.
 
 ## Plug a service in
 
@@ -148,10 +154,10 @@ Every role also serves `/healthz` and `/readyz` on 9090. `serve` without
    Short names are qualified: `billing/ledger`, `billing.ledger.view`. `label` is
    the short name admins read on the Roles pages (without one they see the key).
    A later version may only add; labels and descriptions are display text and
-   may change. Placing your types under another service's types needs
-   that service's owners to approve too.
-3. **An owner approves it** on the service's page.
-4. **Mirror resources and ask for decisions:**
+   may change. A version goes live as soon as it is published. Placing your
+   types under another service's types waits until that service's owners
+   approve it on their service's page.
+3. **Mirror resources and ask for decisions:**
 
    ```go
    hz, _ := hayat.New(ctx, hayat.Config{APIURL: "http://hayat-api:7443", Issuer: issuer,
@@ -169,8 +175,8 @@ Every role also serves `/healthz` and `/readyz` on 9090. `serve` without
    ```
 
    Verify your users' Hayat access tokens offline with `VerifyAccessToken` /
-   `verifyAccessToken` (or the bundled middleware), then ask `Check`. Tokens
-   never carry permissions.
+   `verifyAccessToken` (or the bundled middleware), passing your namespace
+   (`billing`) as the audience, then ask `Check`. Tokens never carry permissions.
 
 ## Move a service's own accounts in
 
@@ -183,7 +189,7 @@ hayat import --file bundle.json --app-url https://db.example.com --out result.js
 ```
 
 It registers the service if needed (printing its API credentials once),
-publishes and approves the bundle's contract, registers a public sign-in client
+publishes the bundle's contract, registers a public sign-in client of the service
 for `<app-url>/callback`, then writes people, tenants, groups, rosters, resources,
 roles and grants. People and tenants keep the ids they had, so the service's rows
 still point at them. A password hash in the old system's unsalted SHA-256 form

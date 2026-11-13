@@ -13,12 +13,11 @@ const UsersPage = lazy(() => import('@/features/users/UsersPage'))
 const UserDetailPage = lazy(() => import('@/features/users/UserDetailPage'))
 const TenantsPage = lazy(() => import('@/features/tenants/TenantsPage'))
 const TenantDetailPage = lazy(() => import('@/features/tenants/TenantDetailPage'))
-const ClientsPage = lazy(() => import('@/features/clients/ClientsPage'))
-const ClientDetailPage = lazy(() => import('@/features/clients/ClientDetailPage'))
 const KeysPage = lazy(() => import('@/features/keys/KeysPage'))
 const AuditPage = lazy(() => import('@/features/audit/AuditPage'))
 const AccountPage = lazy(() => import('@/features/account/AccountPage'))
 const RolesPage = lazy(() => import('@/features/roles/RolesPage'))
+const RoleDetailPage = lazy(() => import('@/features/roles/RoleDetailPage'))
 const RolesByServicePage = lazy(() => import('@/features/roles/RolesByServicePage'))
 const RoleEditorPage = lazy(() => import('@/features/roles/RoleEditorPage'))
 const ServicesPage = lazy(() => import('@/features/services/ServicesPage'))
@@ -84,11 +83,11 @@ export default function App() {
                     ['/roles', <RolesPage key="r" />],
                     ['/roles/by-service/:service?', <RolesByServicePage key="rs" />],
                     ['/roles/new', <RoleEditorPage key="rn" />],
+                    ['/roles/:id', <RoleDetailPage key="rd" />],
                     ['/roles/:id/edit', <RoleEditorPage key="re" />],
                     ['/services', <ServicesPage key="s" />],
-                    ['/services/:id', <ServiceDetailPage key="sd" />],
-                    ['/clients', <ClientsPage key="c" />],
-                    ['/clients/:id', <ClientDetailPage key="cd" />],
+                    // One page for a service and its tabs: /contract, /contract/publish, /clients, /clients/:clientId, /owners.
+                    ['/services/:id/:tab?/:sub?', <ServiceDetailPage key="sd" />],
                     ['/keys', <KeysPage key="k" />],
                     ['/audit', <AuditPage key="a" />],
                   ].map(([path, el]) => (

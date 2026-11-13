@@ -5,6 +5,7 @@ import { CatalogService, TreeAdminService, type Node } from '@/shared/api/gen/ha
 import type { Member } from '@/shared/api/gen/hayat/admin/v1/admin_pb'
 import { errorMessage, useClient } from '@/shared/api/client'
 import { useQuery } from '@/shared/hooks/use-query'
+import { cn } from '@/shared/lib/utils'
 import { Field } from '@/shared/ui/bits'
 import { Button } from '@/shared/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
@@ -12,15 +13,17 @@ import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { Switch } from '@/shared/ui/switch'
+import { nodePath } from './tree'
 
 
 /** A small dialog with one form, the shape every tree dialog shares. */
-function Shell({
+export function Shell({
   title,
   desc,
   submitLabel,
   busy,
   disabled,
+  className,
   onClose,
   onSubmit,
   children,
@@ -30,13 +33,15 @@ function Shell({
   submitLabel: string
   busy: boolean
   disabled?: boolean
+  /** Widens the dialog where one form needs more room than a few fields. */
+  className?: string
   onClose: () => void
   onSubmit: (e: FormEvent) => void
   children: React.ReactNode
 }) {
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className={cn('sm:max-w-md', className)}>
         <form onSubmit={onSubmit} className="flex flex-col gap-4">
           <DialogHeader>
             <DialogTitle className="text-[15px]">{title}</DialogTitle>
@@ -57,7 +62,8 @@ function Shell({
   )
 }
 
-function useSubmit(run: () => Promise<void>, done: () => void) {
+/** Runs one form submit: busy while it goes, a toast if it fails, `done` when it worked. */
+export function useSubmit(run: () => Promise<void>, done: () => void) {
   const [busy, setBusy] = useState(false)
   const submit = async (e: FormEvent) => {
     e.preventDefault()
@@ -118,11 +124,7 @@ export function MoveDialog({ node, nodes, onClose, onDone }: { node: Node; nodes
     for (let cur: Node | undefined = n; cur; cur = byId.get(cur.parentId)) if (cur.id === node.id) return true
     return false
   }
-  const pathOf = (n: Node) => {
-    const parts: string[] = []
-    for (let cur: Node | undefined = n; cur; cur = byId.get(cur.parentId)) parts.unshift(cur.name)
-    return parts.join(' / ')
-  }
+  const pathOf = (n: Node) => nodePath(byId, n).join(' / ')
   const targets = nodes.filter((n) => (n.type === 'hayat/tenant' || n.type === 'hayat/group') && !inside(n) && n.id !== node.parentId)
   const [dest, setDest] = useState('')
   const { busy, submit } = useSubmit(async () => {

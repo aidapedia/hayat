@@ -100,7 +100,7 @@ function RoleForm({ role, from, roles, catalog, services }: { role?: Role; from?
       const input = { name, description: d.description.trim(), appliesTo: d.appliesTo, permissions: d.permissions }
       const saved = role ? await api.updateRole({ id: role.id, ...input }) : await api.createRole(input)
       toast.success(role ? 'Role saved' : 'Role created')
-      navigate(`/roles?role=${saved.role?.id ?? ''}`)
+      navigate(saved.role?.id ? `/roles/${saved.role.id}` : '/roles')
     } catch (err) {
       toast.error(errorMessage(err))
       setSaving(false)
@@ -168,7 +168,7 @@ function RoleForm({ role, from, roles, catalog, services }: { role?: Role; from?
 
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" asChild>
-            <Link to={role ? `/roles?role=${role.id}` : '/roles'}>Cancel</Link>
+            <Link to={role ? `/roles/${role.id}` : '/roles'}>Cancel</Link>
           </Button>
           <Button type="submit" disabled={!canSave || saving}>
             {saving ? 'Saving…' : saveLabel}

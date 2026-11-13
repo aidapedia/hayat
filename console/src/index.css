@@ -6,6 +6,9 @@
 
 @theme inline {
     --color-faint: var(--faint);
+    --color-code-key: var(--code-key);
+    --color-code-string: var(--code-string);
+    --color-code-scalar: var(--code-scalar);
     --color-success: var(--success);
     --color-warning: var(--warning);
     --font-heading: var(--font-sans);
@@ -66,6 +69,10 @@
     --muted: #eef1ef;
     --muted-foreground: #555b63;
     --faint: #939aa1;
+    /* Code highlighting (YAML manifests): keys, strings, numbers and booleans. */
+    --code-key: #1d6a54;
+    --code-string: #8a6100;
+    --code-scalar: #7048c8;
     --accent: #f0f2f0;
     --accent-foreground: #16181c;
     --destructive: #e03131;
@@ -104,6 +111,9 @@
     --muted: #151a18;
     --muted-foreground: #a3aea8;
     --faint: #6c7772;
+    --code-key: #4cc196;
+    --code-string: #e0b452;
+    --code-scalar: #b49cf5;
     --accent: #1b2120;
     --accent-foreground: #f2f5f3;
     --destructive: #ef5350;

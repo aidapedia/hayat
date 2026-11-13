@@ -1,17 +1,17 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
-import { Clock, RotateCcw, Sparkles, TriangleAlert } from 'lucide-react'
+import { RotateCcw, Sparkles, TriangleAlert } from 'lucide-react'
 import { CatalogService, RegistryService, type Contract } from '@/shared/api/gen/hayat/admin/v1/policy_pb'
 import { errorMessage, useClient } from '@/shared/api/client'
 import { useQuery } from '@/shared/hooks/use-query'
+import { Pill } from '@/shared/ui/bits'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
-import { Section } from '@/shared/ui/page/PageHeader'
 import { Tabs, TabsList, TabsTrigger } from '@/shared/ui/tabs'
-import { Textarea } from '@/shared/ui/textarea'
+import { YamlEditor } from '../components/YamlCode'
+import { summaryCount } from '../lib'
 import { ContractForm } from './ContractForm'
-import { baselineOf, check, draftYaml, emptyDraft, EXAMPLE, manifestYaml, summarize, toDraft, type Baseline, type Draft } from './manifest'
-import { SummaryList } from './SummaryList'
+import { baselineOf, check, draftYaml, emptyDraft, EXAMPLE, manifestYaml, summarize, toDraft, type Baseline, type Draft, type Summary } from './manifest'
 import { parseYaml } from './yaml'
 
 type Mode = 'form' | 'yaml'
@@ -31,17 +31,86 @@ function startingPoint(svc: string, contracts: Contract[], base: Baseline): { dr
   }
 }
 
+function ChangeGroup({ title, items }: { title: string; items: { key: string; label: ReactNode; detail?: string }[] }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span className="text-[11px] font-semibold tracking-wide text-faint uppercase">{title}</span>
+      {items.length === 0 ? (
+        <span className="text-[12px] text-faint">No changes</span>
+      ) : (
+        items.map((i) => (
+          <div key={i.key} className="flex flex-col gap-0.5 rounded-lg bg-success/10 px-2.5 py-2 text-[12px] shadow-[inset_3px_0_0_var(--success)]">
+            <span className="break-all">
+              <span className="font-mono font-bold text-success">+ </span>
+              {i.label}
+            </span>
+            {i.detail && <span className="pl-4 text-muted-foreground">{i.detail}</span>}
+          </div>
+        ))
+      )}
+    </div>
+  )
+}
+
+/** What a draft adds, grouped the way the form is. */
+function Changes({ version, summary: s }: { version: number; summary: Summary | null }) {
+  const n = s ? summaryCount(s) : 0
+  return (
+    <aside aria-labelledby="changes-h" className="flex flex-col gap-4 rounded-xl border p-4">
+      <div className="flex items-center justify-between gap-2">
+        <h2 id="changes-h" className="text-[14px] font-semibold">
+          Changes in version {version || '…'}
+        </h2>
+        {n > 0 && <Pill className="border-success/30 text-success">{n} added</Pill>}
+      </div>
+      {!s ? (
+        <p className="text-[12px] text-faint">Switch to the form to see the changes, or publish and Hayat checks the YAML.</p>
+      ) : (
+        <>
+          <ChangeGroup
+            title="Resource types"
+            items={[
+              ...(s.added_types ?? []).map((t) => ({ key: t, label: <span className="font-mono">{t}</span> })),
+              ...Object.entries(s.added_parents ?? {}).map(([t, ps]) => ({ key: `p:${t}`, label: <span className="font-mono">{t}</span>, detail: `can also be filed under ${ps.join(', ')}` })),
+            ]}
+          />
+          <ChangeGroup title="Permissions" items={(s.added_permissions ?? []).map((p) => ({ key: p, label: <span className="font-mono">{p}</span> }))} />
+          <ChangeGroup
+            title="Suggested roles"
+            items={[
+              ...(s.added_roles ?? []).map((r) => ({ key: r, label: <span className="font-semibold">{r}</span> })),
+              ...Object.entries(s.added_role_permissions ?? {}).map(([r, ps]) => ({ key: `rp:${r}`, label: <span className="font-semibold">{r}</span>, detail: `gains ${ps.join(', ')}` })),
+            ]}
+          />
+          <div className="border-t pt-3 text-[11px] text-faint">Nothing live is removed or changed.</div>
+        </>
+      )}
+    </aside>
+  )
+}
+
 /**
- * Publishing a contract version: a form for people, YAML for those who keep
- * it in a repo. Both publish the same manifest; the server checks it again.
+ * Publishing a contract version: a form for people, YAML for those who keep it
+ * in a repo. Both publish the same manifest; the server checks it again. A
+ * version goes live when published, unless it files a type under another
+ * service's types, which waits for that service's owners.
  */
-export function ContractEditor({ serviceId: svc, contracts, onPublished }: { serviceId: string; contracts: Contract[]; onPublished: () => unknown }) {
+export function ContractEditor({
+  serviceId: svc,
+  contracts,
+  onPublished,
+  onCancel,
+}: {
+  serviceId: string
+  contracts: Contract[]
+  onPublished: (c: Contract) => unknown
+  onCancel: () => void
+}) {
   const registry = useClient(RegistryService)
   const catalog = useClient(CatalogService)
   const { data: cat } = useQuery(() => catalog.getCatalog({}), [catalog])
   const known = useMemo(() => (cat?.types ?? []).map((t) => ({ key: t.key, service: t.service, description: t.description })), [cat])
 
-  const pending = contracts.find((c) => c.status === 'pending')
   const active = contracts.find((c) => c.status === 'active')
   const minVersion = contracts[0]?.version ?? 0
   const base = useMemo(() => {
@@ -62,22 +131,9 @@ export function ContractEditor({ serviceId: svc, contracts, onPublished }: { ser
   const [publishing, setPublishing] = useState(false)
 
   const problems = useMemo(() => check(draft, known, base, minVersion), [draft, known, base, minVersion])
-  const summary = useMemo(() => summarize(draft, base), [draft, base])
+  const summary = useMemo(() => (mode === 'form' ? summarize(draft, base) : null), [mode, draft, base])
   const current = mode === 'form' ? draftYaml(draft) : text
   const dirty = current !== startYaml
-
-  if (pending) {
-    return (
-      <Section title="Publish a version">
-        <div className="flex items-start gap-3 rounded-xl border border-warning/40 bg-warning/5 px-4 py-3.5 text-[13px]">
-          <Clock className="mt-0.5 size-4 shrink-0 text-warning" />
-          <span>
-            Version {pending.version} is waiting for approval. Approve or reject it above before publishing another.
-          </span>
-        </div>
-      </Section>
-    )
-  }
 
   const switchMode = (next: Mode) => {
     if (next === mode) return
@@ -117,9 +173,10 @@ export function ContractEditor({ serviceId: svc, contracts, onPublished }: { ser
     }
     setPublishing(true)
     try {
-      await registry.publishContract({ serviceId: svc, manifest: current })
-      toast.success('Published; it goes live once it is approved')
-      await onPublished()
+      const res = await registry.publishContract({ serviceId: svc, manifest: current })
+      const c = res.contract!
+      toast.success(c.status === 'active' ? `Version ${c.version} is live` : `Version ${c.version} waits for ${c.namespaces.join(', ')} to approve it`)
+      await onPublished(c)
     } catch (err) {
       toast.error(errorMessage(err))
     } finally {
@@ -129,89 +186,91 @@ export function ContractEditor({ serviceId: svc, contracts, onPublished }: { ser
 
   const isEmpty = draft.types.length === 0 && draft.permissions.length === 0 && draft.roles.length === 0
   const versionErr = problems.fields.get('version')
+  const version = mode === 'form' ? draft.version : start.draft.version
 
   return (
-    <Section
-      title="Publish a version"
-      desc="A new version can only add to the live one. It goes live once every namespace it touches approves it."
-      action={
-        <Tabs value={mode} onValueChange={(v) => switchMode(v as Mode)}>
-          <TabsList>
-            <TabsTrigger value="form" className="px-3 text-[12px]">
-              Form
-            </TabsTrigger>
-            <TabsTrigger value="yaml" className="px-3 text-[12px]">
-              YAML
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-      }
-    >
-      <div className="rounded-xl border">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
-          <div className="flex flex-wrap items-center gap-3">
-            {mode === 'form' && (
-              <label className="flex items-center gap-2 text-[12px] font-semibold text-muted-foreground">
-                Version
-                <Input
-                  type="number"
-                  min={minVersion + 1}
-                  value={draft.version || ''}
-                  onChange={(e) => setDraft({ ...draft, version: Number(e.target.value) })}
-                  aria-invalid={!!versionErr}
-                  className="h-8 w-20 text-[13px]"
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="text-[16px] font-semibold tracking-[-0.2px]">Publish version {version || '…'}</h2>
+          <p className="mt-0.5 text-[12px] text-muted-foreground">It goes live as soon as you publish. Contracts only add, so check the changes first.</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Tabs value={mode} onValueChange={(v) => switchMode(v as Mode)}>
+            <TabsList>
+              <TabsTrigger value="form" className="px-3 text-[12px]">
+                Form
+              </TabsTrigger>
+              <TabsTrigger value="yaml" className="px-3 text-[12px]">
+                YAML
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <Button size="lg" variant="outline" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button size="lg" onClick={publish} disabled={publishing || !dirty || !current.trim()}>
+            {publishing ? 'Publishing…' : 'Publish'}
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-[minmax(0,1fr)_minmax(260px,320px)] items-start gap-7 max-[1000px]:grid-cols-1">
+        <div className="min-w-0 rounded-xl border">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
+            <div className="flex flex-wrap items-center gap-3">
+              {mode === 'form' && (
+                <label className="flex items-center gap-2 text-[12px] font-semibold text-muted-foreground">
+                  Version
+                  <Input
+                    type="number"
+                    min={minVersion + 1}
+                    value={draft.version || ''}
+                    onChange={(e) => setDraft({ ...draft, version: Number(e.target.value) })}
+                    aria-invalid={!!versionErr}
+                    className="h-8 w-20 text-[13px]"
+                  />
+                </label>
+              )}
+              <span className="text-[12px] text-faint">
+                {start.from ? `Starting from version ${start.from.version} (${start.from.status})` : 'The first version of this contract'}
+              </span>
+              {mode === 'form' && versionErr && <span className="text-[12px] text-destructive">{versionErr.message}</span>}
+            </div>
+            <div className="flex items-center gap-2">
+              {!start.from && (mode === 'yaml' || isEmpty) && (
+                <Button type="button" variant="ghost" size="sm" onClick={loadExample}>
+                  <Sparkles /> Start from an example
+                </Button>
+              )}
+              {dirty && (
+                <Button type="button" variant="ghost" size="sm" onClick={reset}>
+                  <RotateCcw /> Discard changes
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <div className="p-4">
+            {mode === 'form' ? (
+              <ContractForm draft={draft} onChange={setDraft} known={known} base={base} problems={problems.fields} attempted={attempted} />
+            ) : (
+              <div className="flex flex-col gap-2">
+                <YamlEditor
+                  value={text}
+                  onChange={(v) => {
+                    setText(v)
+                    setYamlError('')
+                  }}
+                  ariaLabel="Contract manifest"
                 />
-              </label>
-            )}
-            <span className="text-[12px] text-faint">
-              {start.from ? `Starting from version ${start.from.version} (${start.from.status})` : 'The first version of this contract'}
-            </span>
-            {mode === 'form' && versionErr && <span className="text-[12px] text-destructive">{versionErr.message}</span>}
-          </div>
-          <div className="flex items-center gap-2">
-            {!start.from && (mode === 'yaml' || isEmpty) && (
-              <Button type="button" variant="ghost" size="sm" onClick={loadExample}>
-                <Sparkles /> Start from an example
-              </Button>
-            )}
-            {dirty && (
-              <Button type="button" variant="ghost" size="sm" onClick={reset}>
-                <RotateCcw /> Discard changes
-              </Button>
+                {yamlError ? <p className="text-[12px] text-destructive">{yamlError}</p> : <p className="text-[12px] text-faint">YAML or JSON. It is published as written, and Hayat checks it when you publish.</p>}
+              </div>
             )}
           </div>
-        </div>
 
-        <div className="p-4">
-          {mode === 'form' ? (
-            <ContractForm draft={draft} onChange={setDraft} known={known} base={base} problems={problems.fields} attempted={attempted} />
-          ) : (
-            <div className="flex flex-col gap-2">
-              <Textarea
-                value={text}
-                onChange={(e) => {
-                  setText(e.target.value)
-                  setYamlError('')
-                }}
-                rows={18}
-                className="font-mono text-[12px]"
-                spellCheck={false}
-                aria-label="Contract manifest"
-              />
-              {yamlError ? <p className="text-[12px] text-destructive">{yamlError}</p> : <p className="text-[12px] text-faint">YAML or JSON. It is published as written, and Hayat checks it when you publish.</p>}
-            </div>
-          )}
-        </div>
-
-        <div className="flex flex-col gap-3 border-t bg-muted/30 px-4 py-3.5">
-          {mode === 'form' && (
-            <div className="flex flex-col gap-1.5">
-              <span className="text-[12px] font-semibold text-muted-foreground">What this version adds</span>
-              <SummaryList summary={summary} empty={start.from ? 'Nothing new yet. Add a type, permission or role above.' : 'Nothing yet.'} />
-            </div>
-          )}
           {mode === 'form' && problems.general.length > 0 && (
-            <ul className="flex flex-col gap-1 rounded-[10px] border border-destructive/30 bg-destructive/5 px-3 py-2 text-[12px] text-destructive">
+            <ul className="mx-4 mb-4 flex flex-col gap-1 rounded-[10px] border border-destructive/30 bg-destructive/5 px-3 py-2 text-[12px] text-destructive">
               {problems.general.map((g) => (
                 <li key={g} className="flex items-start gap-2">
                   <TriangleAlert className="mt-0.5 size-3.5 shrink-0" /> {g}
@@ -219,14 +278,10 @@ export function ContractEditor({ serviceId: svc, contracts, onPublished }: { ser
               ))}
             </ul>
           )}
-          <div className="flex items-center justify-end gap-3">
-            {!dirty && start.from && <span className="text-[12px] text-faint">Change something to publish a new version.</span>}
-            <Button type="button" onClick={publish} disabled={publishing || !dirty || !current.trim()}>
-              {publishing ? 'Publishing…' : 'Publish for approval'}
-            </Button>
-          </div>
         </div>
+
+        <Changes version={version} summary={summary} />
       </div>
-    </Section>
+    </div>
   )
 }

@@ -40,7 +40,7 @@ export default function OverviewPage() {
             <div className="grid grid-cols-4 gap-3 max-[1000px]:grid-cols-2 max-[480px]:grid-cols-1">
               <Stat label="Users" value={data.users} sub={`${data.activeUsers.toLocaleString()} active`} Icon={Users} to="/users" />
               <Stat label="Tenants" value={data.tenants} Icon={Building2} to="/tenants" />
-              <Stat label="OAuth clients" value={data.clients} Icon={AppWindow} to="/clients" />
+              <Stat label="OAuth clients" value={data.clients} Icon={AppWindow} to="/services" />
               <Stat label="Signed-in sessions" value={data.activeSessions} Icon={MonitorSmartphone} />
             </div>
 

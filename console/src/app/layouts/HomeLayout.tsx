@@ -1,7 +1,6 @@
 import { useState, type ComponentType, type MouseEvent } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router'
 import {
-  AppWindow,
   Boxes,
   Building2,
   KeyRound,
@@ -92,7 +91,6 @@ const ADMIN_NAV: NavModel = {
       group: 'Applications',
       items: [
         { label: 'Services', Icon: Boxes, path: '/services' },
-        { label: 'OAuth clients', Icon: AppWindow, path: '/clients' },
       ],
     },
     {

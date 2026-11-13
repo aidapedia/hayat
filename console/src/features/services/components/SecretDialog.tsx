@@ -3,7 +3,7 @@ import { CopyField, Field } from '@/shared/ui/bits'
 import { Button } from '@/shared/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
 
-/** Shows a client secret once. Hayat keeps only its hash. */
+/** Shows a sign-in client's secret once. Hayat keeps only its hash. */
 export function SecretDialog({ clientId, secret, onClose }: { clientId: string; secret: string; onClose: () => void }) {
   return (
     <Dialog open={!!secret} onOpenChange={(o) => !o && onClose()}>

@@ -1,23 +1,18 @@
 import { Link, type To } from 'react-router'
 import type { Role } from '@/shared/api/gen/hayat/admin/v1/policy_pb'
-import { cn } from '@/shared/lib/utils'
 import { grantableLine, groupByService, type Catalog, type ServiceMeta } from '../lib/roles'
 import { RoleIcon, RoleSourceBadge, ServiceMark } from './marks'
 
 /**
  * One role in the list: who owns it, what it's for, which services' permissions
- * it bundles and where it can be granted. Selecting it opens the detail panel.
+ * it bundles and where it can be granted. Opening it goes to its own page.
  */
-export function RoleCard({ role, catalog, services, to, selected }: { role: Role; catalog: Catalog; services: ServiceMeta[]; to: To; selected: boolean }) {
+export function RoleCard({ role, catalog, services, to }: { role: Role; catalog: Catalog; services: ServiceMeta[]; to: To }) {
   const groups = groupByService(role.permissions, catalog, services)
   return (
     <Link
       to={to}
-      aria-current={selected ? 'true' : undefined}
-      className={cn(
-        'flex items-start gap-3.5 rounded-xl border bg-background px-4 py-3.5 transition-colors outline-none hover:border-primary/40 focus-visible:ring-3 focus-visible:ring-ring/40',
-        selected && 'border-primary ring-3 ring-primary/12 hover:border-primary',
-      )}
+      className="flex items-start gap-3.5 rounded-xl border bg-background px-4 py-3.5 transition-colors outline-none hover:border-primary/40 focus-visible:ring-3 focus-visible:ring-ring/40"
     >
       <RoleIcon role={role} services={services} />
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">

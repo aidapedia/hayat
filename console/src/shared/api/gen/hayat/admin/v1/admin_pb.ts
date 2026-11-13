@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file hayat/admin/v1/admin.proto.
  */
 export const file_hayat_admin_v1_admin: GenFile = /*@__PURE__*/
-  fileDesc("ChpoYXlhdC9hZG1pbi92MS9hZG1pbi5wcm90bxIOaGF5YXQuYWRtaW4udjEitAIKBFVzZXISCgoCaWQYASABKAkSDQoFZW1haWwYAiABKAkSFgoOZW1haWxfdmVyaWZpZWQYAyABKAgSDAoEbmFtZRgEIAEoCRISCgphdmF0YXJfdXJsGAUgASgJEg4KBmxvY2FsZRgGIAEoCRIQCgh6b25laW5mbxgHIAEoCRINCgVwaG9uZRgIIAEoCRIOCgZzdGF0dXMYCSABKAkSEAoIaXNfYWRtaW4YCiABKAgSFAoMaGFzX3Bhc3N3b3JkGAsgASgIEg4KBnJlZ2lvbhgMIAEoCRIuCgpjcmVhdGVkX2F0GA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIuCgp1cGRhdGVkX2F0GA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCLkAQoHU2Vzc2lvbhIKCgJpZBgBIAEoCRILCgNhbXIYAiADKAkSCgoCaXAYAyABKAkSEgoKdXNlcl9hZ2VudBgEIAEoCRItCglhdXRoX3RpbWUYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjAKDGxhc3Rfc2Vlbl9hdBgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLgoKZXhwaXJlc19hdBgHIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASDwoHY3VycmVudBgIIAEoCCLIAQoGVGVuYW50EgoKAmlkGAEgASgJEgwKBHNsdWcYAiABKAkSDAoEbmFtZRgDIAEoCRIQCghvd25lcl9pZBgEIAEoCRIUCgxtZW1iZXJfY291bnQYBSABKAUSDgoGcmVnaW9uGAYgASgJEi4KCmNyZWF0ZWRfYXQYByABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi4KCnVwZGF0ZWRfYXQYCCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIm0KBk1lbWJlchIiCgR1c2VyGAEgASgLMhQuaGF5YXQuYWRtaW4udjEuVXNlchIQCghpc19vd25lchgCIAEoCBItCglqb2luZWRfYXQYAyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIoICCgZDbGllbnQSCgoCaWQYASABKAkSDAoEbmFtZRgCIAEoCRIMCgRraW5kGAMgASgJEhUKDXJlZGlyZWN0X3VyaXMYBCADKAkSIQoZcG9zdF9sb2dvdXRfcmVkaXJlY3RfdXJpcxgFIAMoCRITCgtncmFudF90eXBlcxgGIAMoCRIPCgdidWlsdGluGAcgASgIEhAKCGRpc2FibGVkGAggASgIEi4KCmNyZWF0ZWRfYXQYCSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi4KCnVwZGF0ZWRfYXQYCiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIroBCgpTaWduaW5nS2V5EgoKAmlkGAEgASgJEg4KBnN0YXR1cxgCIAEoCRIuCgpjcmVhdGVkX2F0GAMgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgxhY3RpdmF0ZWRfYXQYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi4KCnJldGlyZWRfYXQYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIpgBCgpBdWRpdEV2ZW50EgoKAmlkGAEgASgJEiYKAmF0GAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBINCgVhY3RvchgDIAEoCRISCgphY3Rvcl9uYW1lGAQgASgJEg4KBmFjdGlvbhgFIAEoCRIOCgZ0YXJnZXQYBiABKAkSEwoLZGV0YWlsX2pzb24YByABKAkiDgoMR2V0TWVSZXF1ZXN0IlwKDUdldE1lUmVzcG9uc2USIgoEdXNlchgBIAEoCzIULmhheWF0LmFkbWluLnYxLlVzZXISJwoHdGVuYW50cxgCIAMoCzIWLmhheWF0LmFkbWluLnYxLlRlbmFudCJQCg9VcGRhdGVNZVJlcXVlc3QSDAoEbmFtZRgBIAEoCRIOCgZsb2NhbGUYAiABKAkSEAoIem9uZWluZm8YAyABKAkSDQoFcGhvbmUYBCABKAkiNgoQVXBkYXRlTWVSZXNwb25zZRIiCgR1c2VyGAEgASgLMhQuaGF5YXQuYWRtaW4udjEuVXNlciJHChVDaGFuZ2VQYXNzd29yZFJlcXVlc3QSGAoQY3VycmVudF9wYXNzd29yZBgBIAEoCRIUCgxuZXdfcGFzc3dvcmQYAiABKAkiGAoWQ2hhbmdlUGFzc3dvcmRSZXNwb25zZSIXChVMaXN0TXlTZXNzaW9uc1JlcXVlc3QiQwoWTGlzdE15U2Vzc2lvbnNSZXNwb25zZRIpCghzZXNzaW9ucxgBIAMoCzIXLmhheWF0LmFkbWluLnYxLlNlc3Npb24iLAoWUmV2b2tlTXlTZXNzaW9uUmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJIhkKF1Jldm9rZU15U2Vzc2lvblJlc3BvbnNlIhQKEkdldE92ZXJ2aWV3UmVxdWVzdCLSAQoTR2V0T3ZlcnZpZXdSZXNwb25zZRINCgV1c2VycxgBIAEoBRIUCgxhY3RpdmVfdXNlcnMYAiABKAUSDwoHdGVuYW50cxgDIAEoBRIPCgdjbGllbnRzGAQgASgFEhcKD2FjdGl2ZV9zZXNzaW9ucxgFIAEoBRIOCgZpc3N1ZXIYBiABKAkSDgoGcmVnaW9uGAcgASgJEg8KB3ZlcnNpb24YCCABKAkSKgoGcmVjZW50GAkgAygLMhouaGF5YXQuYWRtaW4udjEuQXVkaXRFdmVudCJIChBMaXN0VXNlcnNSZXF1ZXN0Eg0KBXF1ZXJ5GAEgASgJEhEKCXBhZ2Vfc2l6ZRgCIAEoBRISCgpwYWdlX3Rva2VuGAMgASgJIlEKEUxpc3RVc2Vyc1Jlc3BvbnNlEiMKBXVzZXJzGAEgAygLMhQuaGF5YXQuYWRtaW4udjEuVXNlchIXCg9uZXh0X3BhZ2VfdG9rZW4YAiABKAkiHAoOR2V0VXNlclJlcXVlc3QSCgoCaWQYASABKAkiiQEKD0dldFVzZXJSZXNwb25zZRIiCgR1c2VyGAEgASgLMhQuaGF5YXQuYWRtaW4udjEuVXNlchInCgd0ZW5hbnRzGAIgAygLMhYuaGF5YXQuYWRtaW4udjEuVGVuYW50EikKCHNlc3Npb25zGAMgAygLMhcuaGF5YXQuYWRtaW4udjEuU2Vzc2lvbiIwChFJbnZpdGVVc2VyUmVxdWVzdBINCgVlbWFpbBgBIAEoCRIMCgRuYW1lGAIgASgJIkkKEkludml0ZVVzZXJSZXNwb25zZRIiCgR1c2VyGAEgASgLMhQuaGF5YXQuYWRtaW4udjEuVXNlchIPCgdjcmVhdGVkGAIgASgIIl4KEVVwZGF0ZVVzZXJSZXF1ZXN0EgoKAmlkGAEgASgJEgwKBG5hbWUYAiABKAkSDgoGbG9jYWxlGAMgASgJEhAKCHpvbmVpbmZvGAQgASgJEg0KBXBob25lGAUgASgJIjgKElVwZGF0ZVVzZXJSZXNwb25zZRIiCgR1c2VyGAEgASgLMhQuaGF5YXQuYWRtaW4udjEuVXNlciI2ChZTZXRVc2VyRGlzYWJsZWRSZXF1ZXN0EgoKAmlkGAEgASgJEhAKCGRpc2FibGVkGAIgASgIIj0KF1NldFVzZXJEaXNhYmxlZFJlc3BvbnNlEiIKBHVzZXIYASABKAsyFC5oYXlhdC5hZG1pbi52MS5Vc2VyIjAKE1NldFVzZXJBZG1pblJlcXVlc3QSCgoCaWQYASABKAkSDQoFYWRtaW4YAiABKAgiOgoUU2V0VXNlckFkbWluUmVzcG9uc2USIgoEdXNlchgBIAEoCzIULmhheWF0LmFkbWluLnYxLlVzZXIiJwoZUmVzZW5kVmVyaWZpY2F0aW9uUmVxdWVzdBIKCgJpZBgBIAEoCSIcChpSZXNlbmRWZXJpZmljYXRpb25SZXNwb25zZSI7ChlSZXZva2VVc2VyU2Vzc2lvbnNSZXF1ZXN0EgoKAmlkGAEgASgJEhIKCnNlc3Npb25faWQYAiABKAkiHAoaUmV2b2tlVXNlclNlc3Npb25zUmVzcG9uc2UiSgoSTGlzdFRlbmFudHNSZXF1ZXN0Eg0KBXF1ZXJ5GAEgASgJEhEKCXBhZ2Vfc2l6ZRgCIAEoBRISCgpwYWdlX3Rva2VuGAMgASgJIlcKE0xpc3RUZW5hbnRzUmVzcG9uc2USJwoHdGVuYW50cxgBIAMoCzIWLmhheWF0LmFkbWluLnYxLlRlbmFudBIXCg9uZXh0X3BhZ2VfdG9rZW4YAiABKAkiHgoQR2V0VGVuYW50UmVxdWVzdBIKCgJpZBgBIAEoCSJiChFHZXRUZW5hbnRSZXNwb25zZRImCgZ0ZW5hbnQYASABKAsyFi5oYXlhdC5hZG1pbi52MS5UZW5hbnQSFgoObXlfcGVybWlzc2lvbnMYAyADKAlKBAgCEANSB21lbWJlcnMiTgoSTGlzdE1lbWJlcnNSZXF1ZXN0EhEKCXRlbmFudF9pZBgBIAEoCRIRCglwYWdlX3NpemUYAiABKAUSEgoKcGFnZV90b2tlbhgDIAEoCSJXChNMaXN0TWVtYmVyc1Jlc3BvbnNlEicKB21lbWJlcnMYASADKAsyFi5oYXlhdC5hZG1pbi52MS5NZW1iZXISFwoPbmV4dF9wYWdlX3Rva2VuGAIgASgJIl0KE0NyZWF0ZVRlbmFudFJlcXVlc3QSDAoEbmFtZRgBIAEoCRIMCgRzbHVnGAIgASgJEhUKDW93bmVyX3VzZXJfaWQYAyABKAkSEwoLb3duZXJfZW1haWwYBCABKAkiPgoUQ3JlYXRlVGVuYW50UmVzcG9uc2USJgoGdGVuYW50GAEgASgLMhYuaGF5YXQuYWRtaW4udjEuVGVuYW50Ii8KE1JlbmFtZVRlbmFudFJlcXVlc3QSCgoCaWQYASABKAkSDAoEbmFtZRgCIAEoCSI+ChRSZW5hbWVUZW5hbnRSZXNwb25zZRImCgZ0ZW5hbnQYASABKAsyFi5oYXlhdC5hZG1pbi52MS5UZW5hbnQiIQoTRGVsZXRlVGVuYW50UmVxdWVzdBIKCgJpZBgBIAEoCSIWChREZWxldGVUZW5hbnRSZXNwb25zZSJTChBBZGRNZW1iZXJSZXF1ZXN0EhEKCXRlbmFudF9pZBgBIAEoCRIPCgd1c2VyX2lkGAIgASgJEg0KBWVtYWlsGAMgASgJEgwKBG5hbWUYBCABKAkiTAoRQWRkTWVtYmVyUmVzcG9uc2USJgoGbWVtYmVyGAEgASgLMhYuaGF5YXQuYWRtaW4udjEuTWVtYmVyEg8KB2ludml0ZWQYAiABKAgiOQoTUmVtb3ZlTWVtYmVyUmVxdWVzdBIRCgl0ZW5hbnRfaWQYASABKAkSDwoHdXNlcl9pZBgCIAEoCSIWChRSZW1vdmVNZW1iZXJSZXNwb25zZSI+ChhUcmFuc2Zlck93bmVyc2hpcFJlcXVlc3QSEQoJdGVuYW50X2lkGAEgASgJEg8KB3VzZXJfaWQYAiABKAkiQwoZVHJhbnNmZXJPd25lcnNoaXBSZXNwb25zZRImCgZ0ZW5hbnQYASABKAsyFi5oYXlhdC5hZG1pbi52MS5UZW5hbnQiFAoSTGlzdENsaWVudHNSZXF1ZXN0Ij4KE0xpc3RDbGllbnRzUmVzcG9uc2USJwoHY2xpZW50cxgBIAMoCzIWLmhheWF0LmFkbWluLnYxLkNsaWVudCIeChBHZXRDbGllbnRSZXF1ZXN0EgoKAmlkGAEgASgJIjsKEUdldENsaWVudFJlc3BvbnNlEiYKBmNsaWVudBgBIAEoCzIWLmhheWF0LmFkbWluLnYxLkNsaWVudCKAAQoTQ3JlYXRlQ2xpZW50UmVxdWVzdBIMCgRuYW1lGAEgASgJEgwKBGtpbmQYAiABKAkSFQoNcmVkaXJlY3RfdXJpcxgDIAMoCRIhChlwb3N0X2xvZ291dF9yZWRpcmVjdF91cmlzGAQgAygJEhMKC2dyYW50X3R5cGVzGAUgAygJIk4KFENyZWF0ZUNsaWVudFJlc3BvbnNlEiYKBmNsaWVudBgBIAEoCzIWLmhheWF0LmFkbWluLnYxLkNsaWVudBIOCgZzZWNyZXQYAiABKAkifgoTVXBkYXRlQ2xpZW50UmVxdWVzdBIKCgJpZBgBIAEoCRIMCgRuYW1lGAIgASgJEhUKDXJlZGlyZWN0X3VyaXMYAyADKAkSIQoZcG9zdF9sb2dvdXRfcmVkaXJlY3RfdXJpcxgEIAMoCRITCgtncmFudF90eXBlcxgFIAMoCSI+ChRVcGRhdGVDbGllbnRSZXNwb25zZRImCgZjbGllbnQYASABKAsyFi5oYXlhdC5hZG1pbi52MS5DbGllbnQiJwoZUm90YXRlQ2xpZW50U2VjcmV0UmVxdWVzdBIKCgJpZBgBIAEoCSIsChpSb3RhdGVDbGllbnRTZWNyZXRSZXNwb25zZRIOCgZzZWNyZXQYASABKAkiOAoYU2V0Q2xpZW50RGlzYWJsZWRSZXF1ZXN0EgoKAmlkGAEgASgJEhAKCGRpc2FibGVkGAIgASgIIkMKGVNldENsaWVudERpc2FibGVkUmVzcG9uc2USJgoGY2xpZW50GAEgASgLMhYuaGF5YXQuYWRtaW4udjEuQ2xpZW50IhgKFkxpc3RTaWduaW5nS2V5c1JlcXVlc3QiQwoXTGlzdFNpZ25pbmdLZXlzUmVzcG9uc2USKAoEa2V5cxgBIAMoCzIaLmhheWF0LmFkbWluLnYxLlNpZ25pbmdLZXkiGgoYUm90YXRlU2lnbmluZ0tleXNSZXF1ZXN0IkUKGVJvdGF0ZVNpZ25pbmdLZXlzUmVzcG9uc2USKAoEa2V5cxgBIAMoCzIaLmhheWF0LmFkbWluLnYxLlNpZ25pbmdLZXkiPwoWTGlzdEF1ZGl0RXZlbnRzUmVxdWVzdBIRCglwYWdlX3NpemUYASABKAUSEgoKcGFnZV90b2tlbhgCIAEoCSJeChdMaXN0QXVkaXRFdmVudHNSZXNwb25zZRIqCgZldmVudHMYASADKAsyGi5oYXlhdC5hZG1pbi52MS5BdWRpdEV2ZW50EhcKD25leHRfcGFnZV90b2tlbhgCIAEoCTLLAwoOQWNjb3VudFNlcnZpY2USRAoFR2V0TWUSHC5oYXlhdC5hZG1pbi52MS5HZXRNZVJlcXVlc3QaHS5oYXlhdC5hZG1pbi52MS5HZXRNZVJlc3BvbnNlEk0KCFVwZGF0ZU1lEh8uaGF5YXQuYWRtaW4udjEuVXBkYXRlTWVSZXF1ZXN0GiAuaGF5YXQuYWRtaW4udjEuVXBkYXRlTWVSZXNwb25zZRJfCg5DaGFuZ2VQYXNzd29yZBIlLmhheWF0LmFkbWluLnYxLkNoYW5nZVBhc3N3b3JkUmVxdWVzdBomLmhheWF0LmFkbWluLnYxLkNoYW5nZVBhc3N3b3JkUmVzcG9uc2USXwoOTGlzdE15U2Vzc2lvbnMSJS5oYXlhdC5hZG1pbi52MS5MaXN0TXlTZXNzaW9uc1JlcXVlc3QaJi5oYXlhdC5hZG1pbi52MS5MaXN0TXlTZXNzaW9uc1Jlc3BvbnNlEmIKD1Jldm9rZU15U2Vzc2lvbhImLmhheWF0LmFkbWluLnYxLlJldm9rZU15U2Vzc2lvblJlcXVlc3QaJy5oYXlhdC5hZG1pbi52MS5SZXZva2VNeVNlc3Npb25SZXNwb25zZTJpCg9PdmVydmlld1NlcnZpY2USVgoLR2V0T3ZlcnZpZXcSIi5oYXlhdC5hZG1pbi52MS5HZXRPdmVydmlld1JlcXVlc3QaIy5oYXlhdC5hZG1pbi52MS5HZXRPdmVydmlld1Jlc3BvbnNlMu4FCgtVc2VyU2VydmljZRJQCglMaXN0VXNlcnMSIC5oYXlhdC5hZG1pbi52MS5MaXN0VXNlcnNSZXF1ZXN0GiEuaGF5YXQuYWRtaW4udjEuTGlzdFVzZXJzUmVzcG9uc2USSgoHR2V0VXNlchIeLmhheWF0LmFkbWluLnYxLkdldFVzZXJSZXF1ZXN0Gh8uaGF5YXQuYWRtaW4udjEuR2V0VXNlclJlc3BvbnNlElMKCkludml0ZVVzZXISIS5oYXlhdC5hZG1pbi52MS5JbnZpdGVVc2VyUmVxdWVzdBoiLmhheWF0LmFkbWluLnYxLkludml0ZVVzZXJSZXNwb25zZRJTCgpVcGRhdGVVc2VyEiEuaGF5YXQuYWRtaW4udjEuVXBkYXRlVXNlclJlcXVlc3QaIi5oYXlhdC5hZG1pbi52MS5VcGRhdGVVc2VyUmVzcG9uc2USYgoPU2V0VXNlckRpc2FibGVkEiYuaGF5YXQuYWRtaW4udjEuU2V0VXNlckRpc2FibGVkUmVxdWVzdBonLmhheWF0LmFkbWluLnYxLlNldFVzZXJEaXNhYmxlZFJlc3BvbnNlElkKDFNldFVzZXJBZG1pbhIjLmhheWF0LmFkbWluLnYxLlNldFVzZXJBZG1pblJlcXVlc3QaJC5oYXlhdC5hZG1pbi52MS5TZXRVc2VyQWRtaW5SZXNwb25zZRJrChJSZXNlbmRWZXJpZmljYXRpb24SKS5oYXlhdC5hZG1pbi52MS5SZXNlbmRWZXJpZmljYXRpb25SZXF1ZXN0GiouaGF5YXQuYWRtaW4udjEuUmVzZW5kVmVyaWZpY2F0aW9uUmVzcG9uc2USawoSUmV2b2tlVXNlclNlc3Npb25zEikuaGF5YXQuYWRtaW4udjEuUmV2b2tlVXNlclNlc3Npb25zUmVxdWVzdBoqLmhheWF0LmFkbWluLnYxLlJldm9rZVVzZXJTZXNzaW9uc1Jlc3BvbnNlMrkGCg1UZW5hbnRTZXJ2aWNlElYKC0xpc3RUZW5hbnRzEiIuaGF5YXQuYWRtaW4udjEuTGlzdFRlbmFudHNSZXF1ZXN0GiMuaGF5YXQuYWRtaW4udjEuTGlzdFRlbmFudHNSZXNwb25zZRJQCglHZXRUZW5hbnQSIC5oYXlhdC5hZG1pbi52MS5HZXRUZW5hbnRSZXF1ZXN0GiEuaGF5YXQuYWRtaW4udjEuR2V0VGVuYW50UmVzcG9uc2USVgoLTGlzdE1lbWJlcnMSIi5oYXlhdC5hZG1pbi52MS5MaXN0TWVtYmVyc1JlcXVlc3QaIy5oYXlhdC5hZG1pbi52MS5MaXN0TWVtYmVyc1Jlc3BvbnNlElkKDENyZWF0ZVRlbmFudBIjLmhheWF0LmFkbWluLnYxLkNyZWF0ZVRlbmFudFJlcXVlc3QaJC5oYXlhdC5hZG1pbi52MS5DcmVhdGVUZW5hbnRSZXNwb25zZRJZCgxSZW5hbWVUZW5hbnQSIy5oYXlhdC5hZG1pbi52MS5SZW5hbWVUZW5hbnRSZXF1ZXN0GiQuaGF5YXQuYWRtaW4udjEuUmVuYW1lVGVuYW50UmVzcG9uc2USWQoMRGVsZXRlVGVuYW50EiMuaGF5YXQuYWRtaW4udjEuRGVsZXRlVGVuYW50UmVxdWVzdBokLmhheWF0LmFkbWluLnYxLkRlbGV0ZVRlbmFudFJlc3BvbnNlElAKCUFkZE1lbWJlchIgLmhheWF0LmFkbWluLnYxLkFkZE1lbWJlclJlcXVlc3QaIS5oYXlhdC5hZG1pbi52MS5BZGRNZW1iZXJSZXNwb25zZRJZCgxSZW1vdmVNZW1iZXISIy5oYXlhdC5hZG1pbi52MS5SZW1vdmVNZW1iZXJSZXF1ZXN0GiQuaGF5YXQuYWRtaW4udjEuUmVtb3ZlTWVtYmVyUmVzcG9uc2USaAoRVHJhbnNmZXJPd25lcnNoaXASKC5oYXlhdC5hZG1pbi52MS5UcmFuc2Zlck93bmVyc2hpcFJlcXVlc3QaKS5oYXlhdC5hZG1pbi52MS5UcmFuc2Zlck93bmVyc2hpcFJlc3BvbnNlMsYECg1DbGllbnRTZXJ2aWNlElYKC0xpc3RDbGllbnRzEiIuaGF5YXQuYWRtaW4udjEuTGlzdENsaWVudHNSZXF1ZXN0GiMuaGF5YXQuYWRtaW4udjEuTGlzdENsaWVudHNSZXNwb25zZRJQCglHZXRDbGllbnQSIC5oYXlhdC5hZG1pbi52MS5HZXRDbGllbnRSZXF1ZXN0GiEuaGF5YXQuYWRtaW4udjEuR2V0Q2xpZW50UmVzcG9uc2USWQoMQ3JlYXRlQ2xpZW50EiMuaGF5YXQuYWRtaW4udjEuQ3JlYXRlQ2xpZW50UmVxdWVzdBokLmhheWF0LmFkbWluLnYxLkNyZWF0ZUNsaWVudFJlc3BvbnNlElkKDFVwZGF0ZUNsaWVudBIjLmhheWF0LmFkbWluLnYxLlVwZGF0ZUNsaWVudFJlcXVlc3QaJC5oYXlhdC5hZG1pbi52MS5VcGRhdGVDbGllbnRSZXNwb25zZRJrChJSb3RhdGVDbGllbnRTZWNyZXQSKS5oYXlhdC5hZG1pbi52MS5Sb3RhdGVDbGllbnRTZWNyZXRSZXF1ZXN0GiouaGF5YXQuYWRtaW4udjEuUm90YXRlQ2xpZW50U2VjcmV0UmVzcG9uc2USaAoRU2V0Q2xpZW50RGlzYWJsZWQSKC5oYXlhdC5hZG1pbi52MS5TZXRDbGllbnREaXNhYmxlZFJlcXVlc3QaKS5oYXlhdC5hZG1pbi52MS5TZXRDbGllbnREaXNhYmxlZFJlc3BvbnNlMtoBCgpLZXlTZXJ2aWNlEmIKD0xpc3RTaWduaW5nS2V5cxImLmhheWF0LmFkbWluLnYxLkxpc3RTaWduaW5nS2V5c1JlcXVlc3QaJy5oYXlhdC5hZG1pbi52MS5MaXN0U2lnbmluZ0tleXNSZXNwb25zZRJoChFSb3RhdGVTaWduaW5nS2V5cxIoLmhheWF0LmFkbWluLnYxLlJvdGF0ZVNpZ25pbmdLZXlzUmVxdWVzdBopLmhheWF0LmFkbWluLnYxLlJvdGF0ZVNpZ25pbmdLZXlzUmVzcG9uc2UycgoMQXVkaXRTZXJ2aWNlEmIKD0xpc3RBdWRpdEV2ZW50cxImLmhheWF0LmFkbWluLnYxLkxpc3RBdWRpdEV2ZW50c1JlcXVlc3QaJy5oYXlhdC5hZG1pbi52MS5MaXN0QXVkaXRFdmVudHNSZXNwb25zZUI6WjhnaXRodWIuY29tL2FpZGFwZWRpYS9oYXlhdC9nZW4vZ28vaGF5YXQvYWRtaW4vdjE7YWRtaW52MWIGcHJvdG8z", [file_google_protobuf_timestamp]);
+  fileDesc("ChpoYXlhdC9hZG1pbi92MS9hZG1pbi5wcm90bxIOaGF5YXQuYWRtaW4udjEitAIKBFVzZXISCgoCaWQYASABKAkSDQoFZW1haWwYAiABKAkSFgoOZW1haWxfdmVyaWZpZWQYAyABKAgSDAoEbmFtZRgEIAEoCRISCgphdmF0YXJfdXJsGAUgASgJEg4KBmxvY2FsZRgGIAEoCRIQCgh6b25laW5mbxgHIAEoCRINCgVwaG9uZRgIIAEoCRIOCgZzdGF0dXMYCSABKAkSEAoIaXNfYWRtaW4YCiABKAgSFAoMaGFzX3Bhc3N3b3JkGAsgASgIEg4KBnJlZ2lvbhgMIAEoCRIuCgpjcmVhdGVkX2F0GA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIuCgp1cGRhdGVkX2F0GA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCLkAQoHU2Vzc2lvbhIKCgJpZBgBIAEoCRILCgNhbXIYAiADKAkSCgoCaXAYAyABKAkSEgoKdXNlcl9hZ2VudBgEIAEoCRItCglhdXRoX3RpbWUYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjAKDGxhc3Rfc2Vlbl9hdBgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLgoKZXhwaXJlc19hdBgHIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASDwoHY3VycmVudBgIIAEoCCLIAQoGVGVuYW50EgoKAmlkGAEgASgJEgwKBHNsdWcYAiABKAkSDAoEbmFtZRgDIAEoCRIQCghvd25lcl9pZBgEIAEoCRIUCgxtZW1iZXJfY291bnQYBSABKAUSDgoGcmVnaW9uGAYgASgJEi4KCmNyZWF0ZWRfYXQYByABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi4KCnVwZGF0ZWRfYXQYCCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIm0KBk1lbWJlchIiCgR1c2VyGAEgASgLMhQuaGF5YXQuYWRtaW4udjEuVXNlchIQCghpc19vd25lchgCIAEoCBItCglqb2luZWRfYXQYAyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIpYCCgZDbGllbnQSCgoCaWQYASABKAkSDAoEbmFtZRgCIAEoCRIMCgRraW5kGAMgASgJEhUKDXJlZGlyZWN0X3VyaXMYBCADKAkSIQoZcG9zdF9sb2dvdXRfcmVkaXJlY3RfdXJpcxgFIAMoCRITCgtncmFudF90eXBlcxgGIAMoCRIPCgdidWlsdGluGAcgASgIEhAKCGRpc2FibGVkGAggASgIEi4KCmNyZWF0ZWRfYXQYCSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi4KCnVwZGF0ZWRfYXQYCiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhIKCnNlcnZpY2VfaWQYCyABKAkiugEKClNpZ25pbmdLZXkSCgoCaWQYASABKAkSDgoGc3RhdHVzGAIgASgJEi4KCmNyZWF0ZWRfYXQYAyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjAKDGFjdGl2YXRlZF9hdBgEIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLgoKcmV0aXJlZF9hdBgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAimAEKCkF1ZGl0RXZlbnQSCgoCaWQYASABKAkSJgoCYXQYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEg0KBWFjdG9yGAMgASgJEhIKCmFjdG9yX25hbWUYBCABKAkSDgoGYWN0aW9uGAUgASgJEg4KBnRhcmdldBgGIAEoCRITCgtkZXRhaWxfanNvbhgHIAEoCSIOCgxHZXRNZVJlcXVlc3QiXAoNR2V0TWVSZXNwb25zZRIiCgR1c2VyGAEgASgLMhQuaGF5YXQuYWRtaW4udjEuVXNlchInCgd0ZW5hbnRzGAIgAygLMhYuaGF5YXQuYWRtaW4udjEuVGVuYW50IlAKD1VwZGF0ZU1lUmVxdWVzdBIMCgRuYW1lGAEgASgJEg4KBmxvY2FsZRgCIAEoCRIQCgh6b25laW5mbxgDIAEoCRINCgVwaG9uZRgEIAEoCSI2ChBVcGRhdGVNZVJlc3BvbnNlEiIKBHVzZXIYASABKAsyFC5oYXlhdC5hZG1pbi52MS5Vc2VyIkcKFUNoYW5nZVBhc3N3b3JkUmVxdWVzdBIYChBjdXJyZW50X3Bhc3N3b3JkGAEgASgJEhQKDG5ld19wYXNzd29yZBgCIAEoCSIYChZDaGFuZ2VQYXNzd29yZFJlc3BvbnNlIhcKFUxpc3RNeVNlc3Npb25zUmVxdWVzdCJDChZMaXN0TXlTZXNzaW9uc1Jlc3BvbnNlEikKCHNlc3Npb25zGAEgAygLMhcuaGF5YXQuYWRtaW4udjEuU2Vzc2lvbiIsChZSZXZva2VNeVNlc3Npb25SZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkiGQoXUmV2b2tlTXlTZXNzaW9uUmVzcG9uc2UiFAoSR2V0T3ZlcnZpZXdSZXF1ZXN0ItIBChNHZXRPdmVydmlld1Jlc3BvbnNlEg0KBXVzZXJzGAEgASgFEhQKDGFjdGl2ZV91c2VycxgCIAEoBRIPCgd0ZW5hbnRzGAMgASgFEg8KB2NsaWVudHMYBCABKAUSFwoPYWN0aXZlX3Nlc3Npb25zGAUgASgFEg4KBmlzc3VlchgGIAEoCRIOCgZyZWdpb24YByABKAkSDwoHdmVyc2lvbhgIIAEoCRIqCgZyZWNlbnQYCSADKAsyGi5oYXlhdC5hZG1pbi52MS5BdWRpdEV2ZW50IkgKEExpc3RVc2Vyc1JlcXVlc3QSDQoFcXVlcnkYASABKAkSEQoJcGFnZV9zaXplGAIgASgFEhIKCnBhZ2VfdG9rZW4YAyABKAkiUQoRTGlzdFVzZXJzUmVzcG9uc2USIwoFdXNlcnMYASADKAsyFC5oYXlhdC5hZG1pbi52MS5Vc2VyEhcKD25leHRfcGFnZV90b2tlbhgCIAEoCSIcCg5HZXRVc2VyUmVxdWVzdBIKCgJpZBgBIAEoCSKJAQoPR2V0VXNlclJlc3BvbnNlEiIKBHVzZXIYASABKAsyFC5oYXlhdC5hZG1pbi52MS5Vc2VyEicKB3RlbmFudHMYAiADKAsyFi5oYXlhdC5hZG1pbi52MS5UZW5hbnQSKQoIc2Vzc2lvbnMYAyADKAsyFy5oYXlhdC5hZG1pbi52MS5TZXNzaW9uIjAKEUludml0ZVVzZXJSZXF1ZXN0Eg0KBWVtYWlsGAEgASgJEgwKBG5hbWUYAiABKAkiSQoSSW52aXRlVXNlclJlc3BvbnNlEiIKBHVzZXIYASABKAsyFC5oYXlhdC5hZG1pbi52MS5Vc2VyEg8KB2NyZWF0ZWQYAiABKAgiXgoRVXBkYXRlVXNlclJlcXVlc3QSCgoCaWQYASABKAkSDAoEbmFtZRgCIAEoCRIOCgZsb2NhbGUYAyABKAkSEAoIem9uZWluZm8YBCABKAkSDQoFcGhvbmUYBSABKAkiOAoSVXBkYXRlVXNlclJlc3BvbnNlEiIKBHVzZXIYASABKAsyFC5oYXlhdC5hZG1pbi52MS5Vc2VyIjYKFlNldFVzZXJEaXNhYmxlZFJlcXVlc3QSCgoCaWQYASABKAkSEAoIZGlzYWJsZWQYAiABKAgiPQoXU2V0VXNlckRpc2FibGVkUmVzcG9uc2USIgoEdXNlchgBIAEoCzIULmhheWF0LmFkbWluLnYxLlVzZXIiMAoTU2V0VXNlckFkbWluUmVxdWVzdBIKCgJpZBgBIAEoCRINCgVhZG1pbhgCIAEoCCI6ChRTZXRVc2VyQWRtaW5SZXNwb25zZRIiCgR1c2VyGAEgASgLMhQuaGF5YXQuYWRtaW4udjEuVXNlciInChlSZXNlbmRWZXJpZmljYXRpb25SZXF1ZXN0EgoKAmlkGAEgASgJIhwKGlJlc2VuZFZlcmlmaWNhdGlvblJlc3BvbnNlIjsKGVJldm9rZVVzZXJTZXNzaW9uc1JlcXVlc3QSCgoCaWQYASABKAkSEgoKc2Vzc2lvbl9pZBgCIAEoCSIcChpSZXZva2VVc2VyU2Vzc2lvbnNSZXNwb25zZSJKChJMaXN0VGVuYW50c1JlcXVlc3QSDQoFcXVlcnkYASABKAkSEQoJcGFnZV9zaXplGAIgASgFEhIKCnBhZ2VfdG9rZW4YAyABKAkiVwoTTGlzdFRlbmFudHNSZXNwb25zZRInCgd0ZW5hbnRzGAEgAygLMhYuaGF5YXQuYWRtaW4udjEuVGVuYW50EhcKD25leHRfcGFnZV90b2tlbhgCIAEoCSIeChBHZXRUZW5hbnRSZXF1ZXN0EgoKAmlkGAEgASgJImIKEUdldFRlbmFudFJlc3BvbnNlEiYKBnRlbmFudBgBIAEoCzIWLmhheWF0LmFkbWluLnYxLlRlbmFudBIWCg5teV9wZXJtaXNzaW9ucxgDIAMoCUoECAIQA1IHbWVtYmVycyJOChJMaXN0TWVtYmVyc1JlcXVlc3QSEQoJdGVuYW50X2lkGAEgASgJEhEKCXBhZ2Vfc2l6ZRgCIAEoBRISCgpwYWdlX3Rva2VuGAMgASgJIlcKE0xpc3RNZW1iZXJzUmVzcG9uc2USJwoHbWVtYmVycxgBIAMoCzIWLmhheWF0LmFkbWluLnYxLk1lbWJlchIXCg9uZXh0X3BhZ2VfdG9rZW4YAiABKAkiXQoTQ3JlYXRlVGVuYW50UmVxdWVzdBIMCgRuYW1lGAEgASgJEgwKBHNsdWcYAiABKAkSFQoNb3duZXJfdXNlcl9pZBgDIAEoCRITCgtvd25lcl9lbWFpbBgEIAEoCSI+ChRDcmVhdGVUZW5hbnRSZXNwb25zZRImCgZ0ZW5hbnQYASABKAsyFi5oYXlhdC5hZG1pbi52MS5UZW5hbnQiLwoTUmVuYW1lVGVuYW50UmVxdWVzdBIKCgJpZBgBIAEoCRIMCgRuYW1lGAIgASgJIj4KFFJlbmFtZVRlbmFudFJlc3BvbnNlEiYKBnRlbmFudBgBIAEoCzIWLmhheWF0LmFkbWluLnYxLlRlbmFudCIhChNEZWxldGVUZW5hbnRSZXF1ZXN0EgoKAmlkGAEgASgJIhYKFERlbGV0ZVRlbmFudFJlc3BvbnNlIlMKEEFkZE1lbWJlclJlcXVlc3QSEQoJdGVuYW50X2lkGAEgASgJEg8KB3VzZXJfaWQYAiABKAkSDQoFZW1haWwYAyABKAkSDAoEbmFtZRgEIAEoCSJMChFBZGRNZW1iZXJSZXNwb25zZRImCgZtZW1iZXIYASABKAsyFi5oYXlhdC5hZG1pbi52MS5NZW1iZXISDwoHaW52aXRlZBgCIAEoCCI5ChNSZW1vdmVNZW1iZXJSZXF1ZXN0EhEKCXRlbmFudF9pZBgBIAEoCRIPCgd1c2VyX2lkGAIgASgJIhYKFFJlbW92ZU1lbWJlclJlc3BvbnNlIj4KGFRyYW5zZmVyT3duZXJzaGlwUmVxdWVzdBIRCgl0ZW5hbnRfaWQYASABKAkSDwoHdXNlcl9pZBgCIAEoCSJDChlUcmFuc2Zlck93bmVyc2hpcFJlc3BvbnNlEiYKBnRlbmFudBgBIAEoCzIWLmhheWF0LmFkbWluLnYxLlRlbmFudCIYChZMaXN0U2lnbmluZ0tleXNSZXF1ZXN0IkMKF0xpc3RTaWduaW5nS2V5c1Jlc3BvbnNlEigKBGtleXMYASADKAsyGi5oYXlhdC5hZG1pbi52MS5TaWduaW5nS2V5IhoKGFJvdGF0ZVNpZ25pbmdLZXlzUmVxdWVzdCJFChlSb3RhdGVTaWduaW5nS2V5c1Jlc3BvbnNlEigKBGtleXMYASADKAsyGi5oYXlhdC5hZG1pbi52MS5TaWduaW5nS2V5Ij8KFkxpc3RBdWRpdEV2ZW50c1JlcXVlc3QSEQoJcGFnZV9zaXplGAEgASgFEhIKCnBhZ2VfdG9rZW4YAiABKAkiXgoXTGlzdEF1ZGl0RXZlbnRzUmVzcG9uc2USKgoGZXZlbnRzGAEgAygLMhouaGF5YXQuYWRtaW4udjEuQXVkaXRFdmVudBIXCg9uZXh0X3BhZ2VfdG9rZW4YAiABKAkyywMKDkFjY291bnRTZXJ2aWNlEkQKBUdldE1lEhwuaGF5YXQuYWRtaW4udjEuR2V0TWVSZXF1ZXN0Gh0uaGF5YXQuYWRtaW4udjEuR2V0TWVSZXNwb25zZRJNCghVcGRhdGVNZRIfLmhheWF0LmFkbWluLnYxLlVwZGF0ZU1lUmVxdWVzdBogLmhheWF0LmFkbWluLnYxLlVwZGF0ZU1lUmVzcG9uc2USXwoOQ2hhbmdlUGFzc3dvcmQSJS5oYXlhdC5hZG1pbi52MS5DaGFuZ2VQYXNzd29yZFJlcXVlc3QaJi5oYXlhdC5hZG1pbi52MS5DaGFuZ2VQYXNzd29yZFJlc3BvbnNlEl8KDkxpc3RNeVNlc3Npb25zEiUuaGF5YXQuYWRtaW4udjEuTGlzdE15U2Vzc2lvbnNSZXF1ZXN0GiYuaGF5YXQuYWRtaW4udjEuTGlzdE15U2Vzc2lvbnNSZXNwb25zZRJiCg9SZXZva2VNeVNlc3Npb24SJi5oYXlhdC5hZG1pbi52MS5SZXZva2VNeVNlc3Npb25SZXF1ZXN0GicuaGF5YXQuYWRtaW4udjEuUmV2b2tlTXlTZXNzaW9uUmVzcG9uc2UyaQoPT3ZlcnZpZXdTZXJ2aWNlElYKC0dldE92ZXJ2aWV3EiIuaGF5YXQuYWRtaW4udjEuR2V0T3ZlcnZpZXdSZXF1ZXN0GiMuaGF5YXQuYWRtaW4udjEuR2V0T3ZlcnZpZXdSZXNwb25zZTLuBQoLVXNlclNlcnZpY2USUAoJTGlzdFVzZXJzEiAuaGF5YXQuYWRtaW4udjEuTGlzdFVzZXJzUmVxdWVzdBohLmhheWF0LmFkbWluLnYxLkxpc3RVc2Vyc1Jlc3BvbnNlEkoKB0dldFVzZXISHi5oYXlhdC5hZG1pbi52MS5HZXRVc2VyUmVxdWVzdBofLmhheWF0LmFkbWluLnYxLkdldFVzZXJSZXNwb25zZRJTCgpJbnZpdGVVc2VyEiEuaGF5YXQuYWRtaW4udjEuSW52aXRlVXNlclJlcXVlc3QaIi5oYXlhdC5hZG1pbi52MS5JbnZpdGVVc2VyUmVzcG9uc2USUwoKVXBkYXRlVXNlchIhLmhheWF0LmFkbWluLnYxLlVwZGF0ZVVzZXJSZXF1ZXN0GiIuaGF5YXQuYWRtaW4udjEuVXBkYXRlVXNlclJlc3BvbnNlEmIKD1NldFVzZXJEaXNhYmxlZBImLmhheWF0LmFkbWluLnYxLlNldFVzZXJEaXNhYmxlZFJlcXVlc3QaJy5oYXlhdC5hZG1pbi52MS5TZXRVc2VyRGlzYWJsZWRSZXNwb25zZRJZCgxTZXRVc2VyQWRtaW4SIy5oYXlhdC5hZG1pbi52MS5TZXRVc2VyQWRtaW5SZXF1ZXN0GiQuaGF5YXQuYWRtaW4udjEuU2V0VXNlckFkbWluUmVzcG9uc2USawoSUmVzZW5kVmVyaWZpY2F0aW9uEikuaGF5YXQuYWRtaW4udjEuUmVzZW5kVmVyaWZpY2F0aW9uUmVxdWVzdBoqLmhheWF0LmFkbWluLnYxLlJlc2VuZFZlcmlmaWNhdGlvblJlc3BvbnNlEmsKElJldm9rZVVzZXJTZXNzaW9ucxIpLmhheWF0LmFkbWluLnYxLlJldm9rZVVzZXJTZXNzaW9uc1JlcXVlc3QaKi5oYXlhdC5hZG1pbi52MS5SZXZva2VVc2VyU2Vzc2lvbnNSZXNwb25zZTK5BgoNVGVuYW50U2VydmljZRJWCgtMaXN0VGVuYW50cxIiLmhheWF0LmFkbWluLnYxLkxpc3RUZW5hbnRzUmVxdWVzdBojLmhheWF0LmFkbWluLnYxLkxpc3RUZW5hbnRzUmVzcG9uc2USUAoJR2V0VGVuYW50EiAuaGF5YXQuYWRtaW4udjEuR2V0VGVuYW50UmVxdWVzdBohLmhheWF0LmFkbWluLnYxLkdldFRlbmFudFJlc3BvbnNlElYKC0xpc3RNZW1iZXJzEiIuaGF5YXQuYWRtaW4udjEuTGlzdE1lbWJlcnNSZXF1ZXN0GiMuaGF5YXQuYWRtaW4udjEuTGlzdE1lbWJlcnNSZXNwb25zZRJZCgxDcmVhdGVUZW5hbnQSIy5oYXlhdC5hZG1pbi52MS5DcmVhdGVUZW5hbnRSZXF1ZXN0GiQuaGF5YXQuYWRtaW4udjEuQ3JlYXRlVGVuYW50UmVzcG9uc2USWQoMUmVuYW1lVGVuYW50EiMuaGF5YXQuYWRtaW4udjEuUmVuYW1lVGVuYW50UmVxdWVzdBokLmhheWF0LmFkbWluLnYxLlJlbmFtZVRlbmFudFJlc3BvbnNlElkKDERlbGV0ZVRlbmFudBIjLmhheWF0LmFkbWluLnYxLkRlbGV0ZVRlbmFudFJlcXVlc3QaJC5oYXlhdC5hZG1pbi52MS5EZWxldGVUZW5hbnRSZXNwb25zZRJQCglBZGRNZW1iZXISIC5oYXlhdC5hZG1pbi52MS5BZGRNZW1iZXJSZXF1ZXN0GiEuaGF5YXQuYWRtaW4udjEuQWRkTWVtYmVyUmVzcG9uc2USWQoMUmVtb3ZlTWVtYmVyEiMuaGF5YXQuYWRtaW4udjEuUmVtb3ZlTWVtYmVyUmVxdWVzdBokLmhheWF0LmFkbWluLnYxLlJlbW92ZU1lbWJlclJlc3BvbnNlEmgKEVRyYW5zZmVyT3duZXJzaGlwEiguaGF5YXQuYWRtaW4udjEuVHJhbnNmZXJPd25lcnNoaXBSZXF1ZXN0GikuaGF5YXQuYWRtaW4udjEuVHJhbnNmZXJPd25lcnNoaXBSZXNwb25zZTLaAQoKS2V5U2VydmljZRJiCg9MaXN0U2lnbmluZ0tleXMSJi5oYXlhdC5hZG1pbi52MS5MaXN0U2lnbmluZ0tleXNSZXF1ZXN0GicuaGF5YXQuYWRtaW4udjEuTGlzdFNpZ25pbmdLZXlzUmVzcG9uc2USaAoRUm90YXRlU2lnbmluZ0tleXMSKC5oYXlhdC5hZG1pbi52MS5Sb3RhdGVTaWduaW5nS2V5c1JlcXVlc3QaKS5oYXlhdC5hZG1pbi52MS5Sb3RhdGVTaWduaW5nS2V5c1Jlc3BvbnNlMnIKDEF1ZGl0U2VydmljZRJiCg9MaXN0QXVkaXRFdmVudHMSJi5oYXlhdC5hZG1pbi52MS5MaXN0QXVkaXRFdmVudHNSZXF1ZXN0GicuaGF5YXQuYWRtaW4udjEuTGlzdEF1ZGl0RXZlbnRzUmVzcG9uc2VCOlo4Z2l0aHViLmNvbS9haWRhcGVkaWEvaGF5YXQvZ2VuL2dvL2hheWF0L2FkbWluL3YxO2FkbWludjFiBnByb3RvMw", [file_google_protobuf_timestamp]);
 
 /**
  * @generated from message hayat.admin.v1.User
@@ -291,6 +291,13 @@ export type Client = Message<"hayat.admin.v1.Client"> & {
    * @generated from field: google.protobuf.Timestamp updated_at = 10;
    */
   updatedAt?: Timestamp | undefined;
+
+  /**
+   * The service the client belongs to; `hayat` for the console's own.
+   *
+   * @generated from field: string service_id = 11;
+   */
+  serviceId: string;
 };
 
 /**
@@ -1364,256 +1371,6 @@ export const TransferOwnershipResponseSchema: GenMessage<TransferOwnershipRespon
   messageDesc(file_hayat_admin_v1_admin, 52);
 
 /**
- * @generated from message hayat.admin.v1.ListClientsRequest
- */
-export type ListClientsRequest = Message<"hayat.admin.v1.ListClientsRequest"> & {
-};
-
-/**
- * Describes the message hayat.admin.v1.ListClientsRequest.
- * Use `create(ListClientsRequestSchema)` to create a new message.
- */
-export const ListClientsRequestSchema: GenMessage<ListClientsRequest> = /*@__PURE__*/
-  messageDesc(file_hayat_admin_v1_admin, 53);
-
-/**
- * @generated from message hayat.admin.v1.ListClientsResponse
- */
-export type ListClientsResponse = Message<"hayat.admin.v1.ListClientsResponse"> & {
-  /**
-   * @generated from field: repeated hayat.admin.v1.Client clients = 1;
-   */
-  clients: Client[];
-};
-
-/**
- * Describes the message hayat.admin.v1.ListClientsResponse.
- * Use `create(ListClientsResponseSchema)` to create a new message.
- */
-export const ListClientsResponseSchema: GenMessage<ListClientsResponse> = /*@__PURE__*/
-  messageDesc(file_hayat_admin_v1_admin, 54);
-
-/**
- * @generated from message hayat.admin.v1.GetClientRequest
- */
-export type GetClientRequest = Message<"hayat.admin.v1.GetClientRequest"> & {
-  /**
-   * @generated from field: string id = 1;
-   */
-  id: string;
-};
-
-/**
- * Describes the message hayat.admin.v1.GetClientRequest.
- * Use `create(GetClientRequestSchema)` to create a new message.
- */
-export const GetClientRequestSchema: GenMessage<GetClientRequest> = /*@__PURE__*/
-  messageDesc(file_hayat_admin_v1_admin, 55);
-
-/**
- * @generated from message hayat.admin.v1.GetClientResponse
- */
-export type GetClientResponse = Message<"hayat.admin.v1.GetClientResponse"> & {
-  /**
-   * @generated from field: hayat.admin.v1.Client client = 1;
-   */
-  client?: Client | undefined;
-};
-
-/**
- * Describes the message hayat.admin.v1.GetClientResponse.
- * Use `create(GetClientResponseSchema)` to create a new message.
- */
-export const GetClientResponseSchema: GenMessage<GetClientResponse> = /*@__PURE__*/
-  messageDesc(file_hayat_admin_v1_admin, 56);
-
-/**
- * @generated from message hayat.admin.v1.CreateClientRequest
- */
-export type CreateClientRequest = Message<"hayat.admin.v1.CreateClientRequest"> & {
-  /**
-   * @generated from field: string name = 1;
-   */
-  name: string;
-
-  /**
-   * @generated from field: string kind = 2;
-   */
-  kind: string;
-
-  /**
-   * @generated from field: repeated string redirect_uris = 3;
-   */
-  redirectUris: string[];
-
-  /**
-   * @generated from field: repeated string post_logout_redirect_uris = 4;
-   */
-  postLogoutRedirectUris: string[];
-
-  /**
-   * @generated from field: repeated string grant_types = 5;
-   */
-  grantTypes: string[];
-};
-
-/**
- * Describes the message hayat.admin.v1.CreateClientRequest.
- * Use `create(CreateClientRequestSchema)` to create a new message.
- */
-export const CreateClientRequestSchema: GenMessage<CreateClientRequest> = /*@__PURE__*/
-  messageDesc(file_hayat_admin_v1_admin, 57);
-
-/**
- * @generated from message hayat.admin.v1.CreateClientResponse
- */
-export type CreateClientResponse = Message<"hayat.admin.v1.CreateClientResponse"> & {
-  /**
-   * @generated from field: hayat.admin.v1.Client client = 1;
-   */
-  client?: Client | undefined;
-
-  /**
-   * @generated from field: string secret = 2;
-   */
-  secret: string;
-};
-
-/**
- * Describes the message hayat.admin.v1.CreateClientResponse.
- * Use `create(CreateClientResponseSchema)` to create a new message.
- */
-export const CreateClientResponseSchema: GenMessage<CreateClientResponse> = /*@__PURE__*/
-  messageDesc(file_hayat_admin_v1_admin, 58);
-
-/**
- * @generated from message hayat.admin.v1.UpdateClientRequest
- */
-export type UpdateClientRequest = Message<"hayat.admin.v1.UpdateClientRequest"> & {
-  /**
-   * @generated from field: string id = 1;
-   */
-  id: string;
-
-  /**
-   * @generated from field: string name = 2;
-   */
-  name: string;
-
-  /**
-   * @generated from field: repeated string redirect_uris = 3;
-   */
-  redirectUris: string[];
-
-  /**
-   * @generated from field: repeated string post_logout_redirect_uris = 4;
-   */
-  postLogoutRedirectUris: string[];
-
-  /**
-   * @generated from field: repeated string grant_types = 5;
-   */
-  grantTypes: string[];
-};
-
-/**
- * Describes the message hayat.admin.v1.UpdateClientRequest.
- * Use `create(UpdateClientRequestSchema)` to create a new message.
- */
-export const UpdateClientRequestSchema: GenMessage<UpdateClientRequest> = /*@__PURE__*/
-  messageDesc(file_hayat_admin_v1_admin, 59);
-
-/**
- * @generated from message hayat.admin.v1.UpdateClientResponse
- */
-export type UpdateClientResponse = Message<"hayat.admin.v1.UpdateClientResponse"> & {
-  /**
-   * @generated from field: hayat.admin.v1.Client client = 1;
-   */
-  client?: Client | undefined;
-};
-
-/**
- * Describes the message hayat.admin.v1.UpdateClientResponse.
- * Use `create(UpdateClientResponseSchema)` to create a new message.
- */
-export const UpdateClientResponseSchema: GenMessage<UpdateClientResponse> = /*@__PURE__*/
-  messageDesc(file_hayat_admin_v1_admin, 60);
-
-/**
- * @generated from message hayat.admin.v1.RotateClientSecretRequest
- */
-export type RotateClientSecretRequest = Message<"hayat.admin.v1.RotateClientSecretRequest"> & {
-  /**
-   * @generated from field: string id = 1;
-   */
-  id: string;
-};
-
-/**
- * Describes the message hayat.admin.v1.RotateClientSecretRequest.
- * Use `create(RotateClientSecretRequestSchema)` to create a new message.
- */
-export const RotateClientSecretRequestSchema: GenMessage<RotateClientSecretRequest> = /*@__PURE__*/
-  messageDesc(file_hayat_admin_v1_admin, 61);
-
-/**
- * @generated from message hayat.admin.v1.RotateClientSecretResponse
- */
-export type RotateClientSecretResponse = Message<"hayat.admin.v1.RotateClientSecretResponse"> & {
-  /**
-   * @generated from field: string secret = 1;
-   */
-  secret: string;
-};
-
-/**
- * Describes the message hayat.admin.v1.RotateClientSecretResponse.
- * Use `create(RotateClientSecretResponseSchema)` to create a new message.
- */
-export const RotateClientSecretResponseSchema: GenMessage<RotateClientSecretResponse> = /*@__PURE__*/
-  messageDesc(file_hayat_admin_v1_admin, 62);
-
-/**
- * @generated from message hayat.admin.v1.SetClientDisabledRequest
- */
-export type SetClientDisabledRequest = Message<"hayat.admin.v1.SetClientDisabledRequest"> & {
-  /**
-   * @generated from field: string id = 1;
-   */
-  id: string;
-
-  /**
-   * @generated from field: bool disabled = 2;
-   */
-  disabled: boolean;
-};
-
-/**
- * Describes the message hayat.admin.v1.SetClientDisabledRequest.
- * Use `create(SetClientDisabledRequestSchema)` to create a new message.
- */
-export const SetClientDisabledRequestSchema: GenMessage<SetClientDisabledRequest> = /*@__PURE__*/
-  messageDesc(file_hayat_admin_v1_admin, 63);
-
-/**
- * @generated from message hayat.admin.v1.SetClientDisabledResponse
- */
-export type SetClientDisabledResponse = Message<"hayat.admin.v1.SetClientDisabledResponse"> & {
-  /**
-   * @generated from field: hayat.admin.v1.Client client = 1;
-   */
-  client?: Client | undefined;
-};
-
-/**
- * Describes the message hayat.admin.v1.SetClientDisabledResponse.
- * Use `create(SetClientDisabledResponseSchema)` to create a new message.
- */
-export const SetClientDisabledResponseSchema: GenMessage<SetClientDisabledResponse> = /*@__PURE__*/
-  messageDesc(file_hayat_admin_v1_admin, 64);
-
-/**
  * @generated from message hayat.admin.v1.ListSigningKeysRequest
  */
 export type ListSigningKeysRequest = Message<"hayat.admin.v1.ListSigningKeysRequest"> & {
@@ -1624,7 +1381,7 @@ export type ListSigningKeysRequest = Message<"hayat.admin.v1.ListSigningKeysRequ
  * Use `create(ListSigningKeysRequestSchema)` to create a new message.
  */
 export const ListSigningKeysRequestSchema: GenMessage<ListSigningKeysRequest> = /*@__PURE__*/
-  messageDesc(file_hayat_admin_v1_admin, 65);
+  messageDesc(file_hayat_admin_v1_admin, 53);
 
 /**
  * @generated from message hayat.admin.v1.ListSigningKeysResponse
@@ -1641,7 +1398,7 @@ export type ListSigningKeysResponse = Message<"hayat.admin.v1.ListSigningKeysRes
  * Use `create(ListSigningKeysResponseSchema)` to create a new message.
  */
 export const ListSigningKeysResponseSchema: GenMessage<ListSigningKeysResponse> = /*@__PURE__*/
-  messageDesc(file_hayat_admin_v1_admin, 66);
+  messageDesc(file_hayat_admin_v1_admin, 54);
 
 /**
  * @generated from message hayat.admin.v1.RotateSigningKeysRequest
@@ -1654,7 +1411,7 @@ export type RotateSigningKeysRequest = Message<"hayat.admin.v1.RotateSigningKeys
  * Use `create(RotateSigningKeysRequestSchema)` to create a new message.
  */
 export const RotateSigningKeysRequestSchema: GenMessage<RotateSigningKeysRequest> = /*@__PURE__*/
-  messageDesc(file_hayat_admin_v1_admin, 67);
+  messageDesc(file_hayat_admin_v1_admin, 55);
 
 /**
  * @generated from message hayat.admin.v1.RotateSigningKeysResponse
@@ -1671,7 +1428,7 @@ export type RotateSigningKeysResponse = Message<"hayat.admin.v1.RotateSigningKey
  * Use `create(RotateSigningKeysResponseSchema)` to create a new message.
  */
 export const RotateSigningKeysResponseSchema: GenMessage<RotateSigningKeysResponse> = /*@__PURE__*/
-  messageDesc(file_hayat_admin_v1_admin, 68);
+  messageDesc(file_hayat_admin_v1_admin, 56);
 
 /**
  * @generated from message hayat.admin.v1.ListAuditEventsRequest
@@ -1693,7 +1450,7 @@ export type ListAuditEventsRequest = Message<"hayat.admin.v1.ListAuditEventsRequ
  * Use `create(ListAuditEventsRequestSchema)` to create a new message.
  */
 export const ListAuditEventsRequestSchema: GenMessage<ListAuditEventsRequest> = /*@__PURE__*/
-  messageDesc(file_hayat_admin_v1_admin, 69);
+  messageDesc(file_hayat_admin_v1_admin, 57);
 
 /**
  * @generated from message hayat.admin.v1.ListAuditEventsResponse
@@ -1715,7 +1472,7 @@ export type ListAuditEventsResponse = Message<"hayat.admin.v1.ListAuditEventsRes
  * Use `create(ListAuditEventsResponseSchema)` to create a new message.
  */
 export const ListAuditEventsResponseSchema: GenMessage<ListAuditEventsResponse> = /*@__PURE__*/
-  messageDesc(file_hayat_admin_v1_admin, 70);
+  messageDesc(file_hayat_admin_v1_admin, 58);
 
 /**
  * @generated from service hayat.admin.v1.AccountService
@@ -1956,63 +1713,6 @@ export const TenantService: GenService<{
   serviceDesc(file_hayat_admin_v1_admin, 3);
 
 /**
- * @generated from service hayat.admin.v1.ClientService
- */
-export const ClientService: GenService<{
-  /**
-   * @generated from rpc hayat.admin.v1.ClientService.ListClients
-   */
-  listClients: {
-    methodKind: "unary";
-    input: typeof ListClientsRequestSchema;
-    output: typeof ListClientsResponseSchema;
-  },
-  /**
-   * @generated from rpc hayat.admin.v1.ClientService.GetClient
-   */
-  getClient: {
-    methodKind: "unary";
-    input: typeof GetClientRequestSchema;
-    output: typeof GetClientResponseSchema;
-  },
-  /**
-   * A confidential client's secret is returned here once and never again.
-   *
-   * @generated from rpc hayat.admin.v1.ClientService.CreateClient
-   */
-  createClient: {
-    methodKind: "unary";
-    input: typeof CreateClientRequestSchema;
-    output: typeof CreateClientResponseSchema;
-  },
-  /**
-   * @generated from rpc hayat.admin.v1.ClientService.UpdateClient
-   */
-  updateClient: {
-    methodKind: "unary";
-    input: typeof UpdateClientRequestSchema;
-    output: typeof UpdateClientResponseSchema;
-  },
-  /**
-   * @generated from rpc hayat.admin.v1.ClientService.RotateClientSecret
-   */
-  rotateClientSecret: {
-    methodKind: "unary";
-    input: typeof RotateClientSecretRequestSchema;
-    output: typeof RotateClientSecretResponseSchema;
-  },
-  /**
-   * @generated from rpc hayat.admin.v1.ClientService.SetClientDisabled
-   */
-  setClientDisabled: {
-    methodKind: "unary";
-    input: typeof SetClientDisabledRequestSchema;
-    output: typeof SetClientDisabledResponseSchema;
-  },
-}> = /*@__PURE__*/
-  serviceDesc(file_hayat_admin_v1_admin, 4);
-
-/**
  * @generated from service hayat.admin.v1.KeyService
  */
 export const KeyService: GenService<{
@@ -2033,7 +1733,7 @@ export const KeyService: GenService<{
     output: typeof RotateSigningKeysResponseSchema;
   },
 }> = /*@__PURE__*/
-  serviceDesc(file_hayat_admin_v1_admin, 5);
+  serviceDesc(file_hayat_admin_v1_admin, 4);
 
 /**
  * @generated from service hayat.admin.v1.AuditService
@@ -2048,5 +1748,5 @@ export const AuditService: GenService<{
     output: typeof ListAuditEventsResponseSchema;
   },
 }> = /*@__PURE__*/
-  serviceDesc(file_hayat_admin_v1_admin, 6);
+  serviceDesc(file_hayat_admin_v1_admin, 5);
 

@@ -1,15 +1,15 @@
 import { useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router'
+import { Navigate, useSearchParams } from 'react-router'
 import { SearchX } from 'lucide-react'
 import type { Role } from '@/shared/api/gen/hayat/admin/v1/policy_pb'
 import { EmptyState, ErrorState, LoadingState, SearchInput } from '@/shared/ui/bits'
 import { cn } from '@/shared/lib/utils'
-import { Sheet, SheetContent } from '@/shared/ui/sheet'
-import { DeleteRoleDialog } from './components/DeleteRoleDialog'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
+import { Pagination } from '@/shared/ui/table/Pagination'
+import { usePagination } from '@/shared/ui/table/usePagination'
 import { HowRolesWork } from './components/HowRolesWork'
 import { ServiceMark } from './components/marks'
 import { RoleCard } from './components/RoleCard'
-import { RoleDetail } from './components/RoleDetail'
 import { RolesHeader } from './components/RolesHeader'
 import { useRolesData } from './hooks/use-roles-data'
 import { permLabel, sourceOf, type Catalog, type RoleSource } from './lib/roles'
@@ -20,6 +20,9 @@ const SOURCES: { id: 'all' | RoleSource; label: string }[] = [
   { id: 'service', label: 'From services' },
   { id: 'custom', label: 'Yours' },
 ]
+
+// Radix's Select can't hold an empty value, so "any service" has a name of its own.
+const ANY_SERVICE = 'any'
 
 /** A role matches a search by its name, description, identifier, or any permission it holds. */
 function matches(role: Role, q: string, catalog: Catalog) {
@@ -34,15 +37,14 @@ function matches(role: Role, q: string, catalog: Catalog) {
 
 /**
  * The roles: a list you can narrow by who owns a role, which service's
- * permissions it uses, or a search. Picking one opens it in full in a side
- * drawer, over the list. The selection and filters live in the address, so a
- * link (or a refresh) lands on them.
+ * permissions it uses, or a search. Picking one opens it on its own page
+ * (/roles/:id). The filters live in the address, so a link (or a refresh)
+ * lands on them.
  */
 export default function RolesPage() {
   const { roles, catalog, services, error, loading, reload } = useRolesData()
   const [params, setParams] = useSearchParams()
   const [q, setQ] = useState('')
-  const [deleting, setDeleting] = useState<Role | null>(null)
 
   const source = (params.get('source') ?? 'all') as 'all' | RoleSource
   const service = params.get('service') ?? ''
@@ -64,18 +66,21 @@ export default function RolesPage() {
     )
   }, [roles, catalog, source, service, q])
 
-  const selected = roles.find((r) => r.id === params.get('role'))
+  const { pageRows, pager } = usePagination(visible, { pageSize: 10, resetKey: `${source}|${service}|${q.trim()}` })
 
-  const linkWith = (changes: Record<string, string | null>) => {
+  // Filters live in the address, so a link (or a refresh) keeps them.
+  const setFilter = (changes: Record<string, string | null>) => {
     const next = new URLSearchParams(params)
     for (const [k, v] of Object.entries(changes)) {
       if (v === null || v === '') next.delete(k)
       else next.set(k, v)
     }
-    const s = next.toString()
-    return { search: s ? `?${s}` : '' }
+    setParams(next, { replace: true })
   }
-  const setFilter = (changes: Record<string, string | null>) => setParams(linkWith(changes).search.slice(1), { replace: true })
+
+  // The detail used to be a drawer over this list: ?role=<id> still lands on it.
+  const legacy = params.get('role')
+  if (legacy) return <Navigate to={`/roles/${legacy}`} replace />
 
   return (
     <>
@@ -92,6 +97,22 @@ export default function RolesPage() {
         <>
           <div className="mt-5 flex flex-wrap items-center gap-2.5">
             <SearchInput value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search roles or permissions, e.g. “connection”" aria-label="Search roles" className="min-w-[240px] flex-1" />
+            {services.length > 1 && (
+              <Select value={service || ANY_SERVICE} onValueChange={(v) => setFilter({ service: v === ANY_SERVICE ? null : v })}>
+                <SelectTrigger aria-label="Uses permissions from" className="min-w-[200px] text-[13px] data-[size=default]:h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ANY_SERVICE}>Any service</SelectItem>
+                  {services.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      <ServiceMark service={s} size="xs" />
+                      {s.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
             <div role="group" aria-label="Who owns the role" className="flex gap-0.5 rounded-[10px] bg-muted p-[3px]">
               {SOURCES.map((s) => (
                 <button
@@ -109,62 +130,20 @@ export default function RolesPage() {
               ))}
             </div>
           </div>
-          {services.length > 1 && (
-            <div role="group" aria-label="Uses permissions from" className="mt-2.5 flex flex-wrap items-center gap-1.5">
-              <span className="mr-1 text-[12px] text-muted-foreground">Uses permissions from</span>
-              {[{ id: '', name: 'Any service' }, ...services].map((s) => {
-                const on = service === s.id
-                const meta = services.find((m) => m.id === s.id)
-                return (
-                  <button
-                    key={s.id || 'any'}
-                    type="button"
-                    aria-pressed={on}
-                    onClick={() => setFilter({ service: s.id || null })}
-                    className={cn(
-                      'inline-flex h-7 items-center gap-1.5 rounded-lg border px-2.5 text-[12px] transition-colors',
-                      meta && 'pl-1',
-                      on ? 'border-primary bg-primary/8 font-semibold' : 'text-muted-foreground hover:text-foreground',
-                    )}
-                  >
-                    {meta && <ServiceMark service={meta} size="xs" />}
-                    {s.name}
-                  </button>
-                )
-              })}
-            </div>
-          )}
-
-          <div className="mt-5 flex flex-col gap-2">
+          <p className="mt-4 px-0.5 text-[12px] text-muted-foreground">
+            <strong className="font-semibold text-foreground">{visible.length}</strong> {visible.length === 1 ? 'role' : 'roles'} · grants are counted across every tenant on this instance.
+          </p>
+          <div className="mt-2 flex flex-col gap-2">
             {visible.length === 0 ? (
               <EmptyState icon={SearchX} title="No role matches">
                 Try another word, or clear the filters above.
               </EmptyState>
             ) : (
-              visible.map((r) => <RoleCard key={r.id} role={r} catalog={catalog} services={services} to={linkWith({ role: r.id })} selected={r.id === selected?.id} />)
+              pageRows.map((r) => <RoleCard key={r.id} role={r} catalog={catalog} services={services} to={`/roles/${r.id}`} />)
             )}
-            <p className="mt-1 px-0.5 text-[12px] text-muted-foreground">Grants are counted across every tenant on this instance.</p>
-          </div>
-
-          <Sheet open={!!selected} onOpenChange={(open) => !open && setFilter({ role: null })}>
-            <SheetContent side="right" className="w-full gap-0 overflow-y-auto p-0 sm:max-w-[460px] data-[side=right]:sm:max-w-[460px]">
-              {selected && <RoleDetail key={selected.id} role={selected} catalog={catalog} services={services} onDelete={() => setDeleting(selected)} />}
-            </SheetContent>
-          </Sheet>
+            {visible.length > 0 && <Pagination {...pager} pageSizeOptions={[10, 25, 50]} className="px-0.5" />}          </div>
         </>
       ) : null}
-
-      {deleting && (
-        <DeleteRoleDialog
-          role={deleting}
-          onClose={() => setDeleting(null)}
-          onDeleted={() => {
-            setDeleting(null)
-            setFilter({ role: null })
-            void reload()
-          }}
-        />
-      )}
     </>
   )
 }

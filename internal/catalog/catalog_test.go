@@ -68,19 +68,20 @@ func TestContractLifecycle(t *testing.T) {
 	if _, err := c.Publish(ctx, "billing", []byte(strings.Replace(billingV1, "scope: ledger }", "scope: nowhere }", 1)), "test"); err == nil {
 		t.Fatal("unknown scope accepted")
 	}
+	// A version that touches only its own namespace goes live when published:
+	// only the service's owners, or the service itself, can publish for it.
 	v1, err := c.Publish(ctx, "billing", []byte(billingV1), "test")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if v1.Status != "pending" || !slices.Equal(v1.Namespaces, []string{"billing"}) {
+	if v1.Status != "active" || len(v1.Namespaces) != 0 || v1.DecidedBy != "test" {
 		t.Fatalf("v1: %+v", v1)
 	}
-	if _, err := c.Publish(ctx, "billing", []byte(strings.Replace(billingV1, "version: 1", "version: 2", 1)), "test"); !errors.Is(err, catalog.ErrPendingExists) {
-		t.Fatalf("second pending version: %v", err)
+	if svc, _ := c.GetService(ctx, "billing"); svc.ActiveVersion != 1 {
+		t.Fatalf("active version: %d", svc.ActiveVersion)
 	}
-	v1, err = c.Approve(ctx, "billing", 1, []string{"billing"}, owner.ID)
-	if err != nil || v1.Status != "active" {
-		t.Fatalf("approve: %v %+v", err, v1)
+	if _, err := c.Approve(ctx, "billing", 1, []string{"billing"}, owner.ID); !errors.Is(err, catalog.ErrNotPending) {
+		t.Fatalf("approving a live version: %v", err)
 	}
 	snap, _ := c.Snapshot(ctx, true)
 	if lt := snap.Types["billing/ledger"]; lt.AccessPermission != "billing.ledger.view" || !lt.ViaPlacement {
@@ -110,8 +111,12 @@ permissions:
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !slices.Equal(pv.Namespaces, []string{"payments", "billing"}) {
-		t.Fatalf("namespaces: %v", pv.Namespaces)
+	// Only the other service's namespace waits; payments' own needs nothing.
+	if pv.Status != "pending" || !slices.Equal(pv.Namespaces, []string{"billing"}) {
+		t.Fatalf("payments v1: %s %v", pv.Status, pv.Namespaces)
+	}
+	if _, err := c.Publish(ctx, "payments", []byte(strings.Replace(payments, "version: 1", "version: 2", 1)), "test"); !errors.Is(err, catalog.ErrPendingExists) {
+		t.Fatalf("second pending version: %v", err)
 	}
 	pv, _ = c.Approve(ctx, "payments", 1, []string{"payments"}, owner.ID)
 	if pv.Status != "pending" {
@@ -159,9 +164,6 @@ func TestPermissionLabels(t *testing.T) {
 	if _, err := c.Publish(ctx, "billing", []byte(labelled), "test"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := c.Approve(ctx, "billing", 1, []string{"billing"}, owner.ID); err != nil {
-		t.Fatal(err)
-	}
 	snap, _ = c.Snapshot(ctx, true)
 	if snap.Permissions["billing.ledger.view"].Label != "See ledgers" || snap.Permissions["billing.ledger.post"].Label != "" {
 		t.Fatalf("contract labels: %+v %+v", snap.Permissions["billing.ledger.view"], snap.Permissions["billing.ledger.post"])
@@ -170,9 +172,6 @@ func TestPermissionLabels(t *testing.T) {
 	// A label is display text: a later version may change it.
 	v2 := strings.Replace(strings.Replace(labelled, "version: 1", "version: 2", 1), "label: See ledgers", "label: Read ledgers", 1)
 	if _, err := c.Publish(ctx, "billing", []byte(v2), "test"); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := c.Approve(ctx, "billing", 2, []string{"billing"}, owner.ID); err != nil {
 		t.Fatal(err)
 	}
 	snap, _ = c.Snapshot(ctx, true)
