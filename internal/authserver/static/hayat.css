@@ -116,3 +116,25 @@ a { color: var(--accent-bright); }
 .link-sm:hover { text-decoration: underline; }
 .foot { margin: 0; font-size: 13px; color: var(--ink-faint); }
 .foot a { font-weight: 600; text-decoration: none; }
+.pw { position: relative; display: block; }
+.pw input { padding-right: 40px; }
+.pw-toggle {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--ink-faint);
+  cursor: pointer;
+  transition: color .15s, background .15s;
+}
+.pw-toggle:hover { color: var(--ink); background: var(--edge); }
+.pw-toggle:focus-visible { outline: 2px solid var(--accent-bright); outline-offset: 1px; }

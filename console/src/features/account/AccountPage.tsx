@@ -7,7 +7,7 @@ import { useQuery } from '@/shared/hooks/use-query'
 import { useAuth, useMe } from '@/features/auth'
 import { ErrorState, Field, LoadingState, PersonAvatar, Pill } from '@/shared/ui/bits'
 import { Button } from '@/shared/ui/button'
-import { Input } from '@/shared/ui/input'
+import { PasswordInput } from '@/shared/ui/password-input'
 import { Narrow, PageHeader, Section } from '@/shared/ui/page/PageHeader'
 import { ProfileForm } from './ProfileForm'
 import { SessionsTable } from './SessionsTable'
@@ -43,14 +43,14 @@ function PasswordForm({ hasPassword }: { hasPassword: boolean }) {
     <form onSubmit={submit} className="grid grid-cols-3 gap-4 rounded-xl border p-5 max-[760px]:grid-cols-1">
       {hasPassword && (
         <Field label="Current password" htmlFor="pw-current">
-          <Input id="pw-current" type="password" value={current} onChange={(e) => setCurrent(e.target.value)} autoComplete="current-password" required />
+          <PasswordInput id="pw-current" value={current} onChange={(e) => setCurrent(e.target.value)} autoComplete="current-password" required />
         </Field>
       )}
       <Field label="New password" htmlFor="pw-new" hint="At least 10 characters.">
-        <Input id="pw-new" type="password" value={next} onChange={(e) => setNext(e.target.value)} autoComplete="new-password" minLength={10} required />
+        <PasswordInput id="pw-new" value={next} onChange={(e) => setNext(e.target.value)} autoComplete="new-password" minLength={10} required />
       </Field>
       <Field label="Repeat new password" htmlFor="pw-confirm">
-        <Input id="pw-confirm" type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" minLength={10} required />
+        <PasswordInput id="pw-confirm" value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" minLength={10} required />
       </Field>
       <div className="col-span-full flex items-center justify-between gap-3">
         <p className="text-[12px] text-faint">Changing it signs you out everywhere except here.</p>
