@@ -6,7 +6,7 @@ import { Button } from '@/shared/ui/button'
 import { Checkbox } from '@/shared/ui/checkbox'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
+import { Combobox } from '@/shared/ui/combobox'
 import { Switch } from '@/shared/ui/switch'
 import { PLATFORM, qPerm, qType, uid, type Baseline, type Draft, type KnownType, type PermRow, type Problem, type RoleRow, type TypeRow } from './manifest'
 
@@ -170,7 +170,7 @@ export function ContractForm({ draft: d, onChange, known, base, problems, attemp
                       disabled={accessLocked}
                       onChange={(v) => setType(t.uid, { access: { ...access, viaPlacement: v } })}
                       label="Everyone in a group above it can open it"
-                      hint="People on the roster of a group it is filed under get this permission without a grant."
+                      hint="Without a grant: everyone in the group it is filed in (its sub-teams too), and anyone directly on a group further up. A sibling team never gets it."
                     />
                     <Tick
                       checked={access.requiresMembership}
@@ -387,18 +387,17 @@ function Chips({ options, selected, locked = [], onToggle }: { options: Option[]
 function OptionPick({ value, options, placeholder, disabled, invalid, label, onChange }: { value: string; options: Option[]; placeholder: string; disabled?: boolean; invalid?: boolean; label?: string; onChange: (v: string) => void }) {
   const all = value && !options.some((o) => o.value === value) ? [...options, { value, label: value, desc: 'Not declared' }] : options
   return (
-    <Select value={value || undefined} onValueChange={onChange} disabled={disabled}>
-      <SelectTrigger aria-label={label} aria-invalid={invalid} className="h-8 w-full font-mono text-[12px]">
-        <SelectValue placeholder={placeholder} />
-      </SelectTrigger>
-      <SelectContent position="popper">
-        {all.map((o) => (
-          <SelectItem key={o.value} value={o.value} className="font-mono text-[12px]">
-            {o.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <Combobox
+      aria-label={label}
+      value={value}
+      onChange={onChange}
+      options={all.map((o) => ({ value: o.value, label: o.label, keywords: o.desc ? [o.desc] : [] }))}
+      placeholder={placeholder}
+      disabled={disabled}
+      invalid={invalid}
+      className="font-mono text-[12px]"
+      contentClassName="font-mono **:data-[slot=command-item]:text-[12px]"
+    />
   )
 }
 

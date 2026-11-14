@@ -1,7 +1,7 @@
-import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/ui/button'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/shared/ui/dropdown-menu'
+import { Combobox } from '@/shared/ui/combobox'
 
 /**
  * The footer under every table, the same as tabletsgo's: "1–10 of 42", a
@@ -73,21 +73,16 @@ export function Pagination({
         {onPageSizeChange && (
           <>
             <span className="text-faint">·</span>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm">
-                  {pageSize} rows
-                  <ChevronDown className="opacity-70" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent side="top" align="start" className="w-[120px]">
-                {pageSizeOptions.map((n) => (
-                  <DropdownMenuItem key={n} className={cn('text-[13px]', n === pageSize && 'font-semibold text-foreground')} onSelect={() => onPageSizeChange(n)}>
-                    {n} rows
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <Combobox
+              aria-label="Rows per page"
+              variant="ghost"
+              side="top"
+              value={String(pageSize)}
+              onChange={(v) => onPageSizeChange(Number(v))}
+              options={pageSizeOptions.map((n) => ({ value: String(n), label: `${n} rows` }))}
+              className="w-auto"
+              contentClassName="min-w-32"
+            />
           </>
         )}
       </div>

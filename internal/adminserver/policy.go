@@ -700,6 +700,27 @@ func (t *treeAdminService) GetNode(ctx context.Context, req *connect.Request[adm
 		for _, u := range users {
 			resp.Members = append(resp.Members, &adminv1.Member{User: toUser(u), JoinedAt: ts(joined[u.ID])})
 		}
+		nested, err := t.s.tree.SubgroupMembers(ctx, n)
+		if err != nil {
+			return nil, t.s.fail(err)
+		}
+		ids = ids[:0]
+		for _, m := range nested {
+			ids = append(ids, m.UserID)
+		}
+		people, err := t.s.ids.GetUsers(ctx, ids)
+		if err != nil {
+			return nil, t.s.fail(err)
+		}
+		byID := map[uuid.UUID]identity.User{}
+		for _, u := range people {
+			byID[u.ID] = u
+		}
+		for _, m := range nested {
+			if u, ok := byID[m.UserID]; ok {
+				resp.SubgroupMembers = append(resp.SubgroupMembers, &adminv1.SubgroupMember{User: toUser(u), Groups: toNodes(m.Groups)})
+			}
+		}
 	}
 	r, err := t.s.engine.At(ctx, caller(ctx).User.ID, n, authz.Consistency{Fresh: true})
 	if err != nil {
@@ -754,7 +775,9 @@ func (t *treeAdminService) RenameGroup(ctx context.Context, req *connect.Request
 
 // MoveNode needs organise where the node leaves and where it lands. Moving a
 // resource whose type grants access by placement re-decides who can open it,
-// so that also needs the right to grant on the resource (or owning it).
+// so that also needs the right to grant on the resource (or owning it); moving
+// a group puts its people in the groups above where it lands, so that needs
+// the right to grant there.
 func (t *treeAdminService) MoveNode(ctx context.Context, req *connect.Request[adminv1.MoveNodeRequest]) (*connect.Response[adminv1.MoveNodeResponse], error) {
 	n, err := t.s.node(ctx, req.Msg.Id)
 	if err != nil {
@@ -782,6 +805,13 @@ func (t *treeAdminService) MoveNode(ctx context.Context, req *connect.Request[ad
 	}
 	if snap.Types[n.Type].ViaPlacement {
 		if err := t.s.require(ctx, catalog.PermResourcesGrant, n); err != nil {
+			return nil, err
+		}
+	}
+	// A group's people count in every group above it, so where it lands
+	// decides which grants reach them: that is granting there.
+	if n.Type == catalog.TypeGroup {
+		if err := t.s.require(ctx, catalog.PermResourcesGrant, dest); err != nil {
 			return nil, err
 		}
 	}
@@ -957,6 +987,9 @@ func (t *treeAdminService) ListNodeAccess(ctx context.Context, req *connect.Requ
 		}
 		if a.GroupID != uuid.Nil {
 			out.GroupId = a.GroupID.String()
+		}
+		if a.ThroughID != uuid.Nil {
+			out.ThroughGroupId, out.ThroughGroupName = a.ThroughID.String(), a.ThroughName
 		}
 		if a.ExpiresAt != nil {
 			out.ExpiresAt = ts(*a.ExpiresAt)

@@ -5,10 +5,16 @@
 //  1. Owning any node on the chain allows every permission.
 //  2. A grant counts on its own node always, and below it only when it
 //     inherits. It counts when it names the person, or a group (or the tenant)
-//     whose roster holds them. Expired grants don't count.
+//     they count in. Groups nest like an org chart: someone on Payment's
+//     roster counts in Engineering too when Payment sits under it (see
+//     tree.Membership). Belonging goes up; a grant still only reaches down.
+//     Expired grants don't count.
 //  3. Placement: when the node's type grants its access permission by
-//     placement, being on the roster of a hayat/group above it gives that
-//     permission. The tenant never counts here — its roster is everyone, and
+//     placement, it opens to whoever counts in the nearest hayat/group above
+//     it (its own roster or a group nested under it), and to whoever is
+//     directly on the roster of a group further up. So a team sees what is
+//     filed with it and above it on its branch, and never what a sibling team
+//     filed. The tenant never counts here — its roster is everyone, and
 //     counting it would make every access list dead letter.
 //  4. A type that requires membership allows nothing to someone who isn't on
 //     the tenant's roster, whatever was granted.
@@ -56,6 +62,10 @@ type Reason struct {
 	PrincipalType string
 	PrincipalID   uuid.UUID
 	PrincipalName string
+	// ThroughID is the group nested under the granted (or placement) group
+	// that puts them in it, when they aren't on its own roster.
+	ThroughID   uuid.UUID
+	ThroughName string
 }
 
 func (r Reason) String() string {
@@ -65,15 +75,24 @@ func (r Reason) String() string {
 	case ReasonGrant:
 		via := "granted to them directly"
 		if r.PrincipalType == tree.PrincipalGroup {
-			via = fmt.Sprintf("granted to %s", r.PrincipalName)
+			via = fmt.Sprintf("granted to %s%s", r.PrincipalName, r.through())
 		}
 		return fmt.Sprintf("%s role on %s %q, %s", r.RoleName, kindName(r.NodeType), r.NodeName, via)
 	case ReasonPlacement:
-		return fmt.Sprintf("on the roster of group %q, where this is filed", r.NodeName)
+		return fmt.Sprintf("in group %q%s, where this is filed", r.NodeName, r.through())
 	case ReasonAdmin:
 		return "instance admin"
 	}
 	return r.Kind
+}
+
+// through reads ", through Payment" when they count in a group by being on
+// one nested under it.
+func (r Reason) through() string {
+	if r.ThroughID == uuid.Nil {
+		return ""
+	}
+	return fmt.Sprintf(" (through group %q, nested under it)", r.ThroughName)
 }
 
 // kindName is how a node type reads in a sentence.
@@ -168,22 +187,13 @@ func (e *Engine) compute(ctx context.Context, userID uuid.UUID, node tree.Node, 
 		return nil, err
 	}
 
-	groups := map[uuid.UUID]bool{}
+	var m tree.Membership
 	if node.TenantID != nil {
-		rows, err := db.Query(ctx, `SELECT group_id FROM group_members WHERE region = $1 AND tenant_id = $2 AND user_id = $3`,
-			node.Region, *node.TenantID, userID)
-		if err != nil {
+		if m, err = tree.LoadMembership(ctx, db, *node.TenantID, userID); err != nil {
 			return nil, err
 		}
-		for rows.Next() {
-			var g uuid.UUID
-			if err := rows.Scan(&g); err == nil {
-				groups[g] = true
-			}
-		}
-		rows.Close()
 		for _, n := range chain {
-			if n.Type == catalog.TypeTenant && groups[n.ID] {
+			if n.Type == catalog.TypeTenant && m.Direct[n.ID] {
 				r.Member = true
 			}
 		}
@@ -209,13 +219,18 @@ func (e *Engine) compute(ctx context.Context, userID uuid.UUID, node tree.Node, 
 	}
 	rows.Close()
 
-	// Names of the groups (or tenant) grants were made to, for the reasons.
+	// Names of the groups (or tenant) grants were made to, and of the groups
+	// that put them in those, for the reasons.
 	groupNames := map[uuid.UUID]string{}
+	plainNames := map[uuid.UUID]string{}
 	var groupPrincipals []uuid.UUID
 	for _, g := range grants {
-		if g.principalType == tree.PrincipalGroup && groups[g.principalID] {
+		if g.principalType == tree.PrincipalGroup && m.In(g.principalID) {
 			groupPrincipals = append(groupPrincipals, g.principalID)
 		}
+	}
+	for _, via := range m.Through {
+		groupPrincipals = append(groupPrincipals, via)
 	}
 	if len(groupPrincipals) > 0 {
 		rows, err := db.Query(ctx, `SELECT id, name, type FROM nodes WHERE region = ANY($1) AND id = ANY($2)`, regions, groupPrincipals)
@@ -226,6 +241,7 @@ func (e *Engine) compute(ctx context.Context, userID uuid.UUID, node tree.Node, 
 			var id uuid.UUID
 			var name, typ string
 			if rows.Scan(&id, &name, &typ) == nil {
+				plainNames[id] = name
 				if typ == catalog.TypeTenant {
 					groupNames[id] = fmt.Sprintf("everyone in %q", name)
 				} else {
@@ -258,7 +274,7 @@ func (e *Engine) compute(ctx context.Context, userID uuid.UUID, node tree.Node, 
 				continue
 			}
 			mine := (g.principalType == tree.PrincipalUser && g.principalID == userID) ||
-				(g.principalType == tree.PrincipalGroup && groups[g.principalID])
+				(g.principalType == tree.PrincipalGroup && m.In(g.principalID))
 			if !mine {
 				continue
 			}
@@ -272,6 +288,9 @@ func (e *Engine) compute(ctx context.Context, userID uuid.UUID, node tree.Node, 
 			why := at(anc)
 			why.Kind, why.RoleID, why.RoleName, why.PrincipalType, why.PrincipalID = ReasonGrant, role.ID, role.Name, g.principalType, g.principalID
 			why.PrincipalName = groupNames[g.principalID]
+			if via, ok := m.Through[g.principalID]; ok && g.principalType == tree.PrincipalGroup {
+				why.ThroughID, why.ThroughName = via, plainNames[via]
+			}
 			for _, p := range role.Permissions {
 				add(p, why)
 			}
@@ -280,13 +299,9 @@ func (e *Engine) compute(ctx context.Context, userID uuid.UUID, node tree.Node, 
 
 	nt := snap.Types[node.Type]
 	if nt.ViaPlacement && nt.AccessPermission != "" {
-		for _, anc := range chain {
-			if anc.ID != node.ID && anc.Type == catalog.TypeGroup && groups[anc.ID] {
-				why := at(anc)
-				why.Kind = ReasonPlacement
-				add(nt.AccessPermission, why)
-				break
-			}
+		if why, ok := placement(chain, node, m); ok {
+			why.ThroughName = plainNames[why.ThroughID]
+			add(nt.AccessPermission, why)
 		}
 	}
 
@@ -302,6 +317,38 @@ func (e *Engine) compute(ctx context.Context, userID uuid.UUID, node tree.Node, 
 		}
 	}
 	return r, nil
+}
+
+// placement finds the group above node that opens it to them, outermost
+// first: one whose roster they are on directly, or the nearest group above
+// node, which they also count in through a group nested under it. Counting
+// nesting only at the nearest group is what keeps sibling teams apart: being
+// in Payment puts you in Engineering, but Engineering's place on the chain of
+// something Promo filed must not open it to you.
+func placement(chain []tree.Node, node tree.Node, m tree.Membership) (Reason, bool) {
+	nearest := -1
+	for i := len(chain) - 1; i >= 0; i-- {
+		if chain[i].ID != node.ID && chain[i].Type == catalog.TypeGroup {
+			nearest = i
+			break
+		}
+	}
+	for i := 0; i <= nearest; i++ {
+		g := chain[i]
+		if g.Type != catalog.TypeGroup {
+			continue
+		}
+		direct := m.Direct[g.ID]
+		if !direct && (i != nearest || !m.In(g.ID)) {
+			continue
+		}
+		why := Reason{Kind: ReasonPlacement, NodeID: g.ID, NodeName: g.Name, NodeType: g.Type}
+		if !direct {
+			why.ThroughID = m.Through[g.ID]
+		}
+		return why, true
+	}
+	return Reason{}, false
 }
 
 func loadNodes(ctx context.Context, db store.DB, regions []string, ids []uuid.UUID) ([]tree.Node, error) {
@@ -348,24 +395,18 @@ func (e *Engine) LookupResources(ctx context.Context, userID uuid.UUID, perm, ty
 	}
 	db := e.store.Pool
 
-	var groupIDs []uuid.UUID
-	q := `SELECT group_id FROM group_members WHERE user_id = $1`
-	args := []any{userID}
+	// Every group they count in, nested ones included: a grant to Engineering
+	// reaches Payment's people, and what is filed under Engineering may open
+	// to them by placement. At sorts out which candidates really do.
+	scope := uuid.Nil
 	if tenantID != nil {
-		q += ` AND tenant_id = $2`
-		args = append(args, *tenantID)
+		scope = *tenantID
 	}
-	rows, err := db.Query(ctx, q, args...)
+	m, err := tree.LoadMembership(ctx, db, scope, userID)
 	if err != nil {
 		return nil, err
 	}
-	for rows.Next() {
-		var g uuid.UUID
-		if rows.Scan(&g) == nil {
-			groupIDs = append(groupIDs, g)
-		}
-	}
-	rows.Close()
+	groupIDs := m.Groups()
 
 	seeds := map[uuid.UUID]bool{}
 	collect := func(sql string, args ...any) error {
@@ -407,7 +448,7 @@ func (e *Engine) LookupResources(ctx context.Context, userID uuid.UUID, perm, ty
 	for id := range seeds {
 		ids = append(ids, id)
 	}
-	rows, err = db.Query(ctx, `SELECT path FROM nodes WHERE id = ANY($1)`, ids)
+	rows, err := db.Query(ctx, `SELECT path FROM nodes WHERE id = ANY($1)`, ids)
 	if err != nil {
 		return nil, err
 	}
@@ -499,13 +540,27 @@ func (e *Engine) LookupSubjects(ctx context.Context, perm string, node tree.Node
 	if err := collect(`SELECT principal_id FROM grants WHERE region = ANY($1) AND node_id = ANY($2) AND principal_type = 'user'`, regions, chainIDs); err != nil {
 		return nil, err
 	}
-	if err := collect(`SELECT m.user_id FROM group_members m WHERE m.group_id IN (
-			SELECT principal_id FROM grants WHERE region = ANY($1) AND node_id = ANY($2) AND principal_type = 'group')`, regions, chainIDs); err != nil {
+	// Grants to groups reach their rosters and the rosters of every group
+	// nested under them. (The tenant's roster is everyone; it nests nothing.)
+	if err := collect(`SELECT m.user_id FROM grants g
+		JOIN nodes p ON p.region = g.region AND p.id = g.principal_id
+		JOIN nodes n ON n.region = p.region AND (n.id = p.id OR (p.type = 'hayat/group' AND n.type = 'hayat/group' AND n.path LIKE p.path || '%'))
+		JOIN group_members m ON m.region = n.region AND m.group_id = n.id
+		WHERE g.region = ANY($1) AND g.node_id = ANY($2) AND g.principal_type = 'group'`, regions, chainIDs); err != nil {
 		return nil, err
 	}
-	// Placement: rosters of the groups above.
+	// Placement: rosters of the groups above, and of the groups nested under
+	// the nearest of them.
 	if err := collect(`SELECT m.user_id FROM group_members m JOIN nodes n ON n.region = m.region AND n.id = m.group_id
 		WHERE n.id = ANY($1) AND n.type = 'hayat/group'`, chainIDs); err != nil {
+		return nil, err
+	}
+	if err := collect(`WITH nearest AS (
+			SELECT region, tenant_id, path FROM nodes WHERE region = ANY($1) AND id = ANY($2) AND id <> $3 AND type = 'hayat/group'
+			ORDER BY depth DESC LIMIT 1)
+		SELECT m.user_id FROM nearest p
+		JOIN nodes n ON n.region = p.region AND n.tenant_id = p.tenant_id AND n.type = 'hayat/group' AND n.path LIKE p.path || '%'
+		JOIN group_members m ON m.region = n.region AND m.group_id = n.id`, regions, chainIDs, node.ID); err != nil {
 		return nil, err
 	}
 	if catalog.ServiceOf(perm) == catalog.Platform {

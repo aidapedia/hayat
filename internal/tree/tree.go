@@ -7,7 +7,10 @@
 //   - A node is deleted only when nothing is under it. No silent re-parenting.
 //   - A node mirroring a service's resource is created, renamed, moved and
 //     deleted by that service only.
-//   - Nesting groups never merges rosters: moving a group hands nobody access.
+//   - Groups nest like an org chart: whoever is on a group's roster counts in
+//     every group above it (membership.go). Moving a group therefore changes
+//     which grants reach its people; the admin API asks for the right to
+//     grant where it lands.
 //   - A grant to a user needs them on the tenant's roster; a grant to a group
 //     names a group of the same tenant, or the tenant itself ("everyone").
 //   - A role is granted only where it applies, and each of its permissions only

@@ -21,7 +21,12 @@ Design: <https://claude.ai/artifact/AceR8JGbXjPdNE2mz8WHck>
 
 **Phase 2, authorization**
 - **Resource tree**: tenants hold groups; groups hold groups and the resources
-  services file there. A group is a folder and a list of people at once.
+  services file there. A group is a folder and a list of people at once, and
+  groups nest like an org chart: whoever is on Payment (under Engineering) is
+  in Engineering too, so a grant to Engineering reaches them. Belonging goes
+  up, access goes down: a grant on Payment reaches nothing above it, and a team
+  never opens what a sibling team filed. A team lead is a role granted on the
+  team's node.
 - **Roles and grants**: a role is a set of permissions; a grant gives one to a
   person or group on a node, reaching everything below unless it says otherwise.
   Grants can expire.
@@ -48,7 +53,8 @@ Design: <https://claude.ai/artifact/AceR8JGbXjPdNE2mz8WHck>
   (every tenant, its groups and resources; right-click to add a group or move a
   node) with one access list per node (a row per role with a count and faces;
   it opens a modal of everyone it reaches and how, searchable and paged, that
-  marks who can be ungranted there and ungrants them together) and rosters. A
+  marks who can be ungranted there and ungrants them together) and rosters
+  (a group's own people, then everyone in the groups inside it, "via Payment"). A
   tenant's owner signs in to the same console and runs their tenant (members,
   rename, its Resource Tree) without being an instance admin; members see their
   tenants read-only unless granted more.
@@ -78,10 +84,21 @@ all with the password `hayat-dev-password`:
 | Account | Who |
 | --- | --- |
 | `admin@hayat.test` | instance admin |
-| `alice@hayat.test` | owns tenant Acme (groups Engineering › Backend, Frontend; Marketing) |
-| `bob@hayat.test` | Acme member, group manager of Engineering |
-| `carol@hayat.test` | Acme member on the Backend roster, no grants |
+| `alice@hayat.test` | owns tenant Acme |
+| `bob@hayat.test` | head of Engineering: on its roster, Group manager there (so over every team under it) |
+| `paula@hayat.test` | Team lead of Engineering › Payment |
+| `pete@hayat.test`, `priya@hayat.test` | members of Engineering › Payment |
+| `leo@hayat.test` | Team lead of Engineering › Promo |
+| `mia@hayat.test` | member of Engineering › Promo |
+| `carol@hayat.test` | member of Engineering › Platform, no grants |
+| `mona@hayat.test` | Team lead of Marketing |
 | `dave@hayat.test` | owns tenant Globex (group Sales) |
+
+Acme is a small org chart. Teams nest under their department, so Payment's,
+Promo's and Platform's people are all in Engineering too: open Engineering in
+the Resource Tree and they're listed "via Payment" and so on. "Team lead" is a
+custom role the seed makes (manage the team's roster, grant on what it files)
+and grants on each team; reshaping the tree stays with Group managers.
 
 `make seed` prints them again. `make db-reset` wipes the local Postgres so the
 next `make up` starts from scratch. `hayat seed` refuses to run without
@@ -142,7 +159,8 @@ Every OAuth client belongs to a service (see below).
    resource_types:
      - name: ledger
        parents: [hayat/tenant, hayat/group]
-       # Placement: everyone on the roster of a group above a ledger may view it.
+       # Placement: everyone in the group a ledger is filed in (sub-teams included),
+       # and anyone directly on a group further up, may view it.
        access: { permission: ledger.view, via_placement: true, requires_membership: true }
    permissions:
      - { key: ledger.view, scope: ledger, label: View ledgers, description: See entries and balances }

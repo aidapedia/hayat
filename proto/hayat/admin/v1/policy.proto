@@ -406,12 +406,21 @@ message GetNodeResponse {
   // Root first, the node itself last.
   repeated Node ancestors = 2;
   repeated Grant grants = 3;
-  // The roster, for a group.
+  // The roster, for a group: the people on it directly.
   repeated Member members = 4;
   // What the caller may do here.
   repeated string my_permissions = 5;
   // Permissions that mean something here, for the access pickers.
   repeated string permissions = 6;
+  // For a group: people who aren't on its own roster but on a group nested
+  // under it. They count as its members too: every grant to it reaches them.
+  repeated SubgroupMember subgroup_members = 7;
+}
+
+message SubgroupMember {
+  User user = 1;
+  // The nested groups they are on, outermost first.
+  repeated Node groups = 2;
 }
 
 message CreateGroupRequest {
@@ -494,6 +503,10 @@ message NodeAccess {
   string group_name = 9;
   // What placement gives: the type's access permission.
   string permission = 10;
+  // When via is group or placement and they aren't on that group's own
+  // roster: the group nested under it they are on.
+  string through_group_id = 11;
+  string through_group_name = 12;
 }
 message ListNodeAccessResponse {
   repeated NodeAccess entries = 1;

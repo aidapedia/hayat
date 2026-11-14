@@ -215,9 +215,9 @@ type MemberGrant struct {
 }
 
 // MemberGrants lists what the tenant's members were given, the way the authz
-// engine reads it: their own grants, their direct groups' (no nesting), the
-// tenant's "everyone" grants (the roster is the tenant node's group_members),
-// and the nodes they own. Expired grants are left out. `userIDs` narrows it to
+// engine reads it: their own grants, their groups' (a group they are on, or one
+// it is nested under), the tenant's "everyone" grants (the roster is the
+// tenant node's group_members), and the nodes they own. Expired grants are left out. `userIDs` narrows it to
 // those members; `keep` filters by node type.
 func (t *Service) MemberGrants(ctx context.Context, tenantID uuid.UUID, userIDs []uuid.UUID, keep func(nodeType string) bool) ([]MemberGrant, error) {
 	tenant, err := t.ByRef(ctx, catalog.TypeTenant, tenantID.String())
@@ -236,7 +236,10 @@ func (t *Service) MemberGrants(ctx context.Context, tenantID uuid.UUID, userIDs 
 		), reach AS (
 			SELECT r.user_id, 'user' AS principal_type, r.user_id AS principal_id FROM roster r
 			UNION ALL
-			SELECT gm.user_id, 'group', gm.group_id FROM group_members gm JOIN roster r ON r.user_id = gm.user_id
+			SELECT DISTINCT gm.user_id, 'group', a.id FROM group_members gm JOIN roster r ON r.user_id = gm.user_id
+			JOIN nodes g ON g.region = gm.region AND g.id = gm.group_id
+			JOIN nodes a ON a.region = g.region AND a.tenant_id = g.tenant_id
+				AND (a.id = g.id OR (a.type = 'hayat/group' AND g.type = 'hayat/group' AND g.path LIKE a.path || '%'))
 			WHERE gm.region = $1 AND gm.tenant_id = $3
 		)
 		SELECT r.user_id, `+cols+`, r.principal_type, r.principal_id, ro.slug, ro.name, g.inherit, coalesce(p.name, '')
@@ -299,15 +302,20 @@ type Access struct {
 	ExpiresAt *time.Time
 	GroupID   uuid.UUID // via group
 	GroupName string
+	// Through is the group nested under GroupID they are on, when they aren't
+	// on GroupID's own roster.
+	ThroughID   uuid.UUID
+	ThroughName string
 	// Permission is what placement gives, the type's access permission.
 	Permission string
 }
 
 // NodeAccess lists everyone who reaches n and every way they do, read the
 // way the authz engine walks the chain: owners of the node or any node above
-// it, grants on the node or inherited from above (a group's or the tenant's
-// expanded to its roster, nested groups not), and placement under a group
-// when the type opens that way. A type that requires membership leaves out
+// it, grants on the node or inherited from above (a group's expanded to its
+// roster and the rosters of the groups nested under it; the tenant's to its
+// roster), and placement when the type opens that way: the direct rosters of
+// the groups above, and the groups nested under the nearest of them. A type that requires membership leaves out
 // whoever isn't on the tenant's roster. Expired grants and roles the catalog
 // no longer has are left out. What was given, not what it adds up to.
 func (t *Service) NodeAccess(ctx context.Context, n Node) ([]Access, error) {
@@ -406,6 +414,28 @@ func (t *Service) NodeAccess(ctx context.Context, n Node) ([]Access, error) {
 		}
 	}
 
+	// Who counts in a group through one nested under it: the granted groups,
+	// and the nearest group above for placement.
+	var nearest Node
+	if placement {
+		for i := len(chain) - 1; i >= 0; i-- {
+			if chain[i].ID != n.ID && chain[i].Type == catalog.TypeGroup {
+				nearest = chain[i]
+				break
+			}
+		}
+	}
+	nestIn := []uuid.UUID{}
+	for id, g := range groups {
+		if g.Type == catalog.TypeGroup {
+			nestIn = append(nestIn, id)
+		}
+	}
+	nested, err := nestedRosters(ctx, db, regions, nestIn)
+	if err != nil {
+		return nil, err
+	}
+
 	byID := map[uuid.UUID]Node{}
 	for _, anc := range chain {
 		byID[anc.ID] = anc
@@ -434,6 +464,10 @@ func (t *Service) NodeAccess(ctx context.Context, n Node) ([]Access, error) {
 			a.UserID = u
 			out = append(out, a)
 		}
+		for _, nm := range nested[p.ID] {
+			a.UserID, a.ThroughID, a.ThroughName = nm.userID, nm.via.ID, nm.via.Name
+			out = append(out, a)
+		}
 	}
 	if placement {
 		for _, anc := range chain {
@@ -442,6 +476,12 @@ func (t *Service) NodeAccess(ctx context.Context, n Node) ([]Access, error) {
 			}
 			for _, u := range rosters[anc.ID] {
 				out = append(out, Access{UserID: u, Via: ViaPlacement, Source: anc, GroupID: anc.ID, GroupName: anc.Name, Permission: nt.AccessPermission})
+			}
+		}
+		if nearest.ID != uuid.Nil {
+			for _, nm := range nested[nearest.ID] {
+				out = append(out, Access{UserID: nm.userID, Via: ViaPlacement, Source: nearest, GroupID: nearest.ID, GroupName: nearest.Name,
+					ThroughID: nm.via.ID, ThroughName: nm.via.Name, Permission: nt.AccessPermission})
 			}
 		}
 	}
@@ -460,4 +500,44 @@ func (t *Service) NodeAccess(ctx context.Context, n Node) ([]Access, error) {
 		out = kept
 	}
 	return out, nil
+}
+
+type nestedMember struct {
+	userID uuid.UUID
+	via    Node // the group closest under the outer one that they are on
+}
+
+// nestedRosters lists, for each of these groups, the people who count in it
+// only through a group nested under it: one entry each, through the
+// shallowest such group.
+func nestedRosters(ctx context.Context, db store.DB, regions []string, groupIDs []uuid.UUID) (map[uuid.UUID][]nestedMember, error) {
+	out := map[uuid.UUID][]nestedMember{}
+	if len(groupIDs) == 0 {
+		return out, nil
+	}
+	rows, err := db.Query(ctx, `SELECT p.id, m.user_id, `+prefixed("n")+`
+		FROM nodes p
+		JOIN nodes n ON n.region = p.region AND n.tenant_id = p.tenant_id AND n.type = 'hayat/group' AND n.id <> p.id AND n.path LIKE p.path || '%'
+		JOIN group_members m ON m.region = n.region AND m.group_id = n.id
+		WHERE p.region = ANY($1) AND p.id = ANY($2)
+		  AND NOT EXISTS (SELECT 1 FROM group_members d WHERE d.region = p.region AND d.group_id = p.id AND d.user_id = m.user_id)
+		ORDER BY p.id, n.depth, n.name`, regions, groupIDs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	seen := map[[2]uuid.UUID]bool{}
+	for rows.Next() {
+		var outer, u uuid.UUID
+		var g Node
+		if err := rows.Scan(&outer, &u, &g.ID, &g.Region, &g.TenantID, &g.ParentID, &g.Type, &g.ExternalID, &g.Name, &g.OwnerID,
+			&g.Path, &g.Depth, &g.CreatedAt, &g.UpdatedAt); err != nil {
+			return nil, err
+		}
+		if key := [2]uuid.UUID{outer, u}; !seen[key] {
+			seen[key] = true
+			out[outer] = append(out[outer], nestedMember{userID: u, via: g})
+		}
+	}
+	return out, rows.Err()
 }

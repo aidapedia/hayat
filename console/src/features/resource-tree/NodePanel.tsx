@@ -2,7 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { FolderPlus, MoveRight, Pencil, Search, ShieldPlus, Trash2, UserMinus, UserPlus, X } from 'lucide-react'
-import { TreeAdminService, type Node } from '@/shared/api/gen/hayat/admin/v1/policy_pb'
+import { TreeAdminService, type Node, type SubgroupMember } from '@/shared/api/gen/hayat/admin/v1/policy_pb'
 import type { Member } from '@/shared/api/gen/hayat/admin/v1/admin_pb'
 import { errorMessage, useClient } from '@/shared/api/client'
 import { useQuery } from '@/shared/hooks/use-query'
@@ -40,6 +40,30 @@ function PanelSection({ title, count, action, children }: { title: string; count
 
 function Empty({ children }: { children: ReactNode }) {
   return <p className="rounded-[10px] border border-dashed px-3 py-4 text-center text-[12px] text-faint">{children}</p>
+}
+
+/**
+ * Someone in this group because they are on a group inside it. Read-only
+ * here: they leave by being taken off that group's roster.
+ */
+function SubgroupMemberRow({ member, tenantId }: { member: SubgroupMember; tenantId: string }) {
+  const via = member.groups[0]
+  return (
+    <li className="flex items-center justify-between gap-3 px-3 py-2.5">
+      <PersonRow name={member.user!.name} email={member.user!.email} />
+      {via && (
+        <Link
+          to={nodeHref(tenantId, via.id)}
+          title={`On ${member.groups.map((g) => g.name).join(', ')}. Remove them there.`}
+          className="inline-flex max-w-[45%] shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] text-muted-foreground hover:text-foreground"
+        >
+          <NodeIcon type={GROUP} className="size-3 shrink-0" />
+          <span className="truncate">via {via.name}</span>
+          {member.groups.length > 1 && <span className="text-faint">+{member.groups.length - 1}</span>}
+        </Link>
+      )}
+    </li>
+  )
 }
 
 /**
@@ -265,7 +289,7 @@ export function NodePanel({
         {isGroup && (
           <PanelSection
             title="People in this group"
-            count={data.members.length}
+            count={data.members.length + data.subgroupMembers.length}
             action={
               can(P.groups) && (
                 <Button variant="outline" size="xs" onClick={() => setDialog('member')}>
@@ -274,8 +298,8 @@ export function NodePanel({
               )
             }
           >
-            {data.members.length === 0 ? (
-              <Empty>Nobody yet. Grants to the group reach whoever is listed here.</Empty>
+            {data.members.length + data.subgroupMembers.length === 0 ? (
+              <Empty>Nobody yet. Grants to the group reach whoever is listed here, and everyone in the groups inside it.</Empty>
             ) : (
               <ul className="divide-y rounded-[10px] border">
                 {data.members.map((m) => (
@@ -292,6 +316,9 @@ export function NodePanel({
                       </Button>
                     )}
                   </li>
+                ))}
+                {data.subgroupMembers.map((m) => (
+                  <SubgroupMemberRow key={m.user!.id} member={m} tenantId={tenantId} />
                 ))}
               </ul>
             )}

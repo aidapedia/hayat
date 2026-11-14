@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -227,5 +228,142 @@ func TestExplanation(t *testing.T) {
 	must(t, err)
 	if !ok || why.Kind != authz.ReasonPlacement || why.NodeID != w.finance.ID {
 		t.Fatalf("want placement through Finance, got %+v", why)
+	}
+}
+
+// Groups nest like an org chart: Ben is on Payables, so he is in Finance too.
+// Belonging goes up, access still only goes down, and sibling teams stay apart.
+//
+//	Acme
+//	├─ Ledger 2
+//	└─ Finance            (Ana)
+//	   ├─ Ledger 4
+//	   ├─ Payables        (Ben)
+//	   │  ├─ Ledger 1
+//	   │  └─ AP Team      (Ben)
+//	   └─ Receivables
+//	      └─ Ledger 3
+func TestNestedGroupsBelongUp(t *testing.T) {
+	w := build(t)
+	ctx := w.ctx
+	ap, _, err := w.tree.CreateGroup(ctx, w.sub.ID, "AP Team", "test")
+	must(t, err)
+	recv, _, err := w.tree.CreateGroup(ctx, w.finance.ID, "Receivables", "test")
+	must(t, err)
+	l3, _, err := w.tree.UpsertResource(ctx, "billing", tree.ResourceInput{Type: "billing/ledger", ExternalID: "l3", Name: "Ledger 3", ParentID: recv.ID})
+	must(t, err)
+	l4, _, err := w.tree.UpsertResource(ctx, "billing", tree.ResourceInput{Type: "billing/ledger", ExternalID: "l4", Name: "Ledger 4", ParentID: w.finance.ID})
+	must(t, err)
+	for _, g := range []uuid.UUID{w.sub.ID, ap.ID} {
+		_, err = w.tree.AddGroupMember(ctx, g, w.users["ben"], "test")
+		must(t, err)
+	}
+
+	// Placement: his team's things and what is filed above it, never a sibling's.
+	if !w.can("ben", "billing.ledger.view", w.l1) {
+		t.Error("Ledger 1 is filed with Payables, Ben's team")
+	}
+	if !w.can("ben", "billing.ledger.view", l4) {
+		t.Error("Ledger 4 is filed under Finance, and Ben is in Finance through Payables")
+	}
+	if w.can("ben", "billing.ledger.view", l3) {
+		t.Error("Ledger 3 belongs to Receivables, a sibling team: being in Finance must not open it")
+	}
+	if !w.can("ana", "billing.ledger.view", l3) {
+		t.Error("Ana is on Finance's own roster, so everything filed under Finance opens to her")
+	}
+	n4, _ := w.tree.Get(ctx, l4.ID)
+	_, why, _, err := w.engine.Check(ctx, w.users["ben"], "billing.ledger.view", n4, authz.Consistency{})
+	must(t, err)
+	if why.Kind != authz.ReasonPlacement || why.NodeID != w.finance.ID || why.ThroughID != w.sub.ID {
+		t.Errorf("want placement in Finance through Payables, got %+v", why)
+	}
+
+	// A grant to Finance reaches Payables' people; one to Payables reaches nobody above.
+	_, _, err = w.tree.AddGrant(ctx, tree.GrantInput{NodeID: w.l2.ID, PrincipalType: tree.PrincipalGroup,
+		PrincipalID: w.finance.ID, RoleID: w.accRole}, "test")
+	must(t, err)
+	_, _, err = w.tree.AddGrant(ctx, tree.GrantInput{NodeID: l4.ID, PrincipalType: tree.PrincipalGroup,
+		PrincipalID: w.sub.ID, RoleID: w.accRole}, "test")
+	must(t, err)
+	if !w.can("ben", "billing.ledger.post", w.l2) {
+		t.Error("a grant to Finance reaches Ben, who is on Payables under it")
+	}
+	if w.can("ana", "billing.ledger.post", l4) {
+		t.Error("a grant to Payables must not reach Ana, who is only on Finance above it")
+	}
+	n2, _ := w.tree.Get(ctx, w.l2.ID)
+	_, why, _, err = w.engine.Check(ctx, w.users["ben"], "billing.ledger.post", n2, authz.Consistency{})
+	must(t, err)
+	if why.PrincipalID != w.finance.ID || why.ThroughID != w.sub.ID || !strings.Contains(why.String(), `"Payables"`) {
+		t.Errorf("want the Finance grant, through Payables (the group closest under Finance, not AP Team): %+v / %s", why, why)
+	}
+
+	// The lookups agree with Check.
+	got, err := w.engine.LookupResources(ctx, w.users["ben"], "billing.ledger.view", "billing/ledger", nil, authz.Consistency{}, 0)
+	must(t, err)
+	var names []string
+	for _, n := range got {
+		names = append(names, n.Name)
+	}
+	if !slices.Equal(names, []string{"Ledger 1", "Ledger 2", "Ledger 4"}) {
+		t.Errorf("LookupResources for Ben: %v", names)
+	}
+	holds := func(n tree.Node, name string) bool {
+		n, _ = w.tree.Get(ctx, n.ID)
+		subjects, err := w.engine.LookupSubjects(ctx, "billing.ledger.view", n, authz.Consistency{})
+		must(t, err)
+		return slices.ContainsFunc(subjects, func(s authz.Subject) bool { return s.UserID == w.users[name] })
+	}
+	if !holds(l4, "ben") || !holds(w.l2, "ben") || holds(l3, "ben") {
+		t.Error("LookupSubjects disagrees with Check about Ben")
+	}
+
+	// Who reaches a node, and the tenant's grants, say "through Payables".
+	access, err := w.tree.NodeAccess(ctx, n4)
+	must(t, err)
+	if !slices.ContainsFunc(access, func(a tree.Access) bool {
+		return a.UserID == w.users["ben"] && a.Via == tree.ViaPlacement && a.GroupID == w.finance.ID && a.ThroughName == "Payables"
+	}) {
+		t.Errorf("NodeAccess on Ledger 4 should show Ben in Finance through Payables: %+v", access)
+	}
+	access, err = w.tree.NodeAccess(ctx, n2)
+	must(t, err)
+	if !slices.ContainsFunc(access, func(a tree.Access) bool {
+		return a.UserID == w.users["ben"] && a.Via == tree.ViaGroup && a.GroupID == w.finance.ID && a.ThroughID == w.sub.ID
+	}) {
+		t.Errorf("NodeAccess on Ledger 2 should show the Finance grant reaching Ben: %+v", access)
+	}
+	grants, err := w.tree.MemberGrants(ctx, w.tenant.ID, []uuid.UUID{w.users["ben"]}, nil)
+	must(t, err)
+	financeGrants := 0
+	for _, g := range grants {
+		if g.Via == tree.ViaGroup && g.GroupID == w.finance.ID {
+			financeGrants++
+		}
+	}
+	if financeGrants != 1 {
+		t.Errorf("MemberGrants should list the Finance grant once for Ben (he is on two groups under it), got %d: %+v", financeGrants, grants)
+	}
+
+	// Finance's roster, read whole: Ana on it, Ben through Payables and AP Team.
+	nested, err := w.tree.SubgroupMembers(ctx, w.finance)
+	must(t, err)
+	if len(nested) != 1 || nested[0].UserID != w.users["ben"] || len(nested[0].Groups) != 2 ||
+		nested[0].Groups[0].ID != w.sub.ID || nested[0].Groups[1].ID != ap.ID {
+		t.Errorf("SubgroupMembers of Finance: %+v", nested)
+	}
+
+	// Moving Payables out of Finance takes Ben out of Finance.
+	_, _, err = w.tree.Move(ctx, w.sub.ID, w.tenantN.ID, "test")
+	must(t, err)
+	if w.can("ben", "billing.ledger.post", w.l2) {
+		t.Error("after the move Payables is no longer under Finance, so the Finance grant no longer reaches Ben")
+	}
+	n4, _ = w.tree.Get(ctx, l4.ID)
+	_, why, _, err = w.engine.Check(ctx, w.users["ben"], "billing.ledger.view", n4, authz.Consistency{})
+	must(t, err)
+	if why.Kind != authz.ReasonGrant || why.PrincipalID != w.sub.ID {
+		t.Errorf("Ben keeps Ledger 4 only through the grant to Payables, not by placement in Finance: %+v", why)
 	}
 }

@@ -10,11 +10,12 @@ import { cn } from '@/shared/lib/utils'
 import { Field, LoadingState, SearchInput } from '@/shared/ui/bits'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
+import { Combobox } from '@/shared/ui/combobox'
 import { Switch } from '@/shared/ui/switch'
 import { allMembers, allTenants } from './api'
 import { Shell, useSubmit } from './dialogs'
 import { NodeIcon } from './NodeIcon'
+import { PrincipalPicker } from './PrincipalPicker'
 import { GROUP, isContainer, nodePath, TENANT, typeLabel } from './tree'
 
 /** "Tenant, Group" — the node types this role may be granted on. */
@@ -95,26 +96,19 @@ export function GrantRoleDialog({ role, onClose, onDone }: { role: Role; onClose
       onSubmit={submit}
     >
       <Field label="Tenant" hint={tenants.error ?? undefined}>
-        <Select
+        <Combobox
+          aria-label="Tenant"
           value={tenantId}
-          onValueChange={(v) => {
+          onChange={(v) => {
             setTenantId(v)
             setNodeId('')
             setPrincipal('')
             setQuery('')
           }}
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder={tenants.loading ? 'Loading tenants…' : 'Choose a tenant'} />
-          </SelectTrigger>
-          <SelectContent>
-            {(tenants.data ?? []).map((t) => (
-              <SelectItem key={t.id} value={t.id}>
-                {t.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          options={(tenants.data ?? []).map((t) => ({ value: t.id, label: t.name }))}
+          placeholder={tenants.loading ? 'Loading tenants…' : 'Choose a tenant'}
+          searchPlaceholder="Search tenants…"
+        />
       </Field>
 
       <Field label="On which node" hint={node ? nodePath(byId, node).join(' › ') : 'The grant applies here, and below it when it inherits.'}>
@@ -163,41 +157,15 @@ export function GrantRoleDialog({ role, onClose, onDone }: { role: Role; onClose
       </Field>
 
       <Field label="To">
-        <div className="flex gap-2">
-          <Select
-            value={kind}
-            onValueChange={(v) => {
-              setKind(v as 'user' | 'group')
-              setPrincipal('')
-            }}
-          >
-            <SelectTrigger className="w-28">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="user">Person</SelectItem>
-              <SelectItem value="group">Group</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={principal} onValueChange={setPrincipal} disabled={!tenantId}>
-            <SelectTrigger className="min-w-0 flex-1">
-              <SelectValue placeholder={kind === 'user' ? 'Choose a member' : 'Choose a group'} />
-            </SelectTrigger>
-            <SelectContent>
-              {kind === 'user'
-                ? (members.data ?? []).map((m) => (
-                    <SelectItem key={m.user!.id} value={m.user!.id}>
-                      {m.user!.name ? `${m.user!.name} · ${m.user!.email}` : m.user!.email}
-                    </SelectItem>
-                  ))
-                : groups.map((g) => (
-                    <SelectItem key={g.id} value={g.id}>
-                      {g.type === TENANT ? `Everyone in ${g.name}` : nodePath(byId, g).slice(1).join(' › ') || g.name}
-                    </SelectItem>
-                  ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <PrincipalPicker
+          kind={kind}
+          principal={principal}
+          members={members.data ?? []}
+          groups={groups.map((g) => ({ value: g.id, label: g.type === TENANT ? `Everyone in ${g.name}` : nodePath(byId, g).slice(1).join(' › ') || g.name }))}
+          disabled={!tenantId}
+          onKind={setKind}
+          onPrincipal={setPrincipal}
+        />
       </Field>
 
       <Label className="flex items-start justify-between gap-4 rounded-[10px] border px-3 py-2.5 font-normal">

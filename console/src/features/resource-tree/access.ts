@@ -50,10 +50,12 @@ export function wayText(w: NodeAccess, node: Node, tenantName: string) {
       : w.via === 'user'
         ? 'Direct'
         : w.via === 'group'
-          ? `Through ${w.groupName}`
+          ? `Through ${w.groupName}${w.throughGroupName ? ` (via ${w.throughGroupName})` : ''}`
           : w.via === 'everyone'
             ? `Everyone in ${tenantName}`
-            : `On ${w.groupName}'s roster`
+            : w.throughGroupName
+              ? `In ${w.groupName} via ${w.throughGroupName}`
+              : `On ${w.groupName}'s roster`
   const src = w.source
   const from =
     !src || src.id === node.id || w.via === 'placement' ? '' : src.type === 'hayat/root' ? ' · whole instance' : ` · from ${src.name}`
@@ -66,7 +68,7 @@ export function whyNotRemovable(p: Person, node: Node) {
   const w = p.ways[0]
   if (!w) return ''
   if (w.via === 'owner') return 'Owner, always has it'
-  if (w.via === 'group') return `Remove from ${w.groupName} instead`
+  if (w.via === 'group') return `Remove from ${w.throughGroupName || w.groupName} instead`
   if (w.via === 'everyone') return 'Every tenant member has it'
   if (w.via === 'placement') return `Move it out of ${w.groupName} instead`
   if (w.source && w.source.id !== node.id) return `Ungrant on ${w.source.type === 'hayat/root' ? 'the instance' : w.source.name} instead`

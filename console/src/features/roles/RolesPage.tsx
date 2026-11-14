@@ -4,7 +4,7 @@ import { SearchX } from 'lucide-react'
 import type { Role } from '@/shared/api/gen/hayat/admin/v1/policy_pb'
 import { EmptyState, ErrorState, LoadingState, SearchInput } from '@/shared/ui/bits'
 import { cn } from '@/shared/lib/utils'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
+import { Combobox } from '@/shared/ui/combobox'
 import { Pagination } from '@/shared/ui/table/Pagination'
 import { usePagination } from '@/shared/ui/table/usePagination'
 import { HowRolesWork } from './components/HowRolesWork'
@@ -98,20 +98,17 @@ export default function RolesPage() {
           <div className="mt-5 flex flex-wrap items-center gap-2.5">
             <SearchInput value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search roles or permissions, e.g. “connection”" aria-label="Search roles" className="min-w-[240px] flex-1" />
             {services.length > 1 && (
-              <Select value={service || ANY_SERVICE} onValueChange={(v) => setFilter({ service: v === ANY_SERVICE ? null : v })}>
-                <SelectTrigger aria-label="Uses permissions from" className="min-w-[200px] text-[13px] data-[size=default]:h-9">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ANY_SERVICE}>Any service</SelectItem>
-                  {services.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      <ServiceMark service={s} size="xs" />
-                      {s.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Combobox
+                aria-label="Uses permissions from"
+                value={service || ANY_SERVICE}
+                onChange={(v) => setFilter({ service: v === ANY_SERVICE ? null : v })}
+                options={[
+                  { value: ANY_SERVICE, label: 'Any service' },
+                  ...services.map((s) => ({ value: s.id, label: s.name, icon: <ServiceMark service={s} size="xs" /> })),
+                ]}
+                searchPlaceholder="Search services…"
+                className="h-9 w-auto min-w-[200px] text-[13px]"
+              />
             )}
             <div role="group" aria-label="Who owns the role" className="flex gap-0.5 rounded-[10px] bg-muted p-[3px]">
               {SOURCES.map((s) => (

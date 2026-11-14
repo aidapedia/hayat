@@ -43,6 +43,14 @@ enterprise SSO, MFA) is next.
   admins get platform (`hayat.*`) permissions only, unknown keys dropped. Union
   only, no deny. Lookups must confirm every candidate with `At`, so they can't
   disagree with Check.
+- **Groups nest like an org chart: belonging goes up, access goes down.** Whoever
+  is on Payment's roster counts in Engineering above it (`tree.Membership`), so a
+  grant *to* Engineering reaches them; a grant *on* Payment reaches nothing above
+  it. Placement counts nesting only at the nearest group above a resource (plus
+  direct rosters further up), so sibling teams never open each other's things.
+  Rosters themselves stay flat (`group_members` is direct only); a team lead is a
+  role granted on the team's node, not a roster column. Moving a group needs
+  `resources.grant` where it lands.
 - **Every policy write bumps a revision** (`revision.Bump`, in the same
   transaction): the tenant's, or the global one for the catalog, roles, root and
   service grants, and account status/role. Caches key on revisions; Watch reads
@@ -120,3 +128,7 @@ deploy/compose/       docker-compose + .env.example
   `usePagination(rows)` for a list already loaded, `useServerPagination(fetchPage, deps)`
   for an API paged by `page_token` (no total: it offers the pages reached so far).
 - Calls go through `useClient(Service)`; show `errorMessage(err)` in a toast.
+- Every "pick one" list is `Combobox` (`shared/ui/combobox`), from Person/Group to
+  the time zones: options are `{ value, label, hint?, icon? }`, the search box
+  appears at 8+ options, `variant="ghost"` for a toolbar or table footer. There is
+  no `Select` — don't add shadcn's back.
