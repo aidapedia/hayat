@@ -103,6 +103,60 @@ service AccountService {
   rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordResponse);
   rpc ListMySessions(ListMySessionsRequest) returns (ListMySessionsResponse);
   rpc RevokeMySession(RevokeMySessionRequest) returns (RevokeMySessionResponse);
+  // How every app looks for the caller: one theme per account, which every
+  // service reads through DirectoryService.GetUserAppearance.
+  rpc GetMyAppearance(GetMyAppearanceRequest) returns (GetMyAppearanceResponse);
+  rpc SetMyAppearance(SetMyAppearanceRequest) returns (SetMyAppearanceResponse);
+}
+
+// A person's theme. Every field is optional: an empty one means "the app's own
+// default", so it only carries what the person changed. Colors are #rrggbb.
+message Appearance {
+  // The preset it started from ("tg-dark", "hayat-light", …) or "custom".
+  string preset = 1;
+  // system | light | dark: the neutral palette behind the colors left empty.
+  string mode = 2;
+  string accent = 3;
+  string background = 4;
+  string surface = 5;
+  string text = 6;
+  string muted = 7;
+  string border = 8;
+  // The sidebar follows the content colors; the four below are ignored.
+  bool sidebar_match_content = 9;
+  string sidebar_background = 10;
+  string sidebar_text = 11;
+  string sidebar_active = 12;
+  string sidebar_border = 13;
+  string success = 14;
+  string warning = 15;
+  string destructive = 16;
+  // system | inter | plex
+  string font = 17;
+  // The root font size in pixels, 12–18.
+  optional int32 text_size = 18;
+  // comfortable | compact | condensed
+  string density = 19;
+  // Corner radius in pixels, 0–18.
+  optional int32 radius = 20;
+  // Sidebar width in pixels, 200–320.
+  optional int32 sidebar_width = 21;
+  // narrow | default | full
+  string content_width = 22;
+}
+
+message GetMyAppearanceRequest {}
+message GetMyAppearanceResponse {
+  // Absent when the caller never chose a theme.
+  Appearance appearance = 1;
+}
+
+message SetMyAppearanceRequest {
+  // Absent (or setting nothing) goes back to every app's defaults.
+  Appearance appearance = 1;
+}
+message SetMyAppearanceResponse {
+  Appearance appearance = 1;
 }
 
 message GetMeRequest {}

@@ -17,6 +17,11 @@ Design: <https://claude.ai/artifact/AceR8JGbXjPdNE2mz8WHck>
 - **Accounts**: sign-up where the password is chosen from the emailed link,
   password reset, sessions with single sign-on across every application, and a
   first-admin setup page guarded by a token printed in the log.
+- **Appearance**: one theme per account — colors (accent, content, sidebar,
+  status), text size, density, corners, sidebar and content width, font —
+  edited at Account → Appearance and read by every service
+  (`DirectoryService.GetUserAppearance`), so every app looks the same for that
+  person. Anything left on Default stays each app's own.
 - **Tenants**: organisations shared by every service, with members and an owner.
 
 **Phase 2, authorization**
@@ -38,7 +43,7 @@ Design: <https://claude.ai/artifact/AceR8JGbXjPdNE2mz8WHck>
   waits for that service's owners to approve.
 - **Service API** (gRPC, gRPC-Web and Connect on one port): Check, BatchCheck,
   PermissionsAt, LookupResources, LookupSubjects, resource writes, user
-  profiles, a user's tenants, a tenant's roster and what each member was granted, a Watch stream of policy
+  profiles and themes, a user's tenants, a tenant's roster and what each member was granted, a Watch stream of policy
   changes, contract publishing.
 - **Import** (`hayat import`): moves another system's people and access in —
   tabletsgo writes the bundle when it hands identity over to Hayat.

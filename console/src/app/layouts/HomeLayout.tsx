@@ -6,20 +6,17 @@ import {
   KeyRound,
   LayoutDashboard,
   LogOut,
-  Monitor,
-  Moon,
   MoreHorizontal,
+  Palette,
   PanelLeft,
   ScrollText,
   ShieldCheck,
   ShieldHalf,
   FolderTree,
-  Sun,
   UserRound,
   Users,
 } from 'lucide-react'
 import { useAuth, useMe } from '@/features/auth'
-import { useTheme, type Theme } from '@/shared/lib/theme'
 import { PersonAvatar } from '@/shared/ui/bits'
 import {
   Breadcrumb,
@@ -35,8 +32,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/ui/dropdown-menu'
@@ -258,7 +253,6 @@ function NavRows({ items }: { items: NavEntry[] }) {
 function AccountMenu() {
   const { me } = useMe()
   const { signOut } = useAuth()
-  const { theme, setTheme } = useTheme()
   const navigate = useNavigate()
   const { state, isMobile, setOpenMobile } = useSidebar()
   const collapsed = state === 'collapsed' && !isMobile
@@ -298,18 +292,15 @@ function AccountMenu() {
           <UserRound /> Account settings
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuLabel className="text-[10px] font-bold tracking-wide text-faint uppercase">Theme</DropdownMenuLabel>
-        <DropdownMenuRadioGroup value={theme} onValueChange={(v) => setTheme(v as Theme)}>
-          <DropdownMenuRadioItem value="light" className="text-[13px]">
-            <Sun /> Light
-          </DropdownMenuRadioItem>
-          <DropdownMenuRadioItem value="dark" className="text-[13px]">
-            <Moon /> Dark
-          </DropdownMenuRadioItem>
-          <DropdownMenuRadioItem value="system" className="text-[13px]">
-            <Monitor /> System
-          </DropdownMenuRadioItem>
-        </DropdownMenuRadioGroup>
+        <DropdownMenuItem
+          className="text-[13px]"
+          onSelect={() => {
+            setOpenMobile(false)
+            navigate('/account/appearance')
+          }}
+        >
+          <Palette /> Appearance
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem className="text-[13px]" onSelect={() => void signOut()}>
           <LogOut /> Sign out
@@ -348,7 +339,7 @@ export default function HomeLayout() {
       }}
       className="h-full"
     >
-      <Sidebar collapsible="icon">
+      <Sidebar collapsible="icon" className="app-sidebar">
         <SidebarHeader className="border-b px-4 py-4 group-data-[collapsible=icon]:px-2">
           <Brand />
         </SidebarHeader>
@@ -380,7 +371,7 @@ export default function HomeLayout() {
       </Sidebar>
 
       <SidebarInset className="min-w-0">
-        <div className="flex items-center gap-3 border-b bg-sidebar px-4 py-3 md:hidden">
+        <div className="app-sidebar flex items-center gap-3 border-b bg-sidebar px-4 py-3 md:hidden">
           <SidebarTrigger className="size-9" />
           <span className="text-[15px] font-bold tracking-[-0.3px]">
             Hayat
@@ -388,7 +379,7 @@ export default function HomeLayout() {
         </div>
         {/* The one content container: every page gets the same width and gutters. */}
         <main className="min-h-0 flex-1 overflow-y-auto px-8 py-10 max-[600px]:px-4 max-[600px]:py-7">
-          <div className="mx-auto w-full max-w-[1280px]">
+          <div className="mx-auto w-full max-w-(--app-content-width)">
             <PageTrailProvider>
               <PageTrail nav={nav} />
               <Outlet />

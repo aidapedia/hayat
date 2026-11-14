@@ -16,6 +16,7 @@ const TenantDetailPage = lazy(() => import('@/features/tenants/TenantDetailPage'
 const KeysPage = lazy(() => import('@/features/keys/KeysPage'))
 const AuditPage = lazy(() => import('@/features/audit/AuditPage'))
 const AccountPage = lazy(() => import('@/features/account/AccountPage'))
+const AppearancePage = lazy(() => import('@/features/account/AppearancePage'))
 const RolesPage = lazy(() => import('@/features/roles/RolesPage'))
 const RoleDetailPage = lazy(() => import('@/features/roles/RoleDetailPage'))
 const RolesByServicePage = lazy(() => import('@/features/roles/RolesByServicePage'))
@@ -125,6 +126,14 @@ export default function App() {
                     element={
                       <Suspense fallback={<LoadingState />}>
                         <AccountPage />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="/account/appearance"
+                    element={
+                      <Suspense fallback={<LoadingState />}>
+                        <AppearancePage />
                       </Suspense>
                     }
                   />

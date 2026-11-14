@@ -506,6 +506,155 @@ export type GetResourceResponse = Message<"hayat.authz.v1.GetResourceResponse"> 
  */
 export declare const GetResourceResponseSchema: GenMessage<GetResourceResponse>;
 /**
+ * A person's theme. Every field is optional: an empty one means "your app's
+ * own default", so it only carries what the person changed. Colors are #rrggbb.
+ *
+ * @generated from message hayat.authz.v1.Appearance
+ */
+export type Appearance = Message<"hayat.authz.v1.Appearance"> & {
+    /**
+     * The preset it started from ("tg-dark", "hayat-light", …) or "custom".
+     *
+     * @generated from field: string preset = 1;
+     */
+    preset: string;
+    /**
+     * system | light | dark: the neutral palette behind the colors left empty.
+     *
+     * @generated from field: string mode = 2;
+     */
+    mode: string;
+    /**
+     * @generated from field: string accent = 3;
+     */
+    accent: string;
+    /**
+     * @generated from field: string background = 4;
+     */
+    background: string;
+    /**
+     * @generated from field: string surface = 5;
+     */
+    surface: string;
+    /**
+     * @generated from field: string text = 6;
+     */
+    text: string;
+    /**
+     * @generated from field: string muted = 7;
+     */
+    muted: string;
+    /**
+     * @generated from field: string border = 8;
+     */
+    border: string;
+    /**
+     * The sidebar follows the content colors; the four below are ignored.
+     *
+     * @generated from field: bool sidebar_match_content = 9;
+     */
+    sidebarMatchContent: boolean;
+    /**
+     * @generated from field: string sidebar_background = 10;
+     */
+    sidebarBackground: string;
+    /**
+     * @generated from field: string sidebar_text = 11;
+     */
+    sidebarText: string;
+    /**
+     * @generated from field: string sidebar_active = 12;
+     */
+    sidebarActive: string;
+    /**
+     * @generated from field: string sidebar_border = 13;
+     */
+    sidebarBorder: string;
+    /**
+     * @generated from field: string success = 14;
+     */
+    success: string;
+    /**
+     * @generated from field: string warning = 15;
+     */
+    warning: string;
+    /**
+     * @generated from field: string destructive = 16;
+     */
+    destructive: string;
+    /**
+     * system | inter | plex
+     *
+     * @generated from field: string font = 17;
+     */
+    font: string;
+    /**
+     * The root font size in pixels, 12–18.
+     *
+     * @generated from field: optional int32 text_size = 18;
+     */
+    textSize?: number | undefined;
+    /**
+     * comfortable | compact | condensed
+     *
+     * @generated from field: string density = 19;
+     */
+    density: string;
+    /**
+     * Corner radius in pixels, 0–18.
+     *
+     * @generated from field: optional int32 radius = 20;
+     */
+    radius?: number | undefined;
+    /**
+     * Sidebar width in pixels, 200–320.
+     *
+     * @generated from field: optional int32 sidebar_width = 21;
+     */
+    sidebarWidth?: number | undefined;
+    /**
+     * narrow | default | full
+     *
+     * @generated from field: string content_width = 22;
+     */
+    contentWidth: string;
+};
+/**
+ * Describes the message hayat.authz.v1.Appearance.
+ * Use `create(AppearanceSchema)` to create a new message.
+ */
+export declare const AppearanceSchema: GenMessage<Appearance>;
+/**
+ * @generated from message hayat.authz.v1.GetUserAppearanceRequest
+ */
+export type GetUserAppearanceRequest = Message<"hayat.authz.v1.GetUserAppearanceRequest"> & {
+    /**
+     * @generated from field: string user_id = 1;
+     */
+    userId: string;
+};
+/**
+ * Describes the message hayat.authz.v1.GetUserAppearanceRequest.
+ * Use `create(GetUserAppearanceRequestSchema)` to create a new message.
+ */
+export declare const GetUserAppearanceRequestSchema: GenMessage<GetUserAppearanceRequest>;
+/**
+ * @generated from message hayat.authz.v1.GetUserAppearanceResponse
+ */
+export type GetUserAppearanceResponse = Message<"hayat.authz.v1.GetUserAppearanceResponse"> & {
+    /**
+     * Absent when the person never chose a theme.
+     *
+     * @generated from field: hayat.authz.v1.Appearance appearance = 1;
+     */
+    appearance?: Appearance | undefined;
+};
+/**
+ * Describes the message hayat.authz.v1.GetUserAppearanceResponse.
+ * Use `create(GetUserAppearanceResponseSchema)` to create a new message.
+ */
+export declare const GetUserAppearanceResponseSchema: GenMessage<GetUserAppearanceResponse>;
+/**
  * @generated from message hayat.authz.v1.Tenant
  */
 export type Tenant = Message<"hayat.authz.v1.Tenant"> & {
@@ -619,6 +768,93 @@ export type ListTenantMembersResponse = Message<"hayat.authz.v1.ListTenantMember
  * Use `create(ListTenantMembersResponseSchema)` to create a new message.
  */
 export declare const ListTenantMembersResponseSchema: GenMessage<ListTenantMembersResponse>;
+/**
+ * @generated from message hayat.authz.v1.ListTenantGrantsRequest
+ */
+export type ListTenantGrantsRequest = Message<"hayat.authz.v1.ListTenantGrantsRequest"> & {
+    /**
+     * @generated from field: string tenant_id = 1;
+     */
+    tenantId: string;
+    /**
+     * Only these members; empty for everyone on the roster.
+     *
+     * @generated from field: repeated string user_ids = 2;
+     */
+    userIds: string[];
+};
+/**
+ * Describes the message hayat.authz.v1.ListTenantGrantsRequest.
+ * Use `create(ListTenantGrantsRequestSchema)` to create a new message.
+ */
+export declare const ListTenantGrantsRequestSchema: GenMessage<ListTenantGrantsRequest>;
+/**
+ * @generated from message hayat.authz.v1.MemberGrant
+ */
+export type MemberGrant = Message<"hayat.authz.v1.MemberGrant"> & {
+    /**
+     * @generated from field: string user_id = 1;
+     */
+    userId: string;
+    /**
+     * Where it was granted, or the node they own.
+     *
+     * @generated from field: hayat.authz.v1.Resource resource = 2;
+     */
+    resource?: Resource | undefined;
+    /**
+     * How it reaches the member: "owner" (they own the node), "user" (granted to
+     * them), "group" (to a group they are on) or "everyone" (to the tenant).
+     *
+     * @generated from field: string via = 3;
+     */
+    via: string;
+    /**
+     * The role's slug and display name; empty when via is "owner".
+     *
+     * @generated from field: string role = 4;
+     */
+    role: string;
+    /**
+     * @generated from field: string role_name = 5;
+     */
+    roleName: string;
+    /**
+     * Reaches the nodes below as well.
+     *
+     * @generated from field: bool inherit = 6;
+     */
+    inherit: boolean;
+    /**
+     * The group it was granted to, when via is "group".
+     *
+     * @generated from field: string group_id = 7;
+     */
+    groupId: string;
+    /**
+     * @generated from field: string group_name = 8;
+     */
+    groupName: string;
+};
+/**
+ * Describes the message hayat.authz.v1.MemberGrant.
+ * Use `create(MemberGrantSchema)` to create a new message.
+ */
+export declare const MemberGrantSchema: GenMessage<MemberGrant>;
+/**
+ * @generated from message hayat.authz.v1.ListTenantGrantsResponse
+ */
+export type ListTenantGrantsResponse = Message<"hayat.authz.v1.ListTenantGrantsResponse"> & {
+    /**
+     * @generated from field: repeated hayat.authz.v1.MemberGrant grants = 1;
+     */
+    grants: MemberGrant[];
+};
+/**
+ * Describes the message hayat.authz.v1.ListTenantGrantsResponse.
+ * Use `create(ListTenantGrantsResponseSchema)` to create a new message.
+ */
+export declare const ListTenantGrantsResponseSchema: GenMessage<ListTenantGrantsResponse>;
 /**
  * @generated from message hayat.authz.v1.User
  */
@@ -946,6 +1182,31 @@ export declare const DirectoryService: GenService<{
         methodKind: "unary";
         input: typeof ListTenantMembersRequestSchema;
         output: typeof ListTenantMembersResponseSchema;
+    };
+    /**
+     * What each member was given in a tenant: grants made to them, to a group
+     * they are on, or to the whole tenant, and the nodes they own. What was
+     * granted, not what it adds up to: ask PermissionsAt for that. Only the
+     * tenant, its groups and the calling service's own resource types are listed.
+     *
+     * @generated from rpc hayat.authz.v1.DirectoryService.ListTenantGrants
+     */
+    listTenantGrants: {
+        methodKind: "unary";
+        input: typeof ListTenantGrantsRequestSchema;
+        output: typeof ListTenantGrantsResponseSchema;
+    };
+    /**
+     * How every app looks for a person: one theme per account, chosen in Hayat's
+     * console. Apply it to their session; don't keep a copy, so a change shows
+     * on their next page load.
+     *
+     * @generated from rpc hayat.authz.v1.DirectoryService.GetUserAppearance
+     */
+    getUserAppearance: {
+        methodKind: "unary";
+        input: typeof GetUserAppearanceRequestSchema;
+        output: typeof GetUserAppearanceResponseSchema;
     };
 }>;
 /**

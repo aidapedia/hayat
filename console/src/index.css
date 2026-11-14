@@ -97,6 +97,21 @@
     --sidebar-ring: #1d6a54;
 }
 
+/* Navigation. The sidebar paints with its own --sidebar-* tokens, but its
+   labels, hints and rules use the content ones; inside it (`.app-sidebar`)
+   those answer with this --nav-* set. Each defaults to the content token, so
+   nothing changes until a person picks sidebar colors (shared/lib/theme.tsx
+   sets them then). Also the content width a person can change. */
+:root {
+    --nav-foreground: var(--foreground);
+    --nav-muted: var(--muted-foreground);
+    --nav-faint: var(--faint);
+    --nav-accent: var(--accent);
+    --nav-border: var(--border);
+    --nav-primary: var(--primary);
+    --app-content-width: 1280px;
+}
+
 .dark {
     --background: #080a09;
     --foreground: #f2f5f3;
@@ -148,6 +163,17 @@
   html {
     @apply font-sans;
     }
+}
+@layer base {
+  .app-sidebar {
+    --foreground: var(--nav-foreground);
+    --muted-foreground: var(--nav-muted);
+    --faint: var(--nav-faint);
+    --accent: var(--nav-accent);
+    --accent-foreground: var(--nav-foreground);
+    --border: var(--nav-border);
+    --primary: var(--nav-primary);
+  }
 }
 @layer base {
   html, body, #root { height: 100%; }

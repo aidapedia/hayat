@@ -93,6 +93,17 @@ export default function AccountPage() {
               }}
             />
           </Section>
+          <Section
+            title="Appearance"
+            desc="Colors, sizes and type — one theme for every app you sign in to with Hayat."
+            action={
+              <Button asChild variant="outline">
+                <Link to="/account/appearance">Customize</Link>
+              </Button>
+            }
+          >
+            {null}
+          </Section>
           <Section title="Password">
             <PasswordForm hasPassword={user.hasPassword} />
           </Section>

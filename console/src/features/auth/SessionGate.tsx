@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router'
 import { AccountService, type GetMeResponse } from '@/shared/api/gen/hayat/admin/v1/admin_pb'
 import { errorMessage, useClient } from '@/shared/api/client'
 import { setDisplayZone } from '@/shared/lib/datetime'
+import { useTheme } from '@/shared/lib/theme'
 import { Button } from '@/shared/ui/button'
 import { LoadingState } from '@/shared/ui/bits'
 import { useAuth } from './AuthContext'
@@ -21,6 +22,7 @@ export function useMe() {
 export function SessionGate({ children }: { children: ReactNode }) {
   const { manager, signIn, signOut } = useAuth()
   const account = useClient(AccountService)
+  const { receive } = useTheme()
   const [me, setMe] = useState<GetMeResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -31,14 +33,20 @@ export function SessionGate({ children }: { children: ReactNode }) {
       return
     }
     try {
-      const res = await account.getMe({})
+      // The theme is the account's, so it arrives with the account. A failure
+      // to read it only costs the defaults.
+      const [res, look] = await Promise.all([
+        account.getMe({}),
+        account.getMyAppearance({}).then((r) => r.appearance ?? null, () => null),
+      ])
       setDisplayZone(res.user?.zoneinfo)
+      receive(look)
       setMe(res)
       setError(null)
     } catch (err) {
       setError(errorMessage(err))
     }
-  }, [manager, signIn, account])
+  }, [manager, signIn, account, receive])
 
   useEffect(() => {
     void load()

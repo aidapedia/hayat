@@ -12,6 +12,7 @@ package identity
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/mail"
@@ -365,6 +366,7 @@ type ImportedUser struct {
 	Status       string // pending | active | disabled
 	Zoneinfo     string
 	Admin        bool
+	Appearance   *Appearance // the theme they chose there, if any
 }
 
 // Import writes an account with the id and password hash it had elsewhere, so
@@ -391,6 +393,10 @@ func (s *Service) Import(ctx context.Context, in ImportedUser, actor string) (Us
 	if in.Admin {
 		role = RoleAdmin
 	}
+	look, err := in.Appearance.Normalize()
+	if err != nil {
+		return User{}, fmt.Errorf("%s: appearance: %w", email, err)
+	}
 	var u User
 	err = s.store.Tx(ctx, func(tx pgx.Tx) error {
 		if u, err = s.insertUserID(ctx, tx, in.ID, email, in.Name, status, role, in.PasswordHash, status == StatusActive); err != nil {
@@ -399,6 +405,15 @@ func (s *Service) Import(ctx context.Context, in ImportedUser, actor string) (Us
 		if in.Zoneinfo != "" {
 			if u, err = scanUser(tx.QueryRow(ctx, `UPDATE users SET zoneinfo = $3 WHERE region = $1 AND id = $2 RETURNING `+userColumns,
 				u.Region, u.ID, in.Zoneinfo)); err != nil {
+				return err
+			}
+		}
+		if look != nil {
+			b, err := json.Marshal(look)
+			if err != nil {
+				return err
+			}
+			if _, err := tx.Exec(ctx, `UPDATE users SET appearance = $3::jsonb WHERE region = $1 AND id = $2`, u.Region, u.ID, string(b)); err != nil {
 				return err
 			}
 		}

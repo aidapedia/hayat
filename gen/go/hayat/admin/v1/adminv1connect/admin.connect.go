@@ -61,6 +61,12 @@ const (
 	// AccountServiceRevokeMySessionProcedure is the fully-qualified name of the AccountService's
 	// RevokeMySession RPC.
 	AccountServiceRevokeMySessionProcedure = "/hayat.admin.v1.AccountService/RevokeMySession"
+	// AccountServiceGetMyAppearanceProcedure is the fully-qualified name of the AccountService's
+	// GetMyAppearance RPC.
+	AccountServiceGetMyAppearanceProcedure = "/hayat.admin.v1.AccountService/GetMyAppearance"
+	// AccountServiceSetMyAppearanceProcedure is the fully-qualified name of the AccountService's
+	// SetMyAppearance RPC.
+	AccountServiceSetMyAppearanceProcedure = "/hayat.admin.v1.AccountService/SetMyAppearance"
 	// OverviewServiceGetOverviewProcedure is the fully-qualified name of the OverviewService's
 	// GetOverview RPC.
 	OverviewServiceGetOverviewProcedure = "/hayat.admin.v1.OverviewService/GetOverview"
@@ -127,6 +133,10 @@ type AccountServiceClient interface {
 	ChangePassword(context.Context, *connect.Request[v1.ChangePasswordRequest]) (*connect.Response[v1.ChangePasswordResponse], error)
 	ListMySessions(context.Context, *connect.Request[v1.ListMySessionsRequest]) (*connect.Response[v1.ListMySessionsResponse], error)
 	RevokeMySession(context.Context, *connect.Request[v1.RevokeMySessionRequest]) (*connect.Response[v1.RevokeMySessionResponse], error)
+	// How every app looks for the caller: one theme per account, which every
+	// service reads through DirectoryService.GetUserAppearance.
+	GetMyAppearance(context.Context, *connect.Request[v1.GetMyAppearanceRequest]) (*connect.Response[v1.GetMyAppearanceResponse], error)
+	SetMyAppearance(context.Context, *connect.Request[v1.SetMyAppearanceRequest]) (*connect.Response[v1.SetMyAppearanceResponse], error)
 }
 
 // NewAccountServiceClient constructs a client for the hayat.admin.v1.AccountService service. By
@@ -170,6 +180,18 @@ func NewAccountServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(accountServiceMethods.ByName("RevokeMySession")),
 			connect.WithClientOptions(opts...),
 		),
+		getMyAppearance: connect.NewClient[v1.GetMyAppearanceRequest, v1.GetMyAppearanceResponse](
+			httpClient,
+			baseURL+AccountServiceGetMyAppearanceProcedure,
+			connect.WithSchema(accountServiceMethods.ByName("GetMyAppearance")),
+			connect.WithClientOptions(opts...),
+		),
+		setMyAppearance: connect.NewClient[v1.SetMyAppearanceRequest, v1.SetMyAppearanceResponse](
+			httpClient,
+			baseURL+AccountServiceSetMyAppearanceProcedure,
+			connect.WithSchema(accountServiceMethods.ByName("SetMyAppearance")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -180,6 +202,8 @@ type accountServiceClient struct {
 	changePassword  *connect.Client[v1.ChangePasswordRequest, v1.ChangePasswordResponse]
 	listMySessions  *connect.Client[v1.ListMySessionsRequest, v1.ListMySessionsResponse]
 	revokeMySession *connect.Client[v1.RevokeMySessionRequest, v1.RevokeMySessionResponse]
+	getMyAppearance *connect.Client[v1.GetMyAppearanceRequest, v1.GetMyAppearanceResponse]
+	setMyAppearance *connect.Client[v1.SetMyAppearanceRequest, v1.SetMyAppearanceResponse]
 }
 
 // GetMe calls hayat.admin.v1.AccountService.GetMe.
@@ -207,6 +231,16 @@ func (c *accountServiceClient) RevokeMySession(ctx context.Context, req *connect
 	return c.revokeMySession.CallUnary(ctx, req)
 }
 
+// GetMyAppearance calls hayat.admin.v1.AccountService.GetMyAppearance.
+func (c *accountServiceClient) GetMyAppearance(ctx context.Context, req *connect.Request[v1.GetMyAppearanceRequest]) (*connect.Response[v1.GetMyAppearanceResponse], error) {
+	return c.getMyAppearance.CallUnary(ctx, req)
+}
+
+// SetMyAppearance calls hayat.admin.v1.AccountService.SetMyAppearance.
+func (c *accountServiceClient) SetMyAppearance(ctx context.Context, req *connect.Request[v1.SetMyAppearanceRequest]) (*connect.Response[v1.SetMyAppearanceResponse], error) {
+	return c.setMyAppearance.CallUnary(ctx, req)
+}
+
 // AccountServiceHandler is an implementation of the hayat.admin.v1.AccountService service.
 type AccountServiceHandler interface {
 	GetMe(context.Context, *connect.Request[v1.GetMeRequest]) (*connect.Response[v1.GetMeResponse], error)
@@ -214,6 +248,10 @@ type AccountServiceHandler interface {
 	ChangePassword(context.Context, *connect.Request[v1.ChangePasswordRequest]) (*connect.Response[v1.ChangePasswordResponse], error)
 	ListMySessions(context.Context, *connect.Request[v1.ListMySessionsRequest]) (*connect.Response[v1.ListMySessionsResponse], error)
 	RevokeMySession(context.Context, *connect.Request[v1.RevokeMySessionRequest]) (*connect.Response[v1.RevokeMySessionResponse], error)
+	// How every app looks for the caller: one theme per account, which every
+	// service reads through DirectoryService.GetUserAppearance.
+	GetMyAppearance(context.Context, *connect.Request[v1.GetMyAppearanceRequest]) (*connect.Response[v1.GetMyAppearanceResponse], error)
+	SetMyAppearance(context.Context, *connect.Request[v1.SetMyAppearanceRequest]) (*connect.Response[v1.SetMyAppearanceResponse], error)
 }
 
 // NewAccountServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -253,6 +291,18 @@ func NewAccountServiceHandler(svc AccountServiceHandler, opts ...connect.Handler
 		connect.WithSchema(accountServiceMethods.ByName("RevokeMySession")),
 		connect.WithHandlerOptions(opts...),
 	)
+	accountServiceGetMyAppearanceHandler := connect.NewUnaryHandler(
+		AccountServiceGetMyAppearanceProcedure,
+		svc.GetMyAppearance,
+		connect.WithSchema(accountServiceMethods.ByName("GetMyAppearance")),
+		connect.WithHandlerOptions(opts...),
+	)
+	accountServiceSetMyAppearanceHandler := connect.NewUnaryHandler(
+		AccountServiceSetMyAppearanceProcedure,
+		svc.SetMyAppearance,
+		connect.WithSchema(accountServiceMethods.ByName("SetMyAppearance")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/hayat.admin.v1.AccountService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case AccountServiceGetMeProcedure:
@@ -265,6 +315,10 @@ func NewAccountServiceHandler(svc AccountServiceHandler, opts ...connect.Handler
 			accountServiceListMySessionsHandler.ServeHTTP(w, r)
 		case AccountServiceRevokeMySessionProcedure:
 			accountServiceRevokeMySessionHandler.ServeHTTP(w, r)
+		case AccountServiceGetMyAppearanceProcedure:
+			accountServiceGetMyAppearanceHandler.ServeHTTP(w, r)
+		case AccountServiceSetMyAppearanceProcedure:
+			accountServiceSetMyAppearanceHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -292,6 +346,14 @@ func (UnimplementedAccountServiceHandler) ListMySessions(context.Context, *conne
 
 func (UnimplementedAccountServiceHandler) RevokeMySession(context.Context, *connect.Request[v1.RevokeMySessionRequest]) (*connect.Response[v1.RevokeMySessionResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.AccountService.RevokeMySession is not implemented"))
+}
+
+func (UnimplementedAccountServiceHandler) GetMyAppearance(context.Context, *connect.Request[v1.GetMyAppearanceRequest]) (*connect.Response[v1.GetMyAppearanceResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.AccountService.GetMyAppearance is not implemented"))
+}
+
+func (UnimplementedAccountServiceHandler) SetMyAppearance(context.Context, *connect.Request[v1.SetMyAppearanceRequest]) (*connect.Response[v1.SetMyAppearanceResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.AccountService.SetMyAppearance is not implemented"))
 }
 
 // OverviewServiceClient is a client for the hayat.admin.v1.OverviewService service.

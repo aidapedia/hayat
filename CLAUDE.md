@@ -31,6 +31,12 @@ enterprise SSO, MFA) is next.
   never reveal whether an address exists; disabling or resetting ends every
   session, and a refresh token dies with its session; the last instance admin
   can't be demoted or disabled.
+- **A person's theme is the account's** (`users.appearance`, `identity.Appearance`):
+  one per account, edited only through AccountService, read by services through
+  `DirectoryService.GetUserAppearance`, never cached by them. Every field is
+  optional — empty means "the app's own default". `console/src/shared/lib/appearance.ts`
+  and `features/account/AppearanceEditor.tsx` are kept identical with tabletsgo's
+  console copies; change both.
 - **Tokens never carry permissions.** Access tokens are ES256 JWTs with `sub` and `sid`.
 - **Refresh tokens rotate; a reused one revokes its family.** Never let two code
   paths refresh concurrently (the console dedupes `signinSilent`).

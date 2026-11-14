@@ -64,6 +64,10 @@ type BundleUser struct {
 	// Hayat has none yet (a Hayat deployed for this system); either way the
 	// bundle's root grants carry what they may do in the system itself.
 	Admin bool `json:"admin"`
+	// The theme they chose in the other system (a solo tabletsgo's owner), in
+	// the shape of identity.Appearance. Only an account the import creates
+	// takes it; one Hayat already knew keeps its own.
+	Appearance *identity.Appearance `json:"appearance,omitempty"`
 }
 
 type BundleRole struct {
@@ -197,7 +201,7 @@ func (a *App) Import(ctx context.Context, b Bundle, opts ImportOptions) (ImportR
 				return res, fmt.Errorf("user %s: id %s already belongs to another account", bu.Email, id)
 			}
 			if u, err = a.IDs.Import(ctx, identity.ImportedUser{ID: id, Email: bu.Email, Name: bu.Name, PasswordHash: bu.PasswordHash,
-				Status: bu.Status, Zoneinfo: bu.Zoneinfo, Admin: bu.Admin && !hadAdmin}, importActor); err != nil {
+				Status: bu.Status, Zoneinfo: bu.Zoneinfo, Admin: bu.Admin && !hadAdmin, Appearance: bu.Appearance}, importActor); err != nil {
 				return res, fmt.Errorf("user %s: %w", bu.Email, err)
 			}
 			res.UsersCreated++

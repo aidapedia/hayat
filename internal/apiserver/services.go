@@ -291,6 +291,31 @@ func (d *directoryService) BatchGetUsers(ctx context.Context, req *connect.Reque
 	return connect.NewResponse(resp), nil
 }
 
+// GetUserAppearance answers fresh every time: a service applies it to the
+// person's session and keeps no copy, so a change in Hayat's console shows on
+// their next page load.
+func (d *directoryService) GetUserAppearance(ctx context.Context, req *connect.Request[authzv1.GetUserAppearanceRequest]) (*connect.Response[authzv1.GetUserAppearanceResponse], error) {
+	id, err := parseUser(req.Msg.UserId)
+	if err != nil {
+		return nil, err
+	}
+	a, err := d.s.ids.Appearance(ctx, id)
+	if err != nil {
+		return nil, d.s.fail(err)
+	}
+	resp := &authzv1.GetUserAppearanceResponse{}
+	if a != nil {
+		resp.Appearance = &authzv1.Appearance{
+			Preset: a.Preset, Mode: a.Mode, Accent: a.Accent, Background: a.Background, Surface: a.Surface, Text: a.Text,
+			Muted: a.Muted, Border: a.Border, SidebarMatchContent: a.SidebarMatchContent, SidebarBackground: a.SidebarBackground,
+			SidebarText: a.SidebarText, SidebarActive: a.SidebarActive, SidebarBorder: a.SidebarBorder, Success: a.Success,
+			Warning: a.Warning, Destructive: a.Destructive, Font: a.Font, TextSize: a.TextSize, Density: a.Density,
+			Radius: a.Radius, SidebarWidth: a.SidebarWidth, ContentWidth: a.ContentWidth,
+		}
+	}
+	return connect.NewResponse(resp), nil
+}
+
 func toTenant(t tenancy.Tenant, nodeID uuid.UUID) *authzv1.Tenant {
 	out := &authzv1.Tenant{Id: t.ID.String(), Slug: t.Slug, Name: t.Name, MemberCount: int32(t.MemberCount)}
 	if t.OwnerID != uuid.Nil {

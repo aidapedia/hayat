@@ -84,6 +84,9 @@ const (
 	// DirectoryServiceListTenantGrantsProcedure is the fully-qualified name of the DirectoryService's
 	// ListTenantGrants RPC.
 	DirectoryServiceListTenantGrantsProcedure = "/hayat.authz.v1.DirectoryService/ListTenantGrants"
+	// DirectoryServiceGetUserAppearanceProcedure is the fully-qualified name of the DirectoryService's
+	// GetUserAppearance RPC.
+	DirectoryServiceGetUserAppearanceProcedure = "/hayat.authz.v1.DirectoryService/GetUserAppearance"
 	// WatchServiceWatchProcedure is the fully-qualified name of the WatchService's Watch RPC.
 	WatchServiceWatchProcedure = "/hayat.authz.v1.WatchService/Watch"
 	// SchemaServicePublishContractProcedure is the fully-qualified name of the SchemaService's
@@ -413,6 +416,10 @@ type DirectoryServiceClient interface {
 	// granted, not what it adds up to: ask PermissionsAt for that. Only the
 	// tenant, its groups and the calling service's own resource types are listed.
 	ListTenantGrants(context.Context, *connect.Request[v1.ListTenantGrantsRequest]) (*connect.Response[v1.ListTenantGrantsResponse], error)
+	// How every app looks for a person: one theme per account, chosen in Hayat's
+	// console. Apply it to their session; don't keep a copy, so a change shows
+	// on their next page load.
+	GetUserAppearance(context.Context, *connect.Request[v1.GetUserAppearanceRequest]) (*connect.Response[v1.GetUserAppearanceResponse], error)
 }
 
 // NewDirectoryServiceClient constructs a client for the hayat.authz.v1.DirectoryService service. By
@@ -456,6 +463,12 @@ func NewDirectoryServiceClient(httpClient connect.HTTPClient, baseURL string, op
 			connect.WithSchema(directoryServiceMethods.ByName("ListTenantGrants")),
 			connect.WithClientOptions(opts...),
 		),
+		getUserAppearance: connect.NewClient[v1.GetUserAppearanceRequest, v1.GetUserAppearanceResponse](
+			httpClient,
+			baseURL+DirectoryServiceGetUserAppearanceProcedure,
+			connect.WithSchema(directoryServiceMethods.ByName("GetUserAppearance")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -466,6 +479,7 @@ type directoryServiceClient struct {
 	listUserTenants   *connect.Client[v1.ListUserTenantsRequest, v1.ListUserTenantsResponse]
 	listTenantMembers *connect.Client[v1.ListTenantMembersRequest, v1.ListTenantMembersResponse]
 	listTenantGrants  *connect.Client[v1.ListTenantGrantsRequest, v1.ListTenantGrantsResponse]
+	getUserAppearance *connect.Client[v1.GetUserAppearanceRequest, v1.GetUserAppearanceResponse]
 }
 
 // GetUser calls hayat.authz.v1.DirectoryService.GetUser.
@@ -493,6 +507,11 @@ func (c *directoryServiceClient) ListTenantGrants(ctx context.Context, req *conn
 	return c.listTenantGrants.CallUnary(ctx, req)
 }
 
+// GetUserAppearance calls hayat.authz.v1.DirectoryService.GetUserAppearance.
+func (c *directoryServiceClient) GetUserAppearance(ctx context.Context, req *connect.Request[v1.GetUserAppearanceRequest]) (*connect.Response[v1.GetUserAppearanceResponse], error) {
+	return c.getUserAppearance.CallUnary(ctx, req)
+}
+
 // DirectoryServiceHandler is an implementation of the hayat.authz.v1.DirectoryService service.
 type DirectoryServiceHandler interface {
 	GetUser(context.Context, *connect.Request[v1.GetUserRequest]) (*connect.Response[v1.GetUserResponse], error)
@@ -507,6 +526,10 @@ type DirectoryServiceHandler interface {
 	// granted, not what it adds up to: ask PermissionsAt for that. Only the
 	// tenant, its groups and the calling service's own resource types are listed.
 	ListTenantGrants(context.Context, *connect.Request[v1.ListTenantGrantsRequest]) (*connect.Response[v1.ListTenantGrantsResponse], error)
+	// How every app looks for a person: one theme per account, chosen in Hayat's
+	// console. Apply it to their session; don't keep a copy, so a change shows
+	// on their next page load.
+	GetUserAppearance(context.Context, *connect.Request[v1.GetUserAppearanceRequest]) (*connect.Response[v1.GetUserAppearanceResponse], error)
 }
 
 // NewDirectoryServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -546,6 +569,12 @@ func NewDirectoryServiceHandler(svc DirectoryServiceHandler, opts ...connect.Han
 		connect.WithSchema(directoryServiceMethods.ByName("ListTenantGrants")),
 		connect.WithHandlerOptions(opts...),
 	)
+	directoryServiceGetUserAppearanceHandler := connect.NewUnaryHandler(
+		DirectoryServiceGetUserAppearanceProcedure,
+		svc.GetUserAppearance,
+		connect.WithSchema(directoryServiceMethods.ByName("GetUserAppearance")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/hayat.authz.v1.DirectoryService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case DirectoryServiceGetUserProcedure:
@@ -558,6 +587,8 @@ func NewDirectoryServiceHandler(svc DirectoryServiceHandler, opts ...connect.Han
 			directoryServiceListTenantMembersHandler.ServeHTTP(w, r)
 		case DirectoryServiceListTenantGrantsProcedure:
 			directoryServiceListTenantGrantsHandler.ServeHTTP(w, r)
+		case DirectoryServiceGetUserAppearanceProcedure:
+			directoryServiceGetUserAppearanceHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -585,6 +616,10 @@ func (UnimplementedDirectoryServiceHandler) ListTenantMembers(context.Context, *
 
 func (UnimplementedDirectoryServiceHandler) ListTenantGrants(context.Context, *connect.Request[v1.ListTenantGrantsRequest]) (*connect.Response[v1.ListTenantGrantsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.authz.v1.DirectoryService.ListTenantGrants is not implemented"))
+}
+
+func (UnimplementedDirectoryServiceHandler) GetUserAppearance(context.Context, *connect.Request[v1.GetUserAppearanceRequest]) (*connect.Response[v1.GetUserAppearanceResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.authz.v1.DirectoryService.GetUserAppearance is not implemented"))
 }
 
 // WatchServiceClient is a client for the hayat.authz.v1.WatchService service.
