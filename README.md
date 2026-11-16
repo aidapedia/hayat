@@ -1,11 +1,27 @@
+<div align="center">
+
+<img src="console/public/hayat.png" width="80" height="80" alt="Hayat logo" />
+
 # Hayat
+
+**Self-hosted sign-in and tree-based access control for every service you run.**
+One account per person, tenants and nested groups, and one answer to "may this person do this, here?"
+
+[![License](https://img.shields.io/badge/license-Apache--2.0-3FAE86)](LICENSE)
+[![Go](https://img.shields.io/badge/Go-1.27-00ADD8?logo=go&logoColor=white)](go.mod)
+[![Docker](https://img.shields.io/badge/image-ghcr.io%2Faidapedia%2Fhayat-2496ED?logo=docker&logoColor=white)](#run-it-with-docker)
+[![OpenID Connect](https://img.shields.io/badge/OpenID-Connect-F78C40?logo=openid&logoColor=white)](#connect-an-application)
+
+</div>
 
 Identity and tree-based access control for many services. Hayat signs people in
 (it is an OpenID Connect provider), keeps the tenants and groups they belong to,
 and — from phase 2 — answers "may this subject do this, here?" over gRPC for every
 service that publishes a contract.
 
-Design: <https://claude.ai/artifact/AceR8JGbXjPdNE2mz8WHck>
+Design: <https://claude.ai/artifact/AceR8JGbXjPdNE2mz8WHck> ·
+Documentation: [aidapedia/aidapedia › apps/hayat](https://github.com/aidapedia/aidapedia/tree/HEAD/apps/hayat/src/content/docs) ·
+Contributing: [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## What's built
 
@@ -231,6 +247,8 @@ outside development.
 
 ## Develop
 
+The full setup, conventions and PR workflow are in [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ```sh
 make test       # Go tests on an embedded Postgres, plus the console typecheck
 make generate   # after editing proto/: Go and TypeScript code (needs buf + plugins)
@@ -257,3 +275,24 @@ generated code (`make generate`, `sdk/node/dist`) is committed up to date.
 
 Pushing a `v*.*.*` tag by hand builds and publishes the same way. The binary's
 version comes from the tag (`hayat version`); the Node SDK keeps its own.
+
+## Contributing
+
+Bug reports, fixes and features are welcome. [CONTRIBUTING.md](CONTRIBUTING.md)
+covers the dev setup, the rules that break things silently, and how to open a
+PR; [CLAUDE.md](CLAUDE.md) has the full list of invariants. Everyone taking part
+follows the [Code of Conduct](CODE_OF_CONDUCT.md).
+
+## Security
+
+Please report vulnerabilities privately, as described in
+[SECURITY.md](SECURITY.md), rather than in a public issue.
+
+## Sponsor
+
+Hayat is free and open source, with nothing behind a paywall. If it helps you,
+please consider [sponsoring its development](https://github.com/sponsors/aidapedia).
+
+## License
+
+[Apache License 2.0](LICENSE)

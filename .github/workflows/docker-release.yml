@@ -109,6 +109,13 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+
+      # The body is the reviewed docs/releases/v<version>.md from the release PR
+      # (release.yml drafts it); a hand-pushed tag without one gets GitHub's notes.
       - name: Create the GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -116,4 +123,10 @@ jobs:
           VERSION: ${{ inputs.version || github.ref_name }}
         run: |
           TAG="v${VERSION#v}"
-          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --generate-notes
+          NOTES="docs/releases/${TAG}.md"
+          gh release view "$TAG" >/dev/null 2>&1 && exit 0
+          if [ -f "$NOTES" ]; then
+            gh release create "$TAG" --notes-file "$NOTES"
+          else
+            gh release create "$TAG" --generate-notes
+          fi
