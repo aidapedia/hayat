@@ -167,3 +167,32 @@ func TestDisableEndsSessions(t *testing.T) {
 		t.Fatal("inviting an existing address returns that account unchanged")
 	}
 }
+
+func TestUpdateProfileNormalizesPhoneAndLocale(t *testing.T) {
+	svc, _ := newService(t)
+	ctx := context.Background()
+	u, err := svc.CreateAdmin(ctx, "cia@example.com", "Cia", "a long enough password")
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := svc.UpdateProfile(ctx, u.ID, identity.Profile{Name: "Cia", Locale: "id-id", Zoneinfo: "Asia/Jakarta", Phone: "+62 812-3456 (7890)"}, "test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Phone != "+6281234567890" || got.Locale != "id-ID" {
+		t.Fatalf("want +6281234567890 and id-ID, got %q and %q", got.Phone, got.Locale)
+	}
+	for _, bad := range []identity.Profile{
+		{Phone: "0812 3456 7890"}, // no country code
+		{Phone: "+0812345678"},    // a code never starts with 0
+		{Phone: "+62 12"},         // too short
+		{Locale: "not a language"},
+	} {
+		if _, err := svc.UpdateProfile(ctx, u.ID, bad, "test"); err == nil {
+			t.Fatalf("accepted %+v", bad)
+		}
+	}
+	if got, err := svc.UpdateProfile(ctx, u.ID, identity.Profile{Name: "Cia"}, "test"); err != nil || got.Phone != "" || got.Locale != "" {
+		t.Fatalf("clearing the fields: %+v %v", got, err)
+	}
+}

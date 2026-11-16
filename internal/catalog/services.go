@@ -96,6 +96,39 @@ func (c *Service) RegisterService(ctx context.Context, id, displayName, descript
 	return c.GetService(ctx, id)
 }
 
+// UpdateService changes a service's display name and description. Its
+// namespace never changes: its types and permissions are named after it. The
+// hayat/service node mirrors the name, so both change together.
+func (c *Service) UpdateService(ctx context.Context, id, displayName, description, actor string) (ServiceInfo, error) {
+	displayName = strings.TrimSpace(displayName)
+	if displayName == "" || len(displayName) > 100 {
+		return ServiceInfo{}, errs.New("give the service a name of up to 100 characters")
+	}
+	err := c.store.Tx(ctx, func(tx pgx.Tx) error {
+		tag, err := tx.Exec(ctx, `UPDATE services SET display_name = $2, description = $3, updated_at = now() WHERE id = $1`,
+			id, displayName, strings.TrimSpace(description))
+		if err != nil {
+			return err
+		}
+		if tag.RowsAffected() == 0 {
+			return store.ErrNotFound
+		}
+		if _, err := tx.Exec(ctx, `UPDATE nodes n SET name = $3, updated_at = now() FROM node_refs r
+			WHERE r.type = $1 AND r.external_id = $2 AND n.region = r.region AND n.id = r.id`, TypeService, id, displayName); err != nil {
+			return err
+		}
+		if _, err := revision.Bump(ctx, tx, c.store.Region, revision.Global, "service.updated"); err != nil {
+			return err
+		}
+		return audit.Write(ctx, tx, c.store.Region, actor, "service.updated", "service:"+id, map[string]any{"name": displayName})
+	})
+	if err != nil {
+		return ServiceInfo{}, err
+	}
+	c.revs.Forget(revision.Global)
+	return c.GetService(ctx, id)
+}
+
 func (c *Service) GetService(ctx context.Context, id string) (ServiceInfo, error) {
 	return scanService(c.store.Pool.QueryRow(ctx, `SELECT `+serviceColumns+` FROM services WHERE id = $1`, id))
 }

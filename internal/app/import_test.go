@@ -13,6 +13,7 @@ import (
 	"github.com/aidapedia/hayat/internal/app"
 	"github.com/aidapedia/hayat/internal/authz"
 	"github.com/aidapedia/hayat/internal/catalog"
+	"github.com/aidapedia/hayat/internal/identity"
 	"github.com/aidapedia/hayat/sdk/go/hayat"
 )
 
@@ -52,7 +53,8 @@ func consoleBundle() app.Bundle {
 		Format: app.BundleFormat, Version: 1, Source: "console",
 		Service: app.BundleService{ID: "console", DisplayName: "Console", Contract: consoleContract},
 		Users: []app.BundleUser{
-			{ID: ownerID, Email: "owner@example.com", Name: "Olive", PasswordHash: legacyHash("olive-password"), Status: "active", Zoneinfo: "Asia/Jakarta", Admin: true},
+			{ID: ownerID, Email: "owner@example.com", Name: "Olive", PasswordHash: legacyHash("olive-password"), Status: "active", Zoneinfo: "Asia/Jakarta", Admin: true,
+				Appearance: &identity.Appearance{Preset: "slate-rail", Mode: "light", Accent: "#2563EB", SidebarBackground: "#0f172a"}},
 			{ID: memberID, Email: "member@example.com", Name: "Mo", PasswordHash: legacyHash("mo-password!!"), Status: "active"},
 			{ID: otherID, Email: "other@example.com", Name: "Oz", PasswordHash: legacyHash("oz-password!!"), Status: "active"},
 			{ID: pendID, Email: "pending@example.com", Name: "Pat", Status: "pending"},
@@ -105,6 +107,13 @@ func TestImport(t *testing.T) {
 	must(t, err)
 	if !owner.IsAdmin() || owner.Zoneinfo != "Asia/Jakarta" || !owner.EmailVerified {
 		t.Fatalf("owner: %+v", owner)
+	}
+	// So did the theme they chose there; nobody else had one.
+	if look, err := a.IDs.Appearance(ctx, uuid.MustParse(ownerID)); err != nil || look == nil || look.Accent != "#2563eb" || look.SidebarBackground != "#0f172a" {
+		t.Fatalf("owner's appearance: %+v %v", look, err)
+	}
+	if look, _ := a.IDs.Appearance(ctx, uuid.MustParse(memberID)); look != nil {
+		t.Fatalf("an account imported without a theme has none: %+v", look)
 	}
 	if pat, _ := a.IDs.GetUser(ctx, uuid.MustParse(pendID)); pat.Status != "pending" || pat.EmailVerified || pat.HasPassword {
 		t.Fatalf("a pending account stays pending and unverified: %+v", pat)

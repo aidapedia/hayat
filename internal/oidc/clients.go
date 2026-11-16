@@ -21,6 +21,10 @@ import (
 // ConsoleClientID is the built-in client the console signs in with.
 const ConsoleClientID = "hayat-console"
 
+// PlatformService is the service the console client, and any client registered
+// before clients belonged to services, belongs to. It is Hayat itself.
+const PlatformService = "hayat"
+
 const (
 	KindPublic       = "public"
 	KindConfidential = "confidential"
@@ -34,9 +38,11 @@ var allowedGrants = []string{
 
 var ErrBuiltin = errs.New("the console client is managed by Hayat itself")
 
-// Client is one registered application. It implements op.Client.
+// Client is one registered application. It implements op.Client. Every client
+// belongs to a service: its tokens name that service in their audience.
 type Client struct {
 	ID                  string
+	ServiceID           string
 	Name                string
 	Kind                string
 	Redirects           []string
@@ -110,11 +116,11 @@ func NewClients(s *store.Store, issuer string, dev bool) *Clients {
 	return &Clients{store: s, issuer: strings.TrimRight(issuer, "/"), dev: dev}
 }
 
-const clientColumns = `id, name, kind, secret_hash, redirect_uris, post_logout_redirect_uris, grant_types, builtin, disabled_at, created_at, updated_at`
+const clientColumns = `id, service_id, name, kind, secret_hash, redirect_uris, post_logout_redirect_uris, grant_types, builtin, disabled_at, created_at, updated_at`
 
 func (cs *Clients) scan(row pgx.Row) (*Client, error) {
 	c := &Client{issuer: cs.issuer, dev: cs.dev}
-	err := row.Scan(&c.ID, &c.Name, &c.Kind, &c.secretHash, &c.Redirects, &c.PostLogoutRedirects, &c.Grants, &c.Builtin,
+	err := row.Scan(&c.ID, &c.ServiceID, &c.Name, &c.Kind, &c.secretHash, &c.Redirects, &c.PostLogoutRedirects, &c.Grants, &c.Builtin,
 		&c.DisabledAt, &c.CreatedAt, &c.UpdatedAt)
 	return c, store.NotFound(err)
 }
@@ -123,8 +129,10 @@ func (cs *Clients) Get(ctx context.Context, id string) (*Client, error) {
 	return cs.scan(cs.store.Pool.QueryRow(ctx, `SELECT `+clientColumns+` FROM oauth_clients WHERE id = $1`, id))
 }
 
-func (cs *Clients) List(ctx context.Context) ([]*Client, error) {
-	rows, err := cs.store.Pool.Query(ctx, `SELECT `+clientColumns+` FROM oauth_clients ORDER BY builtin DESC, created_at`)
+// ForService lists the clients of one service, the built-in console first.
+func (cs *Clients) ForService(ctx context.Context, serviceID string) ([]*Client, error) {
+	rows, err := cs.store.Pool.Query(ctx, `SELECT `+clientColumns+` FROM oauth_clients WHERE service_id = $1
+		ORDER BY builtin DESC, created_at`, serviceID)
 	if err != nil {
 		return nil, err
 	}
@@ -143,15 +151,18 @@ func (cs *Clients) List(ctx context.Context) ([]*Client, error) {
 // EnsureConsole registers the console client, or updates its addresses when
 // HAYAT_CONSOLE_URL changed.
 func (cs *Clients) EnsureConsole(ctx context.Context, redirectURI, consoleURL string) error {
-	_, err := cs.store.Pool.Exec(ctx, `INSERT INTO oauth_clients (id, name, kind, redirect_uris, post_logout_redirect_uris, grant_types, builtin)
-		VALUES ($1, 'Hayat console', 'public', $2, $3, '{authorization_code,refresh_token}', true)
+	_, err := cs.store.Pool.Exec(ctx, `INSERT INTO oauth_clients (id, service_id, name, kind, redirect_uris, post_logout_redirect_uris, grant_types, builtin)
+		VALUES ($1, $2, 'Hayat console', 'public', $3, $4, '{authorization_code,refresh_token}', true)
 		ON CONFLICT (id) DO UPDATE SET redirect_uris = EXCLUDED.redirect_uris,
 			post_logout_redirect_uris = EXCLUDED.post_logout_redirect_uris, updated_at = now()`,
-		ConsoleClientID, []string{redirectURI}, []string{consoleURL, consoleURL + "/"})
+		ConsoleClientID, PlatformService, []string{redirectURI}, []string{consoleURL, consoleURL + "/"})
 	return err
 }
 
 type ClientInput struct {
+	// ServiceID is the service the client belongs to. Required on Create;
+	// a client never moves to another service.
+	ServiceID           string
 	Name                string
 	Kind                string
 	Redirects           []string
@@ -212,6 +223,9 @@ func (cs *Clients) checkRedirect(raw string) error {
 // Create registers a client. For a confidential client it returns the secret,
 // which is shown once and stored only as a hash.
 func (cs *Clients) Create(ctx context.Context, in ClientInput, actor string) (*Client, string, error) {
+	if strings.TrimSpace(in.ServiceID) == "" {
+		return nil, "", errs.New("a client belongs to a service; name the service")
+	}
 	if err := cs.validate(&in); err != nil {
 		return nil, "", err
 	}
@@ -226,13 +240,14 @@ func (cs *Clients) Create(ctx context.Context, in ClientInput, actor string) (*C
 	var c *Client
 	err := cs.store.Tx(ctx, func(tx pgx.Tx) error {
 		var err error
-		c, err = cs.scan(tx.QueryRow(ctx, `INSERT INTO oauth_clients (id, name, kind, secret_hash, redirect_uris, post_logout_redirect_uris, grant_types)
-			VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING `+clientColumns,
-			id, in.Name, in.Kind, hash, nonNil(in.Redirects), nonNil(in.PostLogoutRedirects), in.Grants))
+		c, err = cs.scan(tx.QueryRow(ctx, `INSERT INTO oauth_clients (id, service_id, name, kind, secret_hash, redirect_uris, post_logout_redirect_uris, grant_types)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING `+clientColumns,
+			id, in.ServiceID, in.Name, in.Kind, hash, nonNil(in.Redirects), nonNil(in.PostLogoutRedirects), in.Grants))
 		if err != nil {
 			return err
 		}
-		return audit.Write(ctx, tx, cs.store.Region, actor, "client.created", "client:"+id, map[string]any{"name": in.Name, "kind": in.Kind})
+		return audit.Write(ctx, tx, cs.store.Region, actor, "client.created", "client:"+id,
+			map[string]any{"name": in.Name, "kind": in.Kind, "service": in.ServiceID})
 	})
 	return c, secret, err
 }
@@ -319,6 +334,25 @@ func (cs *Clients) Count(ctx context.Context) (int, error) {
 	var n int
 	err := cs.store.Pool.QueryRow(ctx, `SELECT count(*) FROM oauth_clients`).Scan(&n)
 	return n, err
+}
+
+// CountByService counts each service's clients, its API credential included.
+func (cs *Clients) CountByService(ctx context.Context) (map[string]int, error) {
+	rows, err := cs.store.Pool.Query(ctx, `SELECT service_id, count(*) FROM oauth_clients GROUP BY service_id`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := map[string]int{}
+	for rows.Next() {
+		var svc string
+		var n int
+		if err := rows.Scan(&svc, &n); err != nil {
+			return nil, err
+		}
+		out[svc] = n
+	}
+	return out, rows.Err()
 }
 
 func nonNil(s []string) []string {

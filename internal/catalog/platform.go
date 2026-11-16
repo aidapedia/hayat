@@ -38,13 +38,13 @@ var platformTypes = []NodeType{
 }
 
 var platformPermissions = []Permission{
-	{Key: PermTenantManage, Service: Platform, Scope: TypeTenant, Description: "Rename the tenant and change its settings."},
-	{Key: PermMembersManage, Service: Platform, Scope: TypeTenant, Description: "Add people to the tenant and remove them."},
-	{Key: PermGroupsManage, Service: Platform, Scope: TypeGroup, Description: "Change who belongs to a group, which decides who every grant to that group reaches."},
-	{Key: PermResourcesOrganise, Service: Platform, Scope: TypeGroup, Description: "Create, rename, move and delete groups, and move resources between them."},
-	{Key: PermResourcesGrant, Service: Platform, Scope: TypeGroup, Description: "Give a person or group a role on a node, and take it away."},
-	{Key: PermContractsApprove, Service: Platform, Scope: TypeService, Description: "Approve contract versions that touch this service's namespace."},
-	{Key: PermServiceManage, Service: Platform, Scope: TypeService, Description: "Name the service's owners and rotate its API secret."},
+	{Key: PermTenantManage, Service: Platform, Scope: TypeTenant, Label: "Manage tenant settings", Description: "Rename the tenant and change its settings."},
+	{Key: PermMembersManage, Service: Platform, Scope: TypeTenant, Label: "Manage members", Description: "Add people to the tenant and remove them."},
+	{Key: PermGroupsManage, Service: Platform, Scope: TypeGroup, Label: "Manage group membership", Description: "Change who belongs to a group, which decides who every grant to that group reaches."},
+	{Key: PermResourcesOrganise, Service: Platform, Scope: TypeGroup, Label: "Organise resources", Description: "Create, rename, move and delete groups, and move resources between them."},
+	{Key: PermResourcesGrant, Service: Platform, Scope: TypeGroup, Label: "Grant access", Description: "Give a person or group a role on a node, and take it away."},
+	{Key: PermContractsApprove, Service: Platform, Scope: TypeService, Label: "Approve contracts", Description: "Approve contract versions that touch this service's namespace."},
+	{Key: PermServiceManage, Service: Platform, Scope: TypeService, Label: "Manage the service", Description: "Name the service's owners and rotate its API secret."},
 }
 
 // Built-in roles, with fixed ids so grants made from them survive anything.
@@ -82,9 +82,9 @@ func EnsurePlatform(ctx context.Context, tx pgx.Tx) error {
 		}
 	}
 	for _, p := range platformPermissions {
-		if _, err := tx.Exec(ctx, `INSERT INTO permissions (key, service_id, scope, description) VALUES ($1, $2, $3, $4)
-			ON CONFLICT (key) DO UPDATE SET scope = EXCLUDED.scope, description = EXCLUDED.description`,
-			p.Key, p.Service, p.Scope, p.Description); err != nil {
+		if _, err := tx.Exec(ctx, `INSERT INTO permissions (key, service_id, scope, label, description) VALUES ($1, $2, $3, $4, $5)
+			ON CONFLICT (key) DO UPDATE SET scope = EXCLUDED.scope, label = EXCLUDED.label, description = EXCLUDED.description`,
+			p.Key, p.Service, p.Scope, p.Label, p.Description); err != nil {
 			return err
 		}
 	}

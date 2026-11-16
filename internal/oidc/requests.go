@@ -43,12 +43,24 @@ type AuthRequest struct {
 	IsDone              bool
 	CreatedAt           time.Time
 	ExpiresAt           time.Time
+	// ServiceID is the service the client belongs to. It is not stored with
+	// the request: Storage looks it up from the client whenever it loads one.
+	ServiceID string
 }
 
-func (a *AuthRequest) GetID() string         { return a.ID.String() }
-func (a *AuthRequest) GetACR() string        { return "" }
-func (a *AuthRequest) GetAMR() []string      { return a.AMR }
-func (a *AuthRequest) GetAudience() []string { return []string{a.ClientID} }
+func (a *AuthRequest) GetID() string    { return a.ID.String() }
+func (a *AuthRequest) GetACR() string   { return "" }
+func (a *AuthRequest) GetAMR() []string { return a.AMR }
+
+// GetAudience names the client and the service it belongs to, so a service
+// can accept a token from any of its sign-in clients by checking its own
+// namespace in `aud`. The ID token's `azp` still names the client.
+func (a *AuthRequest) GetAudience() []string {
+	if a.ServiceID == "" || a.ServiceID == a.ClientID {
+		return []string{a.ClientID}
+	}
+	return []string{a.ClientID, a.ServiceID}
+}
 func (a *AuthRequest) GetAuthTime() time.Time {
 	if a.AuthTime == nil {
 		return time.Time{}

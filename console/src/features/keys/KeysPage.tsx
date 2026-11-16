@@ -4,12 +4,14 @@ import { toast } from 'sonner'
 import { KeyService } from '@/shared/api/gen/hayat/admin/v1/admin_pb'
 import { useClient } from '@/shared/api/client'
 import { useQuery } from '@/shared/hooks/use-query'
+import { usePagination } from '@/shared/ui/table/usePagination'
 import { formatDateTime } from '@/shared/lib/datetime'
 import { ErrorState, LoadingState, StatusBadge } from '@/shared/ui/bits'
 import { Button } from '@/shared/ui/button'
 import { ConfirmDialog } from '@/shared/ui/confirm-dialog'
 import { PageHeader, Section } from '@/shared/ui/page/PageHeader'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
+import { Pagination } from '@/shared/ui/table/Pagination'
 
 const STAGES = [
   { status: 'next', text: 'Published before it signs anything, so every application already has it cached when it takes over.' },
@@ -20,6 +22,7 @@ const STAGES = [
 export default function KeysPage() {
   const keys = useClient(KeyService)
   const { data, error, loading, reload, setData } = useQuery(() => keys.listSigningKeys({}).then((r) => r.keys), [keys])
+  const { pageRows: items, pager } = usePagination(data ?? [])
   const [confirming, setConfirming] = useState(false)
 
   return (
@@ -48,7 +51,7 @@ export default function KeysPage() {
           ) : loading && !data ? (
             <LoadingState />
           ) : (
-            <div className="overflow-x-auto rounded-xl border">
+            <div className="overflow-hidden rounded-xl border">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -60,7 +63,7 @@ export default function KeysPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {(data ?? []).map((k) => (
+                  {items.map((k) => (
                     <TableRow key={k.id}>
                       <TableCell className="font-mono text-[12px]">{k.id}</TableCell>
                       <TableCell>
@@ -73,6 +76,7 @@ export default function KeysPage() {
                   ))}
                 </TableBody>
               </Table>
+              <Pagination {...pager} className="border-t" />
             </div>
           )}
         </Section>

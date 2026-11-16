@@ -30,9 +30,11 @@ type NodeType struct {
 }
 
 type Permission struct {
-	Key         string
-	Service     string
-	Scope       string
+	Key     string
+	Service string
+	Scope   string
+	// Label is the short name people read ("Manage members"); may be empty.
+	Label       string
 	Description string
 }
 
@@ -186,13 +188,13 @@ func load(ctx context.Context, db store.DB, rev int64) (*Snapshot, error) {
 	}
 	rows.Close()
 
-	rows, err = db.Query(ctx, `SELECT key, service_id, scope, description FROM permissions`)
+	rows, err = db.Query(ctx, `SELECT key, service_id, scope, label, description FROM permissions`)
 	if err != nil {
 		return nil, err
 	}
 	for rows.Next() {
 		var p Permission
-		if err := rows.Scan(&p.Key, &p.Service, &p.Scope, &p.Description); err != nil {
+		if err := rows.Scan(&p.Key, &p.Service, &p.Scope, &p.Label, &p.Description); err != nil {
 			rows.Close()
 			return nil, err
 		}

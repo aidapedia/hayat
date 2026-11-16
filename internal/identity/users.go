@@ -12,15 +12,18 @@ package identity
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/mail"
+	"regexp"
 	"strings"
 	"time"
 	"unicode/utf8"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"golang.org/x/text/language"
 
 	"github.com/aidapedia/hayat/internal/audit"
 	"github.com/aidapedia/hayat/internal/crypto"
@@ -363,6 +366,7 @@ type ImportedUser struct {
 	Status       string // pending | active | disabled
 	Zoneinfo     string
 	Admin        bool
+	Appearance   *Appearance // the theme they chose there, if any
 }
 
 // Import writes an account with the id and password hash it had elsewhere, so
@@ -389,6 +393,10 @@ func (s *Service) Import(ctx context.Context, in ImportedUser, actor string) (Us
 	if in.Admin {
 		role = RoleAdmin
 	}
+	look, err := in.Appearance.Normalize()
+	if err != nil {
+		return User{}, fmt.Errorf("%s: appearance: %w", email, err)
+	}
 	var u User
 	err = s.store.Tx(ctx, func(tx pgx.Tx) error {
 		if u, err = s.insertUserID(ctx, tx, in.ID, email, in.Name, status, role, in.PasswordHash, status == StatusActive); err != nil {
@@ -397,6 +405,15 @@ func (s *Service) Import(ctx context.Context, in ImportedUser, actor string) (Us
 		if in.Zoneinfo != "" {
 			if u, err = scanUser(tx.QueryRow(ctx, `UPDATE users SET zoneinfo = $3 WHERE region = $1 AND id = $2 RETURNING `+userColumns,
 				u.Region, u.ID, in.Zoneinfo)); err != nil {
+				return err
+			}
+		}
+		if look != nil {
+			b, err := json.Marshal(look)
+			if err != nil {
+				return err
+			}
+			if _, err := tx.Exec(ctx, `UPDATE users SET appearance = $3::jsonb WHERE region = $1 AND id = $2`, u.Region, u.ID, string(b)); err != nil {
 				return err
 			}
 		}
@@ -654,6 +671,16 @@ func (s *Service) UpdateProfile(ctx context.Context, id uuid.UUID, p Profile, ac
 			return User{}, errs.Newf("%q is not a known time zone", p.Zoneinfo)
 		}
 	}
+	if p.Locale = strings.TrimSpace(p.Locale); p.Locale != "" {
+		tag, err := language.Parse(p.Locale)
+		if err != nil {
+			return User{}, errs.Newf("%q is not a language tag, such as en or id-ID", p.Locale)
+		}
+		p.Locale = tag.String()
+	}
+	if p.Phone = normalizePhone(p.Phone); p.Phone != "" && !e164.MatchString(p.Phone) {
+		return User{}, errs.New("the phone number needs its country code, such as +62 812 3456 7890")
+	}
 	var u User
 	err := s.store.Tx(ctx, func(tx pgx.Tx) error {
 		region, err := s.regionOf(ctx, tx, id)
@@ -669,6 +696,20 @@ func (s *Service) UpdateProfile(ctx context.Context, id uuid.UUID, p Profile, ac
 		return audit.Write(ctx, tx, region, actor, "user.profile_updated", "user:"+id.String(), nil)
 	})
 	return u, err
+}
+
+// e164 is what the OIDC phone_number claim should carry: +, then 7 to 15 digits.
+var e164 = regexp.MustCompile(`^\+[1-9][0-9]{6,14}$`)
+
+// normalizePhone drops the spaces, dashes, dots and brackets people type.
+func normalizePhone(s string) string {
+	return strings.Map(func(r rune) rune {
+		switch r {
+		case ' ', '-', '.', '(', ')', '\u00a0':
+			return -1
+		}
+		return r
+	}, strings.TrimSpace(s))
 }
 
 // SetStatus disables or re-enables an account. Disabling ends every session.

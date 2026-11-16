@@ -66,11 +66,32 @@ func (s *Storage) CreateAuthRequest(ctx context.Context, req *oidc.AuthRequest, 
 	if client.Kind == KindPublic && req.CodeChallenge == "" {
 		return nil, oidc.ErrInvalidRequest().WithDescription("this client must use PKCE (code_challenge with S256)")
 	}
-	return s.requests.create(ctx, req)
+	a, err := s.requests.create(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	a.ServiceID = client.ServiceID
+	return a, nil
+}
+
+// withService fills in the service of the request's client, which the tokens'
+// audience names. A client that is gone leaves it empty; the library refuses
+// the request on its own when it looks the client up.
+// Called as s.withService(ctx)(s.requests.byID(ctx, id)).
+func (s *Storage) withService(ctx context.Context) func(*AuthRequest, error) (*AuthRequest, error) {
+	return func(a *AuthRequest, err error) (*AuthRequest, error) {
+		if err != nil {
+			return nil, err
+		}
+		if c, cerr := s.clients.Get(ctx, a.ClientID); cerr == nil {
+			a.ServiceID = c.ServiceID
+		}
+		return a, nil
+	}
 }
 
 func (s *Storage) AuthRequestByID(ctx context.Context, id string) (op.AuthRequest, error) {
-	a, err := s.requests.byID(ctx, id)
+	a, err := s.withService(ctx)(s.requests.byID(ctx, id))
 	if err != nil {
 		return nil, oidc.ErrInvalidRequest().WithDescription("this sign-in request has expired; start again from the application")
 	}
@@ -79,7 +100,7 @@ func (s *Storage) AuthRequestByID(ctx context.Context, id string) (op.AuthReques
 
 // LoadAuthRequest is AuthRequestByID with the concrete type, for the login page.
 func (s *Storage) LoadAuthRequest(ctx context.Context, id string) (*AuthRequest, error) {
-	return s.requests.byID(ctx, id)
+	return s.withService(ctx)(s.requests.byID(ctx, id))
 }
 
 // CompleteAuthRequest records the signed-in session on the request.
@@ -88,7 +109,7 @@ func (s *Storage) CompleteAuthRequest(ctx context.Context, a *AuthRequest, sess 
 }
 
 func (s *Storage) AuthRequestByCode(ctx context.Context, code string) (op.AuthRequest, error) {
-	a, err := s.requests.byCode(ctx, code)
+	a, err := s.withService(ctx)(s.requests.byCode(ctx, code))
 	if err != nil {
 		return nil, oidc.ErrInvalidGrant().WithDescription("the code is invalid or has expired")
 	}

@@ -59,3 +59,46 @@ func (a *accountService) RevokeMySession(ctx context.Context, req *connect.Reque
 	}
 	return connect.NewResponse(&adminv1.RevokeMySessionResponse{}), nil
 }
+
+func (a *accountService) GetMyAppearance(ctx context.Context, _ *connect.Request[adminv1.GetMyAppearanceRequest]) (*connect.Response[adminv1.GetMyAppearanceResponse], error) {
+	look, err := a.s.ids.Appearance(ctx, caller(ctx).User.ID)
+	if err != nil {
+		return nil, a.s.fail(err)
+	}
+	return connect.NewResponse(&adminv1.GetMyAppearanceResponse{Appearance: toAppearance(look)}), nil
+}
+
+func (a *accountService) SetMyAppearance(ctx context.Context, req *connect.Request[adminv1.SetMyAppearanceRequest]) (*connect.Response[adminv1.SetMyAppearanceResponse], error) {
+	look, err := a.s.ids.SetAppearance(ctx, caller(ctx).User.ID, fromAppearance(req.Msg.Appearance), actor(ctx))
+	if err != nil {
+		return nil, a.s.fail(err)
+	}
+	return connect.NewResponse(&adminv1.SetMyAppearanceResponse{Appearance: toAppearance(look)}), nil
+}
+
+// The theme between the wire and identity: the same fields under the same names.
+func toAppearance(a *identity.Appearance) *adminv1.Appearance {
+	if a == nil {
+		return nil
+	}
+	return &adminv1.Appearance{
+		Preset: a.Preset, Mode: a.Mode, Accent: a.Accent, Background: a.Background, Surface: a.Surface, Text: a.Text,
+		Muted: a.Muted, Border: a.Border, SidebarMatchContent: a.SidebarMatchContent, SidebarBackground: a.SidebarBackground,
+		SidebarText: a.SidebarText, SidebarActive: a.SidebarActive, SidebarBorder: a.SidebarBorder, Success: a.Success,
+		Warning: a.Warning, Destructive: a.Destructive, Font: a.Font, TextSize: a.TextSize, Density: a.Density,
+		Radius: a.Radius, SidebarWidth: a.SidebarWidth, ContentWidth: a.ContentWidth,
+	}
+}
+
+func fromAppearance(a *adminv1.Appearance) *identity.Appearance {
+	if a == nil {
+		return nil
+	}
+	return &identity.Appearance{
+		Preset: a.Preset, Mode: a.Mode, Accent: a.Accent, Background: a.Background, Surface: a.Surface, Text: a.Text,
+		Muted: a.Muted, Border: a.Border, SidebarMatchContent: a.SidebarMatchContent, SidebarBackground: a.SidebarBackground,
+		SidebarText: a.SidebarText, SidebarActive: a.SidebarActive, SidebarBorder: a.SidebarBorder, Success: a.Success,
+		Warning: a.Warning, Destructive: a.Destructive, Font: a.Font, TextSize: a.TextSize, Density: a.Density,
+		Radius: a.Radius, SidebarWidth: a.SidebarWidth, ContentWidth: a.ContentWidth,
+	}
+}

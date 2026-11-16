@@ -10,6 +10,7 @@ import { useQuery } from '@/shared/hooks/use-query'
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/bits'
 import { Button } from '@/shared/ui/button'
 import { PageHeader } from '@/shared/ui/page/PageHeader'
+import { allMembers } from './api'
 import { CreateGroupDialog, MoveDialog } from './dialogs'
 import { NodePanel } from './NodePanel'
 import { ResourceTree, type TenantTree } from './ResourceTree'
@@ -52,7 +53,7 @@ export default function ResourceTreePage() {
   )
 
   const members = useQuery(
-    () => (tenantId ? tenantsApi.getTenant({ id: tenantId }).then((r) => r.members) : Promise.resolve([])),
+    () => (tenantId ? allMembers(tenantsApi, tenantId) : Promise.resolve([])),
     [tenantsApi, tenantId],
   )
 

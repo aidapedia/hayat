@@ -178,29 +178,32 @@ export class Hayat {
     }
     /**
      * Verify a user's access token offline: signature, issuer, expiry, and that
-     * it was issued to clientId (your application's sign-in client).
+     * it was issued for `audience`. A sign-in token's `aud` names its client and
+     * the client's service, so pass your service's namespace ("billing") to
+     * accept any of its sign-in clients, or one client's id to accept only that
+     * client. Leave it out to accept any.
      */
-    async verifyAccessToken(token, clientId) {
+    async verifyAccessToken(token, audience) {
         const { payload } = await jwtVerify(token, this.jwks, { issuer: this.discovery.issuer });
         const claims = payload;
         if (claims.sub?.startsWith('client:'))
             throw new Error('hayat: a service token, not a person');
-        if (clientId) {
+        if (audience) {
             const aud = Array.isArray(claims.aud) ? claims.aud : claims.aud ? [claims.aud] : [];
-            if (claims.client_id !== clientId && !aud.includes(clientId))
-                throw new Error('hayat: token was issued to another client');
+            if (claims.client_id !== audience && !aud.includes(audience))
+                throw new Error('hayat: token was issued for another service or client');
         }
         return claims;
     }
     /** Express/Connect-style middleware: verifies the bearer token and sets req.hayatUser. */
-    middleware(clientId) {
+    middleware(audience) {
         return async (req, res, next) => {
             const header = req.headers.authorization;
             const token = typeof header === 'string' && header.startsWith('Bearer ') ? header.slice(7) : '';
             try {
                 if (!token)
                     throw new Error('no token');
-                req.hayatUser = await this.verifyAccessToken(token, clientId);
+                req.hayatUser = await this.verifyAccessToken(token, audience);
                 next();
             }
             catch {

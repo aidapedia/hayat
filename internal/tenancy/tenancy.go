@@ -339,14 +339,34 @@ func bump(ctx context.Context, tx pgx.Tx, region string, tenantID uuid.UUID) err
 
 // ---------- Members ----------
 
+// Members is the whole roster, in the order people joined.
 func (s *Service) Members(ctx context.Context, tenantID uuid.UUID) ([]Member, error) {
+	return s.MembersPage(ctx, tenantID, MemberCursor{}, 0)
+}
+
+// MemberCursor is where a page of the roster starts: after this member. The
+// user id breaks ties, since everyone added in one transaction joins at the
+// same instant.
+type MemberCursor struct {
+	JoinedAt time.Time
+	UserID   uuid.UUID
+}
+
+// MembersPage returns up to limit members after the cursor, in the order they
+// joined; limit 0 means all of them.
+func (s *Service) MembersPage(ctx context.Context, tenantID uuid.UUID, after MemberCursor, limit int) ([]Member, error) {
 	region, nodeID, err := s.node(ctx, s.store.Pool, tenantID)
 	if err != nil {
 		return nil, err
 	}
+	var lim any // NULL is LIMIT ALL
+	if limit > 0 {
+		lim = limit
+	}
 	rows, err := s.store.Pool.Query(ctx, `SELECT m.user_id, m.user_id = n.owner_id, m.created_at
 		FROM group_members m JOIN nodes n ON n.region = m.region AND n.id = m.group_id
-		WHERE m.region = $1 AND m.group_id = $2 ORDER BY m.created_at`, region, nodeID)
+		WHERE m.region = $1 AND m.group_id = $2 AND (m.created_at, m.user_id) > ($3, $4)
+		ORDER BY m.created_at, m.user_id LIMIT $5`, region, nodeID, after.JoinedAt, after.UserID, lim)
 	if err != nil {
 		return nil, err
 	}

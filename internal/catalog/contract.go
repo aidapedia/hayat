@@ -26,9 +26,11 @@ import (
 // Rules:
 //   - Additive only. A new version may add types, parents, permissions, roles
 //     and role permissions, never remove or change them.
-//   - A version is pending until an owner of every namespace it touches
-//     approves it. Its own namespace always; another service's when one of its
-//     types is placed under that service's types.
+//   - A version goes live when it is published, unless it touches another
+//     service's namespace (one of its types is placed under that service's
+//     types): then it is pending until an owner of each such namespace
+//     approves it. Its own namespace needs no approval: only its owners, or
+//     the service itself, can publish for it.
 //   - Names are written short in the manifest and stored qualified:
 //     "ledger" → "billing/ledger", "ledger.view" → "billing.ledger.view".
 
@@ -56,8 +58,11 @@ type ManifestAccess struct {
 }
 
 type ManifestPerm struct {
-	Key         string `yaml:"key" json:"key"`
-	Scope       string `yaml:"scope" json:"scope"`
+	Key   string `yaml:"key" json:"key"`
+	Scope string `yaml:"scope" json:"scope"`
+	// Label is the short name an admin reads ("Open connections"). Like the
+	// description it is display text, so a later version may change it.
+	Label       string `yaml:"label,omitempty" json:"label,omitempty"`
 	Description string `yaml:"description,omitempty" json:"description,omitempty"`
 }
 
@@ -177,7 +182,7 @@ func compile(m Manifest, snap *Snapshot) (compiled, []string, error) {
 			return compiled{}, nil, errs.Newf("permission %q is listed twice", p.Key)
 		}
 		perms[key] = true
-		out.perms = append(out.perms, Permission{Key: key, Service: svc, Scope: scope, Description: strings.TrimSpace(p.Description)})
+		out.perms = append(out.perms, Permission{Key: key, Service: svc, Scope: scope, Label: strings.TrimSpace(p.Label), Description: strings.TrimSpace(p.Description)})
 	}
 
 	for _, t := range m.ResourceTypes {
@@ -380,7 +385,9 @@ func (c *Service) Publish(ctx context.Context, svc string, raw []byte, actor str
 	if err != nil {
 		return Contract{}, err
 	}
+	live := false
 	err = c.store.Tx(ctx, func(tx pgx.Tx) error {
+		live = false // a retried transaction starts over
 		var active, latest int
 		var pending bool
 		if err := tx.QueryRow(ctx, `SELECT active_version FROM services WHERE id = $1 FOR UPDATE`, svc).Scan(&active); err != nil {
@@ -409,14 +416,26 @@ func (c *Service) Publish(ctx context.Context, svc string, raw []byte, actor str
 		}
 		manifest, _ := json.Marshal(m)
 		sum, _ := json.Marshal(summary)
+		// Only other services' namespaces wait for an approval.
+		waits := slices.DeleteFunc(slices.Clone(namespaces), func(ns string) bool { return ns == svc })
 		if _, err := tx.Exec(ctx, `INSERT INTO contract_versions (service_id, version, manifest, status, namespaces, summary, submitted_by)
-			VALUES ($1, $2, $3, 'pending', $4, $5, $6)`, svc, m.Version, manifest, namespaces, sum, actor); err != nil {
+			VALUES ($1, $2, $3, 'pending', $4, $5, $6)`, svc, m.Version, manifest, waits, sum, actor); err != nil {
 			return err
 		}
-		return audit.Write(ctx, tx, c.store.Region, actor, "contract.published", "service:"+svc, map[string]any{"version": m.Version})
+		if err := audit.Write(ctx, tx, c.store.Region, actor, "contract.published", "service:"+svc, map[string]any{"version": m.Version}); err != nil {
+			return err
+		}
+		if len(waits) > 0 {
+			return nil
+		}
+		live = true
+		return c.activate(ctx, tx, svc, m.Version, actor)
 	})
 	if err != nil {
 		return Contract{}, err
+	}
+	if live {
+		c.revs.Forget(revision.Global)
 	}
 	return c.Contract(ctx, svc, m.Version)
 }
@@ -454,7 +473,7 @@ func (c *Service) Approve(ctx context.Context, svc string, version int, namespac
 		if approved < len(needed) {
 			return nil
 		}
-		return c.activate(ctx, tx, svc, version, approver)
+		return c.activate(ctx, tx, svc, version, audit.UserActor(approver))
 	})
 	if err != nil {
 		return Contract{}, err
@@ -464,8 +483,9 @@ func (c *Service) Approve(ctx context.Context, svc string, version int, namespac
 }
 
 // activate writes a version's entries into the catalog. The catalog may have
-// moved since it was published, so it is validated again.
-func (c *Service) activate(ctx context.Context, tx pgx.Tx, svc string, version int, approver uuid.UUID) error {
+// moved since it was published, so it is validated again. actor is who made it
+// live: the publisher, or the approver who gave the last approval.
+func (c *Service) activate(ctx context.Context, tx pgx.Tx, svc string, version int, actor string) error {
 	var raw []byte
 	if err := tx.QueryRow(ctx, `SELECT manifest FROM contract_versions WHERE service_id = $1 AND version = $2`, svc, version).Scan(&raw); err != nil {
 		return err
@@ -500,8 +520,8 @@ func (c *Service) activate(ctx context.Context, tx pgx.Tx, svc string, version i
 		}
 	}
 	for _, p := range next.perms {
-		if _, err := tx.Exec(ctx, `INSERT INTO permissions (key, service_id, scope, description) VALUES ($1, $2, $3, $4)
-			ON CONFLICT (key) DO UPDATE SET description = EXCLUDED.description`, p.Key, p.Service, p.Scope, p.Description); err != nil {
+		if _, err := tx.Exec(ctx, `INSERT INTO permissions (key, service_id, scope, label, description) VALUES ($1, $2, $3, $4, $5)
+			ON CONFLICT (key) DO UPDATE SET label = EXCLUDED.label, description = EXCLUDED.description`, p.Key, p.Service, p.Scope, p.Label, p.Description); err != nil {
 			return err
 		}
 	}
@@ -523,7 +543,7 @@ func (c *Service) activate(ctx context.Context, tx pgx.Tx, svc string, version i
 		return err
 	}
 	if _, err := tx.Exec(ctx, `UPDATE contract_versions SET status = 'active', decided_by = $3, decided_at = now()
-		WHERE service_id = $1 AND version = $2`, svc, version, audit.UserActor(approver)); err != nil {
+		WHERE service_id = $1 AND version = $2`, svc, version, actor); err != nil {
 		return err
 	}
 	if _, err := tx.Exec(ctx, `UPDATE services SET active_version = $2, updated_at = now() WHERE id = $1`, svc, version); err != nil {
@@ -532,7 +552,7 @@ func (c *Service) activate(ctx context.Context, tx pgx.Tx, svc string, version i
 	if _, err := revision.Bump(ctx, tx, c.store.Region, revision.Global, "catalog.changed"); err != nil {
 		return err
 	}
-	return audit.Write(ctx, tx, c.store.Region, audit.UserActor(approver), "contract.activated", "service:"+svc, map[string]any{"version": version})
+	return audit.Write(ctx, tx, c.store.Region, actor, "contract.activated", "service:"+svc, map[string]any{"version": version})
 }
 
 func (c *Service) Reject(ctx context.Context, svc string, version int, reason, actor string) (Contract, error) {

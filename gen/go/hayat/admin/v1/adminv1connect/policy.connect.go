@@ -58,6 +58,9 @@ const (
 	// CatalogServiceDeleteRoleProcedure is the fully-qualified name of the CatalogService's DeleteRole
 	// RPC.
 	CatalogServiceDeleteRoleProcedure = "/hayat.admin.v1.CatalogService/DeleteRole"
+	// CatalogServiceListRoleGrantsProcedure is the fully-qualified name of the CatalogService's
+	// ListRoleGrants RPC.
+	CatalogServiceListRoleGrantsProcedure = "/hayat.admin.v1.CatalogService/ListRoleGrants"
 	// RegistryServiceListServicesProcedure is the fully-qualified name of the RegistryService's
 	// ListServices RPC.
 	RegistryServiceListServicesProcedure = "/hayat.admin.v1.RegistryService/ListServices"
@@ -67,6 +70,9 @@ const (
 	// RegistryServiceRegisterServiceProcedure is the fully-qualified name of the RegistryService's
 	// RegisterService RPC.
 	RegistryServiceRegisterServiceProcedure = "/hayat.admin.v1.RegistryService/RegisterService"
+	// RegistryServiceUpdateServiceProcedure is the fully-qualified name of the RegistryService's
+	// UpdateService RPC.
+	RegistryServiceUpdateServiceProcedure = "/hayat.admin.v1.RegistryService/UpdateService"
 	// RegistryServiceAddServiceOwnerProcedure is the fully-qualified name of the RegistryService's
 	// AddServiceOwner RPC.
 	RegistryServiceAddServiceOwnerProcedure = "/hayat.admin.v1.RegistryService/AddServiceOwner"
@@ -85,6 +91,24 @@ const (
 	// RegistryServiceRejectContractProcedure is the fully-qualified name of the RegistryService's
 	// RejectContract RPC.
 	RegistryServiceRejectContractProcedure = "/hayat.admin.v1.RegistryService/RejectContract"
+	// RegistryServiceListServiceClientsProcedure is the fully-qualified name of the RegistryService's
+	// ListServiceClients RPC.
+	RegistryServiceListServiceClientsProcedure = "/hayat.admin.v1.RegistryService/ListServiceClients"
+	// RegistryServiceGetServiceClientProcedure is the fully-qualified name of the RegistryService's
+	// GetServiceClient RPC.
+	RegistryServiceGetServiceClientProcedure = "/hayat.admin.v1.RegistryService/GetServiceClient"
+	// RegistryServiceCreateServiceClientProcedure is the fully-qualified name of the RegistryService's
+	// CreateServiceClient RPC.
+	RegistryServiceCreateServiceClientProcedure = "/hayat.admin.v1.RegistryService/CreateServiceClient"
+	// RegistryServiceUpdateServiceClientProcedure is the fully-qualified name of the RegistryService's
+	// UpdateServiceClient RPC.
+	RegistryServiceUpdateServiceClientProcedure = "/hayat.admin.v1.RegistryService/UpdateServiceClient"
+	// RegistryServiceRotateServiceClientSecretProcedure is the fully-qualified name of the
+	// RegistryService's RotateServiceClientSecret RPC.
+	RegistryServiceRotateServiceClientSecretProcedure = "/hayat.admin.v1.RegistryService/RotateServiceClientSecret"
+	// RegistryServiceSetServiceClientDisabledProcedure is the fully-qualified name of the
+	// RegistryService's SetServiceClientDisabled RPC.
+	RegistryServiceSetServiceClientDisabledProcedure = "/hayat.admin.v1.RegistryService/SetServiceClientDisabled"
 	// TreeAdminServiceGetTenantTreeProcedure is the fully-qualified name of the TreeAdminService's
 	// GetTenantTree RPC.
 	TreeAdminServiceGetTenantTreeProcedure = "/hayat.admin.v1.TreeAdminService/GetTenantTree"
@@ -115,6 +139,9 @@ const (
 	// TreeAdminServiceRemoveGroupMemberProcedure is the fully-qualified name of the TreeAdminService's
 	// RemoveGroupMember RPC.
 	TreeAdminServiceRemoveGroupMemberProcedure = "/hayat.admin.v1.TreeAdminService/RemoveGroupMember"
+	// TreeAdminServiceListNodeAccessProcedure is the fully-qualified name of the TreeAdminService's
+	// ListNodeAccess RPC.
+	TreeAdminServiceListNodeAccessProcedure = "/hayat.admin.v1.TreeAdminService/ListNodeAccess"
 	// TreeAdminServiceWhoHasAccessProcedure is the fully-qualified name of the TreeAdminService's
 	// WhoHasAccess RPC.
 	TreeAdminServiceWhoHasAccessProcedure = "/hayat.admin.v1.TreeAdminService/WhoHasAccess"
@@ -130,6 +157,8 @@ type CatalogServiceClient interface {
 	CreateRole(context.Context, *connect.Request[v1.CreateRoleRequest]) (*connect.Response[v1.CreateRoleResponse], error)
 	UpdateRole(context.Context, *connect.Request[v1.UpdateRoleRequest]) (*connect.Response[v1.UpdateRoleResponse], error)
 	DeleteRole(context.Context, *connect.Request[v1.DeleteRoleRequest]) (*connect.Response[v1.DeleteRoleResponse], error)
+	// Where a role is granted, across every tenant: who holds it and on which node.
+	ListRoleGrants(context.Context, *connect.Request[v1.ListRoleGrantsRequest]) (*connect.Response[v1.ListRoleGrantsResponse], error)
 }
 
 // NewCatalogServiceClient constructs a client for the hayat.admin.v1.CatalogService service. By
@@ -173,16 +202,23 @@ func NewCatalogServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(catalogServiceMethods.ByName("DeleteRole")),
 			connect.WithClientOptions(opts...),
 		),
+		listRoleGrants: connect.NewClient[v1.ListRoleGrantsRequest, v1.ListRoleGrantsResponse](
+			httpClient,
+			baseURL+CatalogServiceListRoleGrantsProcedure,
+			connect.WithSchema(catalogServiceMethods.ByName("ListRoleGrants")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // catalogServiceClient implements CatalogServiceClient.
 type catalogServiceClient struct {
-	getCatalog *connect.Client[v1.GetCatalogRequest, v1.GetCatalogResponse]
-	listRoles  *connect.Client[v1.ListRolesRequest, v1.ListRolesResponse]
-	createRole *connect.Client[v1.CreateRoleRequest, v1.CreateRoleResponse]
-	updateRole *connect.Client[v1.UpdateRoleRequest, v1.UpdateRoleResponse]
-	deleteRole *connect.Client[v1.DeleteRoleRequest, v1.DeleteRoleResponse]
+	getCatalog     *connect.Client[v1.GetCatalogRequest, v1.GetCatalogResponse]
+	listRoles      *connect.Client[v1.ListRolesRequest, v1.ListRolesResponse]
+	createRole     *connect.Client[v1.CreateRoleRequest, v1.CreateRoleResponse]
+	updateRole     *connect.Client[v1.UpdateRoleRequest, v1.UpdateRoleResponse]
+	deleteRole     *connect.Client[v1.DeleteRoleRequest, v1.DeleteRoleResponse]
+	listRoleGrants *connect.Client[v1.ListRoleGrantsRequest, v1.ListRoleGrantsResponse]
 }
 
 // GetCatalog calls hayat.admin.v1.CatalogService.GetCatalog.
@@ -210,6 +246,11 @@ func (c *catalogServiceClient) DeleteRole(ctx context.Context, req *connect.Requ
 	return c.deleteRole.CallUnary(ctx, req)
 }
 
+// ListRoleGrants calls hayat.admin.v1.CatalogService.ListRoleGrants.
+func (c *catalogServiceClient) ListRoleGrants(ctx context.Context, req *connect.Request[v1.ListRoleGrantsRequest]) (*connect.Response[v1.ListRoleGrantsResponse], error) {
+	return c.listRoleGrants.CallUnary(ctx, req)
+}
+
 // CatalogServiceHandler is an implementation of the hayat.admin.v1.CatalogService service.
 type CatalogServiceHandler interface {
 	GetCatalog(context.Context, *connect.Request[v1.GetCatalogRequest]) (*connect.Response[v1.GetCatalogResponse], error)
@@ -217,6 +258,8 @@ type CatalogServiceHandler interface {
 	CreateRole(context.Context, *connect.Request[v1.CreateRoleRequest]) (*connect.Response[v1.CreateRoleResponse], error)
 	UpdateRole(context.Context, *connect.Request[v1.UpdateRoleRequest]) (*connect.Response[v1.UpdateRoleResponse], error)
 	DeleteRole(context.Context, *connect.Request[v1.DeleteRoleRequest]) (*connect.Response[v1.DeleteRoleResponse], error)
+	// Where a role is granted, across every tenant: who holds it and on which node.
+	ListRoleGrants(context.Context, *connect.Request[v1.ListRoleGrantsRequest]) (*connect.Response[v1.ListRoleGrantsResponse], error)
 }
 
 // NewCatalogServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -256,6 +299,12 @@ func NewCatalogServiceHandler(svc CatalogServiceHandler, opts ...connect.Handler
 		connect.WithSchema(catalogServiceMethods.ByName("DeleteRole")),
 		connect.WithHandlerOptions(opts...),
 	)
+	catalogServiceListRoleGrantsHandler := connect.NewUnaryHandler(
+		CatalogServiceListRoleGrantsProcedure,
+		svc.ListRoleGrants,
+		connect.WithSchema(catalogServiceMethods.ByName("ListRoleGrants")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/hayat.admin.v1.CatalogService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case CatalogServiceGetCatalogProcedure:
@@ -268,6 +317,8 @@ func NewCatalogServiceHandler(svc CatalogServiceHandler, opts ...connect.Handler
 			catalogServiceUpdateRoleHandler.ServeHTTP(w, r)
 		case CatalogServiceDeleteRoleProcedure:
 			catalogServiceDeleteRoleHandler.ServeHTTP(w, r)
+		case CatalogServiceListRoleGrantsProcedure:
+			catalogServiceListRoleGrantsHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -297,12 +348,18 @@ func (UnimplementedCatalogServiceHandler) DeleteRole(context.Context, *connect.R
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.CatalogService.DeleteRole is not implemented"))
 }
 
+func (UnimplementedCatalogServiceHandler) ListRoleGrants(context.Context, *connect.Request[v1.ListRoleGrantsRequest]) (*connect.Response[v1.ListRoleGrantsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.CatalogService.ListRoleGrants is not implemented"))
+}
+
 // RegistryServiceClient is a client for the hayat.admin.v1.RegistryService service.
 type RegistryServiceClient interface {
 	ListServices(context.Context, *connect.Request[v1.ListServicesRequest]) (*connect.Response[v1.ListServicesResponse], error)
 	GetService(context.Context, *connect.Request[v1.GetServiceRequest]) (*connect.Response[v1.GetServiceResponse], error)
 	// Creates the namespace, its confidential API client and the first owner.
 	RegisterService(context.Context, *connect.Request[v1.RegisterServiceRequest]) (*connect.Response[v1.RegisterServiceResponse], error)
+	// Changes the display name and description; the namespace never changes.
+	UpdateService(context.Context, *connect.Request[v1.UpdateServiceRequest]) (*connect.Response[v1.UpdateServiceResponse], error)
 	AddServiceOwner(context.Context, *connect.Request[v1.AddServiceOwnerRequest]) (*connect.Response[v1.AddServiceOwnerResponse], error)
 	RemoveServiceOwner(context.Context, *connect.Request[v1.RemoveServiceOwnerRequest]) (*connect.Response[v1.RemoveServiceOwnerResponse], error)
 	RotateServiceSecret(context.Context, *connect.Request[v1.RotateServiceSecretRequest]) (*connect.Response[v1.RotateServiceSecretResponse], error)
@@ -310,6 +367,15 @@ type RegistryServiceClient interface {
 	// Approves every namespace of the version the caller may approve.
 	ApproveContract(context.Context, *connect.Request[v1.ApproveContractRequest]) (*connect.Response[v1.ApproveContractResponse], error)
 	RejectContract(context.Context, *connect.Request[v1.RejectContractRequest]) (*connect.Response[v1.RejectContractResponse], error)
+	// A service's sign-in clients: the OAuth clients people sign in through.
+	// Its API credential is managed above (RotateServiceSecret), not here.
+	ListServiceClients(context.Context, *connect.Request[v1.ListServiceClientsRequest]) (*connect.Response[v1.ListServiceClientsResponse], error)
+	GetServiceClient(context.Context, *connect.Request[v1.GetServiceClientRequest]) (*connect.Response[v1.GetServiceClientResponse], error)
+	// A confidential client's secret is returned here once and never again.
+	CreateServiceClient(context.Context, *connect.Request[v1.CreateServiceClientRequest]) (*connect.Response[v1.CreateServiceClientResponse], error)
+	UpdateServiceClient(context.Context, *connect.Request[v1.UpdateServiceClientRequest]) (*connect.Response[v1.UpdateServiceClientResponse], error)
+	RotateServiceClientSecret(context.Context, *connect.Request[v1.RotateServiceClientSecretRequest]) (*connect.Response[v1.RotateServiceClientSecretResponse], error)
+	SetServiceClientDisabled(context.Context, *connect.Request[v1.SetServiceClientDisabledRequest]) (*connect.Response[v1.SetServiceClientDisabledResponse], error)
 }
 
 // NewRegistryServiceClient constructs a client for the hayat.admin.v1.RegistryService service. By
@@ -339,6 +405,12 @@ func NewRegistryServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			httpClient,
 			baseURL+RegistryServiceRegisterServiceProcedure,
 			connect.WithSchema(registryServiceMethods.ByName("RegisterService")),
+			connect.WithClientOptions(opts...),
+		),
+		updateService: connect.NewClient[v1.UpdateServiceRequest, v1.UpdateServiceResponse](
+			httpClient,
+			baseURL+RegistryServiceUpdateServiceProcedure,
+			connect.WithSchema(registryServiceMethods.ByName("UpdateService")),
 			connect.WithClientOptions(opts...),
 		),
 		addServiceOwner: connect.NewClient[v1.AddServiceOwnerRequest, v1.AddServiceOwnerResponse](
@@ -377,20 +449,63 @@ func NewRegistryServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			connect.WithSchema(registryServiceMethods.ByName("RejectContract")),
 			connect.WithClientOptions(opts...),
 		),
+		listServiceClients: connect.NewClient[v1.ListServiceClientsRequest, v1.ListServiceClientsResponse](
+			httpClient,
+			baseURL+RegistryServiceListServiceClientsProcedure,
+			connect.WithSchema(registryServiceMethods.ByName("ListServiceClients")),
+			connect.WithClientOptions(opts...),
+		),
+		getServiceClient: connect.NewClient[v1.GetServiceClientRequest, v1.GetServiceClientResponse](
+			httpClient,
+			baseURL+RegistryServiceGetServiceClientProcedure,
+			connect.WithSchema(registryServiceMethods.ByName("GetServiceClient")),
+			connect.WithClientOptions(opts...),
+		),
+		createServiceClient: connect.NewClient[v1.CreateServiceClientRequest, v1.CreateServiceClientResponse](
+			httpClient,
+			baseURL+RegistryServiceCreateServiceClientProcedure,
+			connect.WithSchema(registryServiceMethods.ByName("CreateServiceClient")),
+			connect.WithClientOptions(opts...),
+		),
+		updateServiceClient: connect.NewClient[v1.UpdateServiceClientRequest, v1.UpdateServiceClientResponse](
+			httpClient,
+			baseURL+RegistryServiceUpdateServiceClientProcedure,
+			connect.WithSchema(registryServiceMethods.ByName("UpdateServiceClient")),
+			connect.WithClientOptions(opts...),
+		),
+		rotateServiceClientSecret: connect.NewClient[v1.RotateServiceClientSecretRequest, v1.RotateServiceClientSecretResponse](
+			httpClient,
+			baseURL+RegistryServiceRotateServiceClientSecretProcedure,
+			connect.WithSchema(registryServiceMethods.ByName("RotateServiceClientSecret")),
+			connect.WithClientOptions(opts...),
+		),
+		setServiceClientDisabled: connect.NewClient[v1.SetServiceClientDisabledRequest, v1.SetServiceClientDisabledResponse](
+			httpClient,
+			baseURL+RegistryServiceSetServiceClientDisabledProcedure,
+			connect.WithSchema(registryServiceMethods.ByName("SetServiceClientDisabled")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // registryServiceClient implements RegistryServiceClient.
 type registryServiceClient struct {
-	listServices        *connect.Client[v1.ListServicesRequest, v1.ListServicesResponse]
-	getService          *connect.Client[v1.GetServiceRequest, v1.GetServiceResponse]
-	registerService     *connect.Client[v1.RegisterServiceRequest, v1.RegisterServiceResponse]
-	addServiceOwner     *connect.Client[v1.AddServiceOwnerRequest, v1.AddServiceOwnerResponse]
-	removeServiceOwner  *connect.Client[v1.RemoveServiceOwnerRequest, v1.RemoveServiceOwnerResponse]
-	rotateServiceSecret *connect.Client[v1.RotateServiceSecretRequest, v1.RotateServiceSecretResponse]
-	publishContract     *connect.Client[v1.RegistryServicePublishContractRequest, v1.RegistryServicePublishContractResponse]
-	approveContract     *connect.Client[v1.ApproveContractRequest, v1.ApproveContractResponse]
-	rejectContract      *connect.Client[v1.RejectContractRequest, v1.RejectContractResponse]
+	listServices              *connect.Client[v1.ListServicesRequest, v1.ListServicesResponse]
+	getService                *connect.Client[v1.GetServiceRequest, v1.GetServiceResponse]
+	registerService           *connect.Client[v1.RegisterServiceRequest, v1.RegisterServiceResponse]
+	updateService             *connect.Client[v1.UpdateServiceRequest, v1.UpdateServiceResponse]
+	addServiceOwner           *connect.Client[v1.AddServiceOwnerRequest, v1.AddServiceOwnerResponse]
+	removeServiceOwner        *connect.Client[v1.RemoveServiceOwnerRequest, v1.RemoveServiceOwnerResponse]
+	rotateServiceSecret       *connect.Client[v1.RotateServiceSecretRequest, v1.RotateServiceSecretResponse]
+	publishContract           *connect.Client[v1.RegistryServicePublishContractRequest, v1.RegistryServicePublishContractResponse]
+	approveContract           *connect.Client[v1.ApproveContractRequest, v1.ApproveContractResponse]
+	rejectContract            *connect.Client[v1.RejectContractRequest, v1.RejectContractResponse]
+	listServiceClients        *connect.Client[v1.ListServiceClientsRequest, v1.ListServiceClientsResponse]
+	getServiceClient          *connect.Client[v1.GetServiceClientRequest, v1.GetServiceClientResponse]
+	createServiceClient       *connect.Client[v1.CreateServiceClientRequest, v1.CreateServiceClientResponse]
+	updateServiceClient       *connect.Client[v1.UpdateServiceClientRequest, v1.UpdateServiceClientResponse]
+	rotateServiceClientSecret *connect.Client[v1.RotateServiceClientSecretRequest, v1.RotateServiceClientSecretResponse]
+	setServiceClientDisabled  *connect.Client[v1.SetServiceClientDisabledRequest, v1.SetServiceClientDisabledResponse]
 }
 
 // ListServices calls hayat.admin.v1.RegistryService.ListServices.
@@ -406,6 +521,11 @@ func (c *registryServiceClient) GetService(ctx context.Context, req *connect.Req
 // RegisterService calls hayat.admin.v1.RegistryService.RegisterService.
 func (c *registryServiceClient) RegisterService(ctx context.Context, req *connect.Request[v1.RegisterServiceRequest]) (*connect.Response[v1.RegisterServiceResponse], error) {
 	return c.registerService.CallUnary(ctx, req)
+}
+
+// UpdateService calls hayat.admin.v1.RegistryService.UpdateService.
+func (c *registryServiceClient) UpdateService(ctx context.Context, req *connect.Request[v1.UpdateServiceRequest]) (*connect.Response[v1.UpdateServiceResponse], error) {
+	return c.updateService.CallUnary(ctx, req)
 }
 
 // AddServiceOwner calls hayat.admin.v1.RegistryService.AddServiceOwner.
@@ -438,12 +558,44 @@ func (c *registryServiceClient) RejectContract(ctx context.Context, req *connect
 	return c.rejectContract.CallUnary(ctx, req)
 }
 
+// ListServiceClients calls hayat.admin.v1.RegistryService.ListServiceClients.
+func (c *registryServiceClient) ListServiceClients(ctx context.Context, req *connect.Request[v1.ListServiceClientsRequest]) (*connect.Response[v1.ListServiceClientsResponse], error) {
+	return c.listServiceClients.CallUnary(ctx, req)
+}
+
+// GetServiceClient calls hayat.admin.v1.RegistryService.GetServiceClient.
+func (c *registryServiceClient) GetServiceClient(ctx context.Context, req *connect.Request[v1.GetServiceClientRequest]) (*connect.Response[v1.GetServiceClientResponse], error) {
+	return c.getServiceClient.CallUnary(ctx, req)
+}
+
+// CreateServiceClient calls hayat.admin.v1.RegistryService.CreateServiceClient.
+func (c *registryServiceClient) CreateServiceClient(ctx context.Context, req *connect.Request[v1.CreateServiceClientRequest]) (*connect.Response[v1.CreateServiceClientResponse], error) {
+	return c.createServiceClient.CallUnary(ctx, req)
+}
+
+// UpdateServiceClient calls hayat.admin.v1.RegistryService.UpdateServiceClient.
+func (c *registryServiceClient) UpdateServiceClient(ctx context.Context, req *connect.Request[v1.UpdateServiceClientRequest]) (*connect.Response[v1.UpdateServiceClientResponse], error) {
+	return c.updateServiceClient.CallUnary(ctx, req)
+}
+
+// RotateServiceClientSecret calls hayat.admin.v1.RegistryService.RotateServiceClientSecret.
+func (c *registryServiceClient) RotateServiceClientSecret(ctx context.Context, req *connect.Request[v1.RotateServiceClientSecretRequest]) (*connect.Response[v1.RotateServiceClientSecretResponse], error) {
+	return c.rotateServiceClientSecret.CallUnary(ctx, req)
+}
+
+// SetServiceClientDisabled calls hayat.admin.v1.RegistryService.SetServiceClientDisabled.
+func (c *registryServiceClient) SetServiceClientDisabled(ctx context.Context, req *connect.Request[v1.SetServiceClientDisabledRequest]) (*connect.Response[v1.SetServiceClientDisabledResponse], error) {
+	return c.setServiceClientDisabled.CallUnary(ctx, req)
+}
+
 // RegistryServiceHandler is an implementation of the hayat.admin.v1.RegistryService service.
 type RegistryServiceHandler interface {
 	ListServices(context.Context, *connect.Request[v1.ListServicesRequest]) (*connect.Response[v1.ListServicesResponse], error)
 	GetService(context.Context, *connect.Request[v1.GetServiceRequest]) (*connect.Response[v1.GetServiceResponse], error)
 	// Creates the namespace, its confidential API client and the first owner.
 	RegisterService(context.Context, *connect.Request[v1.RegisterServiceRequest]) (*connect.Response[v1.RegisterServiceResponse], error)
+	// Changes the display name and description; the namespace never changes.
+	UpdateService(context.Context, *connect.Request[v1.UpdateServiceRequest]) (*connect.Response[v1.UpdateServiceResponse], error)
 	AddServiceOwner(context.Context, *connect.Request[v1.AddServiceOwnerRequest]) (*connect.Response[v1.AddServiceOwnerResponse], error)
 	RemoveServiceOwner(context.Context, *connect.Request[v1.RemoveServiceOwnerRequest]) (*connect.Response[v1.RemoveServiceOwnerResponse], error)
 	RotateServiceSecret(context.Context, *connect.Request[v1.RotateServiceSecretRequest]) (*connect.Response[v1.RotateServiceSecretResponse], error)
@@ -451,6 +603,15 @@ type RegistryServiceHandler interface {
 	// Approves every namespace of the version the caller may approve.
 	ApproveContract(context.Context, *connect.Request[v1.ApproveContractRequest]) (*connect.Response[v1.ApproveContractResponse], error)
 	RejectContract(context.Context, *connect.Request[v1.RejectContractRequest]) (*connect.Response[v1.RejectContractResponse], error)
+	// A service's sign-in clients: the OAuth clients people sign in through.
+	// Its API credential is managed above (RotateServiceSecret), not here.
+	ListServiceClients(context.Context, *connect.Request[v1.ListServiceClientsRequest]) (*connect.Response[v1.ListServiceClientsResponse], error)
+	GetServiceClient(context.Context, *connect.Request[v1.GetServiceClientRequest]) (*connect.Response[v1.GetServiceClientResponse], error)
+	// A confidential client's secret is returned here once and never again.
+	CreateServiceClient(context.Context, *connect.Request[v1.CreateServiceClientRequest]) (*connect.Response[v1.CreateServiceClientResponse], error)
+	UpdateServiceClient(context.Context, *connect.Request[v1.UpdateServiceClientRequest]) (*connect.Response[v1.UpdateServiceClientResponse], error)
+	RotateServiceClientSecret(context.Context, *connect.Request[v1.RotateServiceClientSecretRequest]) (*connect.Response[v1.RotateServiceClientSecretResponse], error)
+	SetServiceClientDisabled(context.Context, *connect.Request[v1.SetServiceClientDisabledRequest]) (*connect.Response[v1.SetServiceClientDisabledResponse], error)
 }
 
 // NewRegistryServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -476,6 +637,12 @@ func NewRegistryServiceHandler(svc RegistryServiceHandler, opts ...connect.Handl
 		RegistryServiceRegisterServiceProcedure,
 		svc.RegisterService,
 		connect.WithSchema(registryServiceMethods.ByName("RegisterService")),
+		connect.WithHandlerOptions(opts...),
+	)
+	registryServiceUpdateServiceHandler := connect.NewUnaryHandler(
+		RegistryServiceUpdateServiceProcedure,
+		svc.UpdateService,
+		connect.WithSchema(registryServiceMethods.ByName("UpdateService")),
 		connect.WithHandlerOptions(opts...),
 	)
 	registryServiceAddServiceOwnerHandler := connect.NewUnaryHandler(
@@ -514,6 +681,42 @@ func NewRegistryServiceHandler(svc RegistryServiceHandler, opts ...connect.Handl
 		connect.WithSchema(registryServiceMethods.ByName("RejectContract")),
 		connect.WithHandlerOptions(opts...),
 	)
+	registryServiceListServiceClientsHandler := connect.NewUnaryHandler(
+		RegistryServiceListServiceClientsProcedure,
+		svc.ListServiceClients,
+		connect.WithSchema(registryServiceMethods.ByName("ListServiceClients")),
+		connect.WithHandlerOptions(opts...),
+	)
+	registryServiceGetServiceClientHandler := connect.NewUnaryHandler(
+		RegistryServiceGetServiceClientProcedure,
+		svc.GetServiceClient,
+		connect.WithSchema(registryServiceMethods.ByName("GetServiceClient")),
+		connect.WithHandlerOptions(opts...),
+	)
+	registryServiceCreateServiceClientHandler := connect.NewUnaryHandler(
+		RegistryServiceCreateServiceClientProcedure,
+		svc.CreateServiceClient,
+		connect.WithSchema(registryServiceMethods.ByName("CreateServiceClient")),
+		connect.WithHandlerOptions(opts...),
+	)
+	registryServiceUpdateServiceClientHandler := connect.NewUnaryHandler(
+		RegistryServiceUpdateServiceClientProcedure,
+		svc.UpdateServiceClient,
+		connect.WithSchema(registryServiceMethods.ByName("UpdateServiceClient")),
+		connect.WithHandlerOptions(opts...),
+	)
+	registryServiceRotateServiceClientSecretHandler := connect.NewUnaryHandler(
+		RegistryServiceRotateServiceClientSecretProcedure,
+		svc.RotateServiceClientSecret,
+		connect.WithSchema(registryServiceMethods.ByName("RotateServiceClientSecret")),
+		connect.WithHandlerOptions(opts...),
+	)
+	registryServiceSetServiceClientDisabledHandler := connect.NewUnaryHandler(
+		RegistryServiceSetServiceClientDisabledProcedure,
+		svc.SetServiceClientDisabled,
+		connect.WithSchema(registryServiceMethods.ByName("SetServiceClientDisabled")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/hayat.admin.v1.RegistryService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case RegistryServiceListServicesProcedure:
@@ -522,6 +725,8 @@ func NewRegistryServiceHandler(svc RegistryServiceHandler, opts ...connect.Handl
 			registryServiceGetServiceHandler.ServeHTTP(w, r)
 		case RegistryServiceRegisterServiceProcedure:
 			registryServiceRegisterServiceHandler.ServeHTTP(w, r)
+		case RegistryServiceUpdateServiceProcedure:
+			registryServiceUpdateServiceHandler.ServeHTTP(w, r)
 		case RegistryServiceAddServiceOwnerProcedure:
 			registryServiceAddServiceOwnerHandler.ServeHTTP(w, r)
 		case RegistryServiceRemoveServiceOwnerProcedure:
@@ -534,6 +739,18 @@ func NewRegistryServiceHandler(svc RegistryServiceHandler, opts ...connect.Handl
 			registryServiceApproveContractHandler.ServeHTTP(w, r)
 		case RegistryServiceRejectContractProcedure:
 			registryServiceRejectContractHandler.ServeHTTP(w, r)
+		case RegistryServiceListServiceClientsProcedure:
+			registryServiceListServiceClientsHandler.ServeHTTP(w, r)
+		case RegistryServiceGetServiceClientProcedure:
+			registryServiceGetServiceClientHandler.ServeHTTP(w, r)
+		case RegistryServiceCreateServiceClientProcedure:
+			registryServiceCreateServiceClientHandler.ServeHTTP(w, r)
+		case RegistryServiceUpdateServiceClientProcedure:
+			registryServiceUpdateServiceClientHandler.ServeHTTP(w, r)
+		case RegistryServiceRotateServiceClientSecretProcedure:
+			registryServiceRotateServiceClientSecretHandler.ServeHTTP(w, r)
+		case RegistryServiceSetServiceClientDisabledProcedure:
+			registryServiceSetServiceClientDisabledHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -553,6 +770,10 @@ func (UnimplementedRegistryServiceHandler) GetService(context.Context, *connect.
 
 func (UnimplementedRegistryServiceHandler) RegisterService(context.Context, *connect.Request[v1.RegisterServiceRequest]) (*connect.Response[v1.RegisterServiceResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.RegistryService.RegisterService is not implemented"))
+}
+
+func (UnimplementedRegistryServiceHandler) UpdateService(context.Context, *connect.Request[v1.UpdateServiceRequest]) (*connect.Response[v1.UpdateServiceResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.RegistryService.UpdateService is not implemented"))
 }
 
 func (UnimplementedRegistryServiceHandler) AddServiceOwner(context.Context, *connect.Request[v1.AddServiceOwnerRequest]) (*connect.Response[v1.AddServiceOwnerResponse], error) {
@@ -579,6 +800,30 @@ func (UnimplementedRegistryServiceHandler) RejectContract(context.Context, *conn
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.RegistryService.RejectContract is not implemented"))
 }
 
+func (UnimplementedRegistryServiceHandler) ListServiceClients(context.Context, *connect.Request[v1.ListServiceClientsRequest]) (*connect.Response[v1.ListServiceClientsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.RegistryService.ListServiceClients is not implemented"))
+}
+
+func (UnimplementedRegistryServiceHandler) GetServiceClient(context.Context, *connect.Request[v1.GetServiceClientRequest]) (*connect.Response[v1.GetServiceClientResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.RegistryService.GetServiceClient is not implemented"))
+}
+
+func (UnimplementedRegistryServiceHandler) CreateServiceClient(context.Context, *connect.Request[v1.CreateServiceClientRequest]) (*connect.Response[v1.CreateServiceClientResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.RegistryService.CreateServiceClient is not implemented"))
+}
+
+func (UnimplementedRegistryServiceHandler) UpdateServiceClient(context.Context, *connect.Request[v1.UpdateServiceClientRequest]) (*connect.Response[v1.UpdateServiceClientResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.RegistryService.UpdateServiceClient is not implemented"))
+}
+
+func (UnimplementedRegistryServiceHandler) RotateServiceClientSecret(context.Context, *connect.Request[v1.RotateServiceClientSecretRequest]) (*connect.Response[v1.RotateServiceClientSecretResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.RegistryService.RotateServiceClientSecret is not implemented"))
+}
+
+func (UnimplementedRegistryServiceHandler) SetServiceClientDisabled(context.Context, *connect.Request[v1.SetServiceClientDisabledRequest]) (*connect.Response[v1.SetServiceClientDisabledResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.RegistryService.SetServiceClientDisabled is not implemented"))
+}
+
 // TreeAdminServiceClient is a client for the hayat.admin.v1.TreeAdminService service.
 type TreeAdminServiceClient interface {
 	// Every node of a tenant, parents first.
@@ -592,6 +837,11 @@ type TreeAdminServiceClient interface {
 	RemoveGrant(context.Context, *connect.Request[v1.RemoveGrantRequest]) (*connect.Response[v1.RemoveGrantResponse], error)
 	AddGroupMember(context.Context, *connect.Request[v1.AddGroupMemberRequest]) (*connect.Response[v1.AddGroupMemberResponse], error)
 	RemoveGroupMember(context.Context, *connect.Request[v1.RemoveGroupMemberRequest]) (*connect.Response[v1.RemoveGroupMemberResponse], error)
+	// Everyone who reaches this node, one row per way: owners on the chain,
+	// grants here or inherited from above (to a group or the whole tenant,
+	// listed per person on its roster), and placement under a group. What was
+	// given, not what it adds up to: WhoHasAccess answers for one permission.
+	ListNodeAccess(context.Context, *connect.Request[v1.ListNodeAccessRequest]) (*connect.Response[v1.ListNodeAccessResponse], error)
 	// Who really holds a permission here, and through what.
 	WhoHasAccess(context.Context, *connect.Request[v1.WhoHasAccessRequest]) (*connect.Response[v1.WhoHasAccessResponse], error)
 	// Why a person may (or may not) do something here.
@@ -669,6 +919,12 @@ func NewTreeAdminServiceClient(httpClient connect.HTTPClient, baseURL string, op
 			connect.WithSchema(treeAdminServiceMethods.ByName("RemoveGroupMember")),
 			connect.WithClientOptions(opts...),
 		),
+		listNodeAccess: connect.NewClient[v1.ListNodeAccessRequest, v1.ListNodeAccessResponse](
+			httpClient,
+			baseURL+TreeAdminServiceListNodeAccessProcedure,
+			connect.WithSchema(treeAdminServiceMethods.ByName("ListNodeAccess")),
+			connect.WithClientOptions(opts...),
+		),
 		whoHasAccess: connect.NewClient[v1.WhoHasAccessRequest, v1.WhoHasAccessResponse](
 			httpClient,
 			baseURL+TreeAdminServiceWhoHasAccessProcedure,
@@ -696,6 +952,7 @@ type treeAdminServiceClient struct {
 	removeGrant       *connect.Client[v1.RemoveGrantRequest, v1.RemoveGrantResponse]
 	addGroupMember    *connect.Client[v1.AddGroupMemberRequest, v1.AddGroupMemberResponse]
 	removeGroupMember *connect.Client[v1.RemoveGroupMemberRequest, v1.RemoveGroupMemberResponse]
+	listNodeAccess    *connect.Client[v1.ListNodeAccessRequest, v1.ListNodeAccessResponse]
 	whoHasAccess      *connect.Client[v1.WhoHasAccessRequest, v1.WhoHasAccessResponse]
 	explainAccess     *connect.Client[v1.ExplainAccessRequest, v1.ExplainAccessResponse]
 }
@@ -750,6 +1007,11 @@ func (c *treeAdminServiceClient) RemoveGroupMember(ctx context.Context, req *con
 	return c.removeGroupMember.CallUnary(ctx, req)
 }
 
+// ListNodeAccess calls hayat.admin.v1.TreeAdminService.ListNodeAccess.
+func (c *treeAdminServiceClient) ListNodeAccess(ctx context.Context, req *connect.Request[v1.ListNodeAccessRequest]) (*connect.Response[v1.ListNodeAccessResponse], error) {
+	return c.listNodeAccess.CallUnary(ctx, req)
+}
+
 // WhoHasAccess calls hayat.admin.v1.TreeAdminService.WhoHasAccess.
 func (c *treeAdminServiceClient) WhoHasAccess(ctx context.Context, req *connect.Request[v1.WhoHasAccessRequest]) (*connect.Response[v1.WhoHasAccessResponse], error) {
 	return c.whoHasAccess.CallUnary(ctx, req)
@@ -773,6 +1035,11 @@ type TreeAdminServiceHandler interface {
 	RemoveGrant(context.Context, *connect.Request[v1.RemoveGrantRequest]) (*connect.Response[v1.RemoveGrantResponse], error)
 	AddGroupMember(context.Context, *connect.Request[v1.AddGroupMemberRequest]) (*connect.Response[v1.AddGroupMemberResponse], error)
 	RemoveGroupMember(context.Context, *connect.Request[v1.RemoveGroupMemberRequest]) (*connect.Response[v1.RemoveGroupMemberResponse], error)
+	// Everyone who reaches this node, one row per way: owners on the chain,
+	// grants here or inherited from above (to a group or the whole tenant,
+	// listed per person on its roster), and placement under a group. What was
+	// given, not what it adds up to: WhoHasAccess answers for one permission.
+	ListNodeAccess(context.Context, *connect.Request[v1.ListNodeAccessRequest]) (*connect.Response[v1.ListNodeAccessResponse], error)
 	// Who really holds a permission here, and through what.
 	WhoHasAccess(context.Context, *connect.Request[v1.WhoHasAccessRequest]) (*connect.Response[v1.WhoHasAccessResponse], error)
 	// Why a person may (or may not) do something here.
@@ -846,6 +1113,12 @@ func NewTreeAdminServiceHandler(svc TreeAdminServiceHandler, opts ...connect.Han
 		connect.WithSchema(treeAdminServiceMethods.ByName("RemoveGroupMember")),
 		connect.WithHandlerOptions(opts...),
 	)
+	treeAdminServiceListNodeAccessHandler := connect.NewUnaryHandler(
+		TreeAdminServiceListNodeAccessProcedure,
+		svc.ListNodeAccess,
+		connect.WithSchema(treeAdminServiceMethods.ByName("ListNodeAccess")),
+		connect.WithHandlerOptions(opts...),
+	)
 	treeAdminServiceWhoHasAccessHandler := connect.NewUnaryHandler(
 		TreeAdminServiceWhoHasAccessProcedure,
 		svc.WhoHasAccess,
@@ -880,6 +1153,8 @@ func NewTreeAdminServiceHandler(svc TreeAdminServiceHandler, opts ...connect.Han
 			treeAdminServiceAddGroupMemberHandler.ServeHTTP(w, r)
 		case TreeAdminServiceRemoveGroupMemberProcedure:
 			treeAdminServiceRemoveGroupMemberHandler.ServeHTTP(w, r)
+		case TreeAdminServiceListNodeAccessProcedure:
+			treeAdminServiceListNodeAccessHandler.ServeHTTP(w, r)
 		case TreeAdminServiceWhoHasAccessProcedure:
 			treeAdminServiceWhoHasAccessHandler.ServeHTTP(w, r)
 		case TreeAdminServiceExplainAccessProcedure:
@@ -931,6 +1206,10 @@ func (UnimplementedTreeAdminServiceHandler) AddGroupMember(context.Context, *con
 
 func (UnimplementedTreeAdminServiceHandler) RemoveGroupMember(context.Context, *connect.Request[v1.RemoveGroupMemberRequest]) (*connect.Response[v1.RemoveGroupMemberResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.TreeAdminService.RemoveGroupMember is not implemented"))
+}
+
+func (UnimplementedTreeAdminServiceHandler) ListNodeAccess(context.Context, *connect.Request[v1.ListNodeAccessRequest]) (*connect.Response[v1.ListNodeAccessResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.TreeAdminService.ListNodeAccess is not implemented"))
 }
 
 func (UnimplementedTreeAdminServiceHandler) WhoHasAccess(context.Context, *connect.Request[v1.WhoHasAccessRequest]) (*connect.Response[v1.WhoHasAccessResponse], error) {

@@ -203,6 +203,7 @@ func TestAdminAPI(t *testing.T) {
 	}
 
 	testTenantOwner(t, e, tenants, created.Msg.Tenant.Id, beaToken)
+	testRoleGrants(t, e, token, beaToken, created.Msg.Tenant.Id, me.Msg.User.Id)
 
 	// Signing out of Hayat cuts the console off at once, not when the token expires.
 	page := e.must(browser.Get(e.auth + "/logout"))
@@ -211,6 +212,68 @@ func TestAdminAPI(t *testing.T) {
 	e.must(browser.PostForm(e.auth+"/logout", url.Values{"csrf": {string(csrf[1])}}))
 	if _, err := overview.GetOverview(ctx, connect.NewRequest(&adminv1.GetOverviewRequest{})); code(err) != connect.CodeUnauthenticated {
 		t.Fatalf("after sign-out: want Unauthenticated, got %v", err)
+	}
+}
+
+// The roles page reads labels from the catalog and asks where a role is
+// granted; only an instance admin may ask that, and a role in use can't go.
+func testRoleGrants(t *testing.T, e *env, adminToken, beaToken, acmeID, beaID string) {
+	ctx := context.Background()
+	cat := adminv1connect.NewCatalogServiceClient(http.DefaultClient, e.admin, bearer(adminToken))
+	catalogResp, err := cat.GetCatalog(ctx, connect.NewRequest(&adminv1.GetCatalogRequest{}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if i := slices.IndexFunc(catalogResp.Msg.Permissions, func(p *adminv1.PermissionInfo) bool { return p.Key == "hayat.members.manage" }); i < 0 || catalogResp.Msg.Permissions[i].Label != "Manage members" {
+		t.Fatalf("platform permissions carry a label: %v", catalogResp.Msg.Permissions)
+	}
+
+	treeAdmin := adminv1connect.NewTreeAdminServiceClient(http.DefaultClient, e.admin, bearer(adminToken))
+	tr, err := treeAdmin.GetTenantTree(ctx, connect.NewRequest(&adminv1.GetTenantTreeRequest{TenantId: acmeID}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var tenantNode *adminv1.Node
+	for _, n := range tr.Msg.Nodes {
+		if n.Type == "hayat/tenant" {
+			tenantNode = n
+		}
+	}
+	if tenantNode == nil {
+		t.Fatal("tenant node missing from its tree")
+	}
+	group, err := treeAdmin.CreateGroup(ctx, connect.NewRequest(&adminv1.CreateGroupRequest{ParentId: tenantNode.Id, Name: "Engineering"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	role, err := cat.CreateRole(ctx, connect.NewRequest(&adminv1.CreateRoleRequest{Name: "Group helper", AppliesTo: []string{"hayat/group"}, Permissions: []string{"hayat.groups.manage"}}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := treeAdmin.AddGrant(ctx, connect.NewRequest(&adminv1.AddGrantRequest{NodeId: group.Msg.Node.Id, PrincipalType: "user", PrincipalId: beaID,
+		RoleId: role.Msg.Role.Id, Inherit: true})); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := cat.ListRoleGrants(ctx, connect.NewRequest(&adminv1.ListRoleGrantsRequest{RoleId: role.Msg.Role.Id}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got.Msg.Grants) != 1 || got.Msg.Truncated {
+		t.Fatalf("one grant: %v", got.Msg)
+	}
+	g := got.Msg.Grants[0]
+	if g.NodeName != "Engineering" || g.NodeType != "hayat/group" || g.TenantId != acmeID || !slices.Equal(g.Path, []string{tenantNode.Name}) ||
+		g.Grant.PrincipalEmail != "bea@example.com" {
+		t.Fatalf("grant place: %+v", g)
+	}
+
+	bea := adminv1connect.NewCatalogServiceClient(http.DefaultClient, e.admin, bearer(beaToken))
+	if _, err := bea.ListRoleGrants(ctx, connect.NewRequest(&adminv1.ListRoleGrantsRequest{RoleId: role.Msg.Role.Id})); code(err) != connect.CodePermissionDenied {
+		t.Fatalf("a tenant owner can't list grants across tenants: %v", err)
+	}
+	if _, err := cat.DeleteRole(ctx, connect.NewRequest(&adminv1.DeleteRoleRequest{Id: role.Msg.Role.Id})); code(err) != connect.CodeFailedPrecondition {
+		t.Fatalf("deleting a role in use: want FailedPrecondition, got %v", err)
 	}
 }
 
@@ -283,12 +346,21 @@ func testTenantOwner(t *testing.T, e *env, admin adminv1connect.TenantServiceCli
 	carlToken := e.activate("carl@example.com", "carl's long password")
 	carl := adminv1connect.NewTenantServiceClient(http.DefaultClient, e.admin, bearer(carlToken))
 	seen, err := carl.GetTenant(ctx, connect.NewRequest(&adminv1.GetTenantRequest{Id: acmeID}))
-	if err != nil || len(seen.Msg.MyPermissions) != 0 || len(seen.Msg.Members) != 2 {
+	if err != nil || len(seen.Msg.MyPermissions) != 0 {
 		t.Fatalf("member reads the tenant: %v %v", seen, err)
 	}
-	carlID := seen.Msg.Members[1].User.Id
-	if seen.Msg.Members[0].User.Email == "carl@example.com" {
-		carlID = seen.Msg.Members[0].User.Id
+	// The roster pages in join order: bea (the owner) first, then carl.
+	first, err := carl.ListMembers(ctx, connect.NewRequest(&adminv1.ListMembersRequest{TenantId: acmeID, PageSize: 1}))
+	if err != nil || len(first.Msg.Members) != 1 || !first.Msg.Members[0].IsOwner || first.Msg.NextPageToken == "" {
+		t.Fatalf("first page of members: %v %v", first, err)
+	}
+	second, err := carl.ListMembers(ctx, connect.NewRequest(&adminv1.ListMembersRequest{TenantId: acmeID, PageSize: 1, PageToken: first.Msg.NextPageToken}))
+	if err != nil || len(second.Msg.Members) != 1 || second.Msg.Members[0].User.Email != "carl@example.com" || second.Msg.NextPageToken != "" {
+		t.Fatalf("second page of members: %v %v", second, err)
+	}
+	carlID := second.Msg.Members[0].User.Id
+	if _, err := bea.ListMembers(ctx, connect.NewRequest(&adminv1.ListMembersRequest{TenantId: other.Msg.Tenant.Id})); code(err) != connect.CodePermissionDenied {
+		t.Fatalf("someone else's roster: want PermissionDenied, got %v", err)
 	}
 	for name, call := range map[string]func() error{
 		"rename": func() error {

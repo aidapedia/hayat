@@ -34,8 +34,6 @@ const (
 	UserServiceName = "hayat.admin.v1.UserService"
 	// TenantServiceName is the fully-qualified name of the TenantService service.
 	TenantServiceName = "hayat.admin.v1.TenantService"
-	// ClientServiceName is the fully-qualified name of the ClientService service.
-	ClientServiceName = "hayat.admin.v1.ClientService"
 	// KeyServiceName is the fully-qualified name of the KeyService service.
 	KeyServiceName = "hayat.admin.v1.KeyService"
 	// AuditServiceName is the fully-qualified name of the AuditService service.
@@ -63,6 +61,12 @@ const (
 	// AccountServiceRevokeMySessionProcedure is the fully-qualified name of the AccountService's
 	// RevokeMySession RPC.
 	AccountServiceRevokeMySessionProcedure = "/hayat.admin.v1.AccountService/RevokeMySession"
+	// AccountServiceGetMyAppearanceProcedure is the fully-qualified name of the AccountService's
+	// GetMyAppearance RPC.
+	AccountServiceGetMyAppearanceProcedure = "/hayat.admin.v1.AccountService/GetMyAppearance"
+	// AccountServiceSetMyAppearanceProcedure is the fully-qualified name of the AccountService's
+	// SetMyAppearance RPC.
+	AccountServiceSetMyAppearanceProcedure = "/hayat.admin.v1.AccountService/SetMyAppearance"
 	// OverviewServiceGetOverviewProcedure is the fully-qualified name of the OverviewService's
 	// GetOverview RPC.
 	OverviewServiceGetOverviewProcedure = "/hayat.admin.v1.OverviewService/GetOverview"
@@ -91,6 +95,9 @@ const (
 	TenantServiceListTenantsProcedure = "/hayat.admin.v1.TenantService/ListTenants"
 	// TenantServiceGetTenantProcedure is the fully-qualified name of the TenantService's GetTenant RPC.
 	TenantServiceGetTenantProcedure = "/hayat.admin.v1.TenantService/GetTenant"
+	// TenantServiceListMembersProcedure is the fully-qualified name of the TenantService's ListMembers
+	// RPC.
+	TenantServiceListMembersProcedure = "/hayat.admin.v1.TenantService/ListMembers"
 	// TenantServiceCreateTenantProcedure is the fully-qualified name of the TenantService's
 	// CreateTenant RPC.
 	TenantServiceCreateTenantProcedure = "/hayat.admin.v1.TenantService/CreateTenant"
@@ -108,23 +115,6 @@ const (
 	// TenantServiceTransferOwnershipProcedure is the fully-qualified name of the TenantService's
 	// TransferOwnership RPC.
 	TenantServiceTransferOwnershipProcedure = "/hayat.admin.v1.TenantService/TransferOwnership"
-	// ClientServiceListClientsProcedure is the fully-qualified name of the ClientService's ListClients
-	// RPC.
-	ClientServiceListClientsProcedure = "/hayat.admin.v1.ClientService/ListClients"
-	// ClientServiceGetClientProcedure is the fully-qualified name of the ClientService's GetClient RPC.
-	ClientServiceGetClientProcedure = "/hayat.admin.v1.ClientService/GetClient"
-	// ClientServiceCreateClientProcedure is the fully-qualified name of the ClientService's
-	// CreateClient RPC.
-	ClientServiceCreateClientProcedure = "/hayat.admin.v1.ClientService/CreateClient"
-	// ClientServiceUpdateClientProcedure is the fully-qualified name of the ClientService's
-	// UpdateClient RPC.
-	ClientServiceUpdateClientProcedure = "/hayat.admin.v1.ClientService/UpdateClient"
-	// ClientServiceRotateClientSecretProcedure is the fully-qualified name of the ClientService's
-	// RotateClientSecret RPC.
-	ClientServiceRotateClientSecretProcedure = "/hayat.admin.v1.ClientService/RotateClientSecret"
-	// ClientServiceSetClientDisabledProcedure is the fully-qualified name of the ClientService's
-	// SetClientDisabled RPC.
-	ClientServiceSetClientDisabledProcedure = "/hayat.admin.v1.ClientService/SetClientDisabled"
 	// KeyServiceListSigningKeysProcedure is the fully-qualified name of the KeyService's
 	// ListSigningKeys RPC.
 	KeyServiceListSigningKeysProcedure = "/hayat.admin.v1.KeyService/ListSigningKeys"
@@ -143,6 +133,10 @@ type AccountServiceClient interface {
 	ChangePassword(context.Context, *connect.Request[v1.ChangePasswordRequest]) (*connect.Response[v1.ChangePasswordResponse], error)
 	ListMySessions(context.Context, *connect.Request[v1.ListMySessionsRequest]) (*connect.Response[v1.ListMySessionsResponse], error)
 	RevokeMySession(context.Context, *connect.Request[v1.RevokeMySessionRequest]) (*connect.Response[v1.RevokeMySessionResponse], error)
+	// How every app looks for the caller: one theme per account, which every
+	// service reads through DirectoryService.GetUserAppearance.
+	GetMyAppearance(context.Context, *connect.Request[v1.GetMyAppearanceRequest]) (*connect.Response[v1.GetMyAppearanceResponse], error)
+	SetMyAppearance(context.Context, *connect.Request[v1.SetMyAppearanceRequest]) (*connect.Response[v1.SetMyAppearanceResponse], error)
 }
 
 // NewAccountServiceClient constructs a client for the hayat.admin.v1.AccountService service. By
@@ -186,6 +180,18 @@ func NewAccountServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(accountServiceMethods.ByName("RevokeMySession")),
 			connect.WithClientOptions(opts...),
 		),
+		getMyAppearance: connect.NewClient[v1.GetMyAppearanceRequest, v1.GetMyAppearanceResponse](
+			httpClient,
+			baseURL+AccountServiceGetMyAppearanceProcedure,
+			connect.WithSchema(accountServiceMethods.ByName("GetMyAppearance")),
+			connect.WithClientOptions(opts...),
+		),
+		setMyAppearance: connect.NewClient[v1.SetMyAppearanceRequest, v1.SetMyAppearanceResponse](
+			httpClient,
+			baseURL+AccountServiceSetMyAppearanceProcedure,
+			connect.WithSchema(accountServiceMethods.ByName("SetMyAppearance")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -196,6 +202,8 @@ type accountServiceClient struct {
 	changePassword  *connect.Client[v1.ChangePasswordRequest, v1.ChangePasswordResponse]
 	listMySessions  *connect.Client[v1.ListMySessionsRequest, v1.ListMySessionsResponse]
 	revokeMySession *connect.Client[v1.RevokeMySessionRequest, v1.RevokeMySessionResponse]
+	getMyAppearance *connect.Client[v1.GetMyAppearanceRequest, v1.GetMyAppearanceResponse]
+	setMyAppearance *connect.Client[v1.SetMyAppearanceRequest, v1.SetMyAppearanceResponse]
 }
 
 // GetMe calls hayat.admin.v1.AccountService.GetMe.
@@ -223,6 +231,16 @@ func (c *accountServiceClient) RevokeMySession(ctx context.Context, req *connect
 	return c.revokeMySession.CallUnary(ctx, req)
 }
 
+// GetMyAppearance calls hayat.admin.v1.AccountService.GetMyAppearance.
+func (c *accountServiceClient) GetMyAppearance(ctx context.Context, req *connect.Request[v1.GetMyAppearanceRequest]) (*connect.Response[v1.GetMyAppearanceResponse], error) {
+	return c.getMyAppearance.CallUnary(ctx, req)
+}
+
+// SetMyAppearance calls hayat.admin.v1.AccountService.SetMyAppearance.
+func (c *accountServiceClient) SetMyAppearance(ctx context.Context, req *connect.Request[v1.SetMyAppearanceRequest]) (*connect.Response[v1.SetMyAppearanceResponse], error) {
+	return c.setMyAppearance.CallUnary(ctx, req)
+}
+
 // AccountServiceHandler is an implementation of the hayat.admin.v1.AccountService service.
 type AccountServiceHandler interface {
 	GetMe(context.Context, *connect.Request[v1.GetMeRequest]) (*connect.Response[v1.GetMeResponse], error)
@@ -230,6 +248,10 @@ type AccountServiceHandler interface {
 	ChangePassword(context.Context, *connect.Request[v1.ChangePasswordRequest]) (*connect.Response[v1.ChangePasswordResponse], error)
 	ListMySessions(context.Context, *connect.Request[v1.ListMySessionsRequest]) (*connect.Response[v1.ListMySessionsResponse], error)
 	RevokeMySession(context.Context, *connect.Request[v1.RevokeMySessionRequest]) (*connect.Response[v1.RevokeMySessionResponse], error)
+	// How every app looks for the caller: one theme per account, which every
+	// service reads through DirectoryService.GetUserAppearance.
+	GetMyAppearance(context.Context, *connect.Request[v1.GetMyAppearanceRequest]) (*connect.Response[v1.GetMyAppearanceResponse], error)
+	SetMyAppearance(context.Context, *connect.Request[v1.SetMyAppearanceRequest]) (*connect.Response[v1.SetMyAppearanceResponse], error)
 }
 
 // NewAccountServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -269,6 +291,18 @@ func NewAccountServiceHandler(svc AccountServiceHandler, opts ...connect.Handler
 		connect.WithSchema(accountServiceMethods.ByName("RevokeMySession")),
 		connect.WithHandlerOptions(opts...),
 	)
+	accountServiceGetMyAppearanceHandler := connect.NewUnaryHandler(
+		AccountServiceGetMyAppearanceProcedure,
+		svc.GetMyAppearance,
+		connect.WithSchema(accountServiceMethods.ByName("GetMyAppearance")),
+		connect.WithHandlerOptions(opts...),
+	)
+	accountServiceSetMyAppearanceHandler := connect.NewUnaryHandler(
+		AccountServiceSetMyAppearanceProcedure,
+		svc.SetMyAppearance,
+		connect.WithSchema(accountServiceMethods.ByName("SetMyAppearance")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/hayat.admin.v1.AccountService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case AccountServiceGetMeProcedure:
@@ -281,6 +315,10 @@ func NewAccountServiceHandler(svc AccountServiceHandler, opts ...connect.Handler
 			accountServiceListMySessionsHandler.ServeHTTP(w, r)
 		case AccountServiceRevokeMySessionProcedure:
 			accountServiceRevokeMySessionHandler.ServeHTTP(w, r)
+		case AccountServiceGetMyAppearanceProcedure:
+			accountServiceGetMyAppearanceHandler.ServeHTTP(w, r)
+		case AccountServiceSetMyAppearanceProcedure:
+			accountServiceSetMyAppearanceHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -308,6 +346,14 @@ func (UnimplementedAccountServiceHandler) ListMySessions(context.Context, *conne
 
 func (UnimplementedAccountServiceHandler) RevokeMySession(context.Context, *connect.Request[v1.RevokeMySessionRequest]) (*connect.Response[v1.RevokeMySessionResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.AccountService.RevokeMySession is not implemented"))
+}
+
+func (UnimplementedAccountServiceHandler) GetMyAppearance(context.Context, *connect.Request[v1.GetMyAppearanceRequest]) (*connect.Response[v1.GetMyAppearanceResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.AccountService.GetMyAppearance is not implemented"))
+}
+
+func (UnimplementedAccountServiceHandler) SetMyAppearance(context.Context, *connect.Request[v1.SetMyAppearanceRequest]) (*connect.Response[v1.SetMyAppearanceResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.AccountService.SetMyAppearance is not implemented"))
 }
 
 // OverviewServiceClient is a client for the hayat.admin.v1.OverviewService service.
@@ -644,6 +690,8 @@ type TenantServiceClient interface {
 	ListTenants(context.Context, *connect.Request[v1.ListTenantsRequest]) (*connect.Response[v1.ListTenantsResponse], error)
 	// Members, and anyone holding a permission on the tenant.
 	GetTenant(context.Context, *connect.Request[v1.GetTenantRequest]) (*connect.Response[v1.GetTenantResponse], error)
+	// The roster, a page at a time, in the order people joined. Allowed like GetTenant.
+	ListMembers(context.Context, *connect.Request[v1.ListMembersRequest]) (*connect.Response[v1.ListMembersResponse], error)
 	// Instance admin only.
 	CreateTenant(context.Context, *connect.Request[v1.CreateTenantRequest]) (*connect.Response[v1.CreateTenantResponse], error)
 	// hayat.tenant.manage.
@@ -679,6 +727,12 @@ func NewTenantServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			httpClient,
 			baseURL+TenantServiceGetTenantProcedure,
 			connect.WithSchema(tenantServiceMethods.ByName("GetTenant")),
+			connect.WithClientOptions(opts...),
+		),
+		listMembers: connect.NewClient[v1.ListMembersRequest, v1.ListMembersResponse](
+			httpClient,
+			baseURL+TenantServiceListMembersProcedure,
+			connect.WithSchema(tenantServiceMethods.ByName("ListMembers")),
 			connect.WithClientOptions(opts...),
 		),
 		createTenant: connect.NewClient[v1.CreateTenantRequest, v1.CreateTenantResponse](
@@ -724,6 +778,7 @@ func NewTenantServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 type tenantServiceClient struct {
 	listTenants       *connect.Client[v1.ListTenantsRequest, v1.ListTenantsResponse]
 	getTenant         *connect.Client[v1.GetTenantRequest, v1.GetTenantResponse]
+	listMembers       *connect.Client[v1.ListMembersRequest, v1.ListMembersResponse]
 	createTenant      *connect.Client[v1.CreateTenantRequest, v1.CreateTenantResponse]
 	renameTenant      *connect.Client[v1.RenameTenantRequest, v1.RenameTenantResponse]
 	deleteTenant      *connect.Client[v1.DeleteTenantRequest, v1.DeleteTenantResponse]
@@ -740,6 +795,11 @@ func (c *tenantServiceClient) ListTenants(ctx context.Context, req *connect.Requ
 // GetTenant calls hayat.admin.v1.TenantService.GetTenant.
 func (c *tenantServiceClient) GetTenant(ctx context.Context, req *connect.Request[v1.GetTenantRequest]) (*connect.Response[v1.GetTenantResponse], error) {
 	return c.getTenant.CallUnary(ctx, req)
+}
+
+// ListMembers calls hayat.admin.v1.TenantService.ListMembers.
+func (c *tenantServiceClient) ListMembers(ctx context.Context, req *connect.Request[v1.ListMembersRequest]) (*connect.Response[v1.ListMembersResponse], error) {
+	return c.listMembers.CallUnary(ctx, req)
 }
 
 // CreateTenant calls hayat.admin.v1.TenantService.CreateTenant.
@@ -778,6 +838,8 @@ type TenantServiceHandler interface {
 	ListTenants(context.Context, *connect.Request[v1.ListTenantsRequest]) (*connect.Response[v1.ListTenantsResponse], error)
 	// Members, and anyone holding a permission on the tenant.
 	GetTenant(context.Context, *connect.Request[v1.GetTenantRequest]) (*connect.Response[v1.GetTenantResponse], error)
+	// The roster, a page at a time, in the order people joined. Allowed like GetTenant.
+	ListMembers(context.Context, *connect.Request[v1.ListMembersRequest]) (*connect.Response[v1.ListMembersResponse], error)
 	// Instance admin only.
 	CreateTenant(context.Context, *connect.Request[v1.CreateTenantRequest]) (*connect.Response[v1.CreateTenantResponse], error)
 	// hayat.tenant.manage.
@@ -809,6 +871,12 @@ func NewTenantServiceHandler(svc TenantServiceHandler, opts ...connect.HandlerOp
 		TenantServiceGetTenantProcedure,
 		svc.GetTenant,
 		connect.WithSchema(tenantServiceMethods.ByName("GetTenant")),
+		connect.WithHandlerOptions(opts...),
+	)
+	tenantServiceListMembersHandler := connect.NewUnaryHandler(
+		TenantServiceListMembersProcedure,
+		svc.ListMembers,
+		connect.WithSchema(tenantServiceMethods.ByName("ListMembers")),
 		connect.WithHandlerOptions(opts...),
 	)
 	tenantServiceCreateTenantHandler := connect.NewUnaryHandler(
@@ -853,6 +921,8 @@ func NewTenantServiceHandler(svc TenantServiceHandler, opts ...connect.HandlerOp
 			tenantServiceListTenantsHandler.ServeHTTP(w, r)
 		case TenantServiceGetTenantProcedure:
 			tenantServiceGetTenantHandler.ServeHTTP(w, r)
+		case TenantServiceListMembersProcedure:
+			tenantServiceListMembersHandler.ServeHTTP(w, r)
 		case TenantServiceCreateTenantProcedure:
 			tenantServiceCreateTenantHandler.ServeHTTP(w, r)
 		case TenantServiceRenameTenantProcedure:
@@ -882,6 +952,10 @@ func (UnimplementedTenantServiceHandler) GetTenant(context.Context, *connect.Req
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.TenantService.GetTenant is not implemented"))
 }
 
+func (UnimplementedTenantServiceHandler) ListMembers(context.Context, *connect.Request[v1.ListMembersRequest]) (*connect.Response[v1.ListMembersResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.TenantService.ListMembers is not implemented"))
+}
+
 func (UnimplementedTenantServiceHandler) CreateTenant(context.Context, *connect.Request[v1.CreateTenantRequest]) (*connect.Response[v1.CreateTenantResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.TenantService.CreateTenant is not implemented"))
 }
@@ -904,208 +978,6 @@ func (UnimplementedTenantServiceHandler) RemoveMember(context.Context, *connect.
 
 func (UnimplementedTenantServiceHandler) TransferOwnership(context.Context, *connect.Request[v1.TransferOwnershipRequest]) (*connect.Response[v1.TransferOwnershipResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.TenantService.TransferOwnership is not implemented"))
-}
-
-// ClientServiceClient is a client for the hayat.admin.v1.ClientService service.
-type ClientServiceClient interface {
-	ListClients(context.Context, *connect.Request[v1.ListClientsRequest]) (*connect.Response[v1.ListClientsResponse], error)
-	GetClient(context.Context, *connect.Request[v1.GetClientRequest]) (*connect.Response[v1.GetClientResponse], error)
-	// A confidential client's secret is returned here once and never again.
-	CreateClient(context.Context, *connect.Request[v1.CreateClientRequest]) (*connect.Response[v1.CreateClientResponse], error)
-	UpdateClient(context.Context, *connect.Request[v1.UpdateClientRequest]) (*connect.Response[v1.UpdateClientResponse], error)
-	RotateClientSecret(context.Context, *connect.Request[v1.RotateClientSecretRequest]) (*connect.Response[v1.RotateClientSecretResponse], error)
-	SetClientDisabled(context.Context, *connect.Request[v1.SetClientDisabledRequest]) (*connect.Response[v1.SetClientDisabledResponse], error)
-}
-
-// NewClientServiceClient constructs a client for the hayat.admin.v1.ClientService service. By
-// default, it uses the Connect protocol with the binary Protobuf Codec, asks for gzipped responses,
-// and sends uncompressed requests. To use the gRPC or gRPC-Web protocols, supply the
-// connect.WithGRPC() or connect.WithGRPCWeb() options.
-//
-// The URL supplied here should be the base URL for the Connect or gRPC server (for example,
-// http://api.acme.com or https://acme.com/grpc).
-func NewClientServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) ClientServiceClient {
-	baseURL = strings.TrimRight(baseURL, "/")
-	clientServiceMethods := v1.File_hayat_admin_v1_admin_proto.Services().ByName("ClientService").Methods()
-	return &clientServiceClient{
-		listClients: connect.NewClient[v1.ListClientsRequest, v1.ListClientsResponse](
-			httpClient,
-			baseURL+ClientServiceListClientsProcedure,
-			connect.WithSchema(clientServiceMethods.ByName("ListClients")),
-			connect.WithClientOptions(opts...),
-		),
-		getClient: connect.NewClient[v1.GetClientRequest, v1.GetClientResponse](
-			httpClient,
-			baseURL+ClientServiceGetClientProcedure,
-			connect.WithSchema(clientServiceMethods.ByName("GetClient")),
-			connect.WithClientOptions(opts...),
-		),
-		createClient: connect.NewClient[v1.CreateClientRequest, v1.CreateClientResponse](
-			httpClient,
-			baseURL+ClientServiceCreateClientProcedure,
-			connect.WithSchema(clientServiceMethods.ByName("CreateClient")),
-			connect.WithClientOptions(opts...),
-		),
-		updateClient: connect.NewClient[v1.UpdateClientRequest, v1.UpdateClientResponse](
-			httpClient,
-			baseURL+ClientServiceUpdateClientProcedure,
-			connect.WithSchema(clientServiceMethods.ByName("UpdateClient")),
-			connect.WithClientOptions(opts...),
-		),
-		rotateClientSecret: connect.NewClient[v1.RotateClientSecretRequest, v1.RotateClientSecretResponse](
-			httpClient,
-			baseURL+ClientServiceRotateClientSecretProcedure,
-			connect.WithSchema(clientServiceMethods.ByName("RotateClientSecret")),
-			connect.WithClientOptions(opts...),
-		),
-		setClientDisabled: connect.NewClient[v1.SetClientDisabledRequest, v1.SetClientDisabledResponse](
-			httpClient,
-			baseURL+ClientServiceSetClientDisabledProcedure,
-			connect.WithSchema(clientServiceMethods.ByName("SetClientDisabled")),
-			connect.WithClientOptions(opts...),
-		),
-	}
-}
-
-// clientServiceClient implements ClientServiceClient.
-type clientServiceClient struct {
-	listClients        *connect.Client[v1.ListClientsRequest, v1.ListClientsResponse]
-	getClient          *connect.Client[v1.GetClientRequest, v1.GetClientResponse]
-	createClient       *connect.Client[v1.CreateClientRequest, v1.CreateClientResponse]
-	updateClient       *connect.Client[v1.UpdateClientRequest, v1.UpdateClientResponse]
-	rotateClientSecret *connect.Client[v1.RotateClientSecretRequest, v1.RotateClientSecretResponse]
-	setClientDisabled  *connect.Client[v1.SetClientDisabledRequest, v1.SetClientDisabledResponse]
-}
-
-// ListClients calls hayat.admin.v1.ClientService.ListClients.
-func (c *clientServiceClient) ListClients(ctx context.Context, req *connect.Request[v1.ListClientsRequest]) (*connect.Response[v1.ListClientsResponse], error) {
-	return c.listClients.CallUnary(ctx, req)
-}
-
-// GetClient calls hayat.admin.v1.ClientService.GetClient.
-func (c *clientServiceClient) GetClient(ctx context.Context, req *connect.Request[v1.GetClientRequest]) (*connect.Response[v1.GetClientResponse], error) {
-	return c.getClient.CallUnary(ctx, req)
-}
-
-// CreateClient calls hayat.admin.v1.ClientService.CreateClient.
-func (c *clientServiceClient) CreateClient(ctx context.Context, req *connect.Request[v1.CreateClientRequest]) (*connect.Response[v1.CreateClientResponse], error) {
-	return c.createClient.CallUnary(ctx, req)
-}
-
-// UpdateClient calls hayat.admin.v1.ClientService.UpdateClient.
-func (c *clientServiceClient) UpdateClient(ctx context.Context, req *connect.Request[v1.UpdateClientRequest]) (*connect.Response[v1.UpdateClientResponse], error) {
-	return c.updateClient.CallUnary(ctx, req)
-}
-
-// RotateClientSecret calls hayat.admin.v1.ClientService.RotateClientSecret.
-func (c *clientServiceClient) RotateClientSecret(ctx context.Context, req *connect.Request[v1.RotateClientSecretRequest]) (*connect.Response[v1.RotateClientSecretResponse], error) {
-	return c.rotateClientSecret.CallUnary(ctx, req)
-}
-
-// SetClientDisabled calls hayat.admin.v1.ClientService.SetClientDisabled.
-func (c *clientServiceClient) SetClientDisabled(ctx context.Context, req *connect.Request[v1.SetClientDisabledRequest]) (*connect.Response[v1.SetClientDisabledResponse], error) {
-	return c.setClientDisabled.CallUnary(ctx, req)
-}
-
-// ClientServiceHandler is an implementation of the hayat.admin.v1.ClientService service.
-type ClientServiceHandler interface {
-	ListClients(context.Context, *connect.Request[v1.ListClientsRequest]) (*connect.Response[v1.ListClientsResponse], error)
-	GetClient(context.Context, *connect.Request[v1.GetClientRequest]) (*connect.Response[v1.GetClientResponse], error)
-	// A confidential client's secret is returned here once and never again.
-	CreateClient(context.Context, *connect.Request[v1.CreateClientRequest]) (*connect.Response[v1.CreateClientResponse], error)
-	UpdateClient(context.Context, *connect.Request[v1.UpdateClientRequest]) (*connect.Response[v1.UpdateClientResponse], error)
-	RotateClientSecret(context.Context, *connect.Request[v1.RotateClientSecretRequest]) (*connect.Response[v1.RotateClientSecretResponse], error)
-	SetClientDisabled(context.Context, *connect.Request[v1.SetClientDisabledRequest]) (*connect.Response[v1.SetClientDisabledResponse], error)
-}
-
-// NewClientServiceHandler builds an HTTP handler from the service implementation. It returns the
-// path on which to mount the handler and the handler itself.
-//
-// By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
-// and JSON codecs. They also support gzip compression.
-func NewClientServiceHandler(svc ClientServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
-	clientServiceMethods := v1.File_hayat_admin_v1_admin_proto.Services().ByName("ClientService").Methods()
-	clientServiceListClientsHandler := connect.NewUnaryHandler(
-		ClientServiceListClientsProcedure,
-		svc.ListClients,
-		connect.WithSchema(clientServiceMethods.ByName("ListClients")),
-		connect.WithHandlerOptions(opts...),
-	)
-	clientServiceGetClientHandler := connect.NewUnaryHandler(
-		ClientServiceGetClientProcedure,
-		svc.GetClient,
-		connect.WithSchema(clientServiceMethods.ByName("GetClient")),
-		connect.WithHandlerOptions(opts...),
-	)
-	clientServiceCreateClientHandler := connect.NewUnaryHandler(
-		ClientServiceCreateClientProcedure,
-		svc.CreateClient,
-		connect.WithSchema(clientServiceMethods.ByName("CreateClient")),
-		connect.WithHandlerOptions(opts...),
-	)
-	clientServiceUpdateClientHandler := connect.NewUnaryHandler(
-		ClientServiceUpdateClientProcedure,
-		svc.UpdateClient,
-		connect.WithSchema(clientServiceMethods.ByName("UpdateClient")),
-		connect.WithHandlerOptions(opts...),
-	)
-	clientServiceRotateClientSecretHandler := connect.NewUnaryHandler(
-		ClientServiceRotateClientSecretProcedure,
-		svc.RotateClientSecret,
-		connect.WithSchema(clientServiceMethods.ByName("RotateClientSecret")),
-		connect.WithHandlerOptions(opts...),
-	)
-	clientServiceSetClientDisabledHandler := connect.NewUnaryHandler(
-		ClientServiceSetClientDisabledProcedure,
-		svc.SetClientDisabled,
-		connect.WithSchema(clientServiceMethods.ByName("SetClientDisabled")),
-		connect.WithHandlerOptions(opts...),
-	)
-	return "/hayat.admin.v1.ClientService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.URL.Path {
-		case ClientServiceListClientsProcedure:
-			clientServiceListClientsHandler.ServeHTTP(w, r)
-		case ClientServiceGetClientProcedure:
-			clientServiceGetClientHandler.ServeHTTP(w, r)
-		case ClientServiceCreateClientProcedure:
-			clientServiceCreateClientHandler.ServeHTTP(w, r)
-		case ClientServiceUpdateClientProcedure:
-			clientServiceUpdateClientHandler.ServeHTTP(w, r)
-		case ClientServiceRotateClientSecretProcedure:
-			clientServiceRotateClientSecretHandler.ServeHTTP(w, r)
-		case ClientServiceSetClientDisabledProcedure:
-			clientServiceSetClientDisabledHandler.ServeHTTP(w, r)
-		default:
-			http.NotFound(w, r)
-		}
-	})
-}
-
-// UnimplementedClientServiceHandler returns CodeUnimplemented from all methods.
-type UnimplementedClientServiceHandler struct{}
-
-func (UnimplementedClientServiceHandler) ListClients(context.Context, *connect.Request[v1.ListClientsRequest]) (*connect.Response[v1.ListClientsResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.ClientService.ListClients is not implemented"))
-}
-
-func (UnimplementedClientServiceHandler) GetClient(context.Context, *connect.Request[v1.GetClientRequest]) (*connect.Response[v1.GetClientResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.ClientService.GetClient is not implemented"))
-}
-
-func (UnimplementedClientServiceHandler) CreateClient(context.Context, *connect.Request[v1.CreateClientRequest]) (*connect.Response[v1.CreateClientResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.ClientService.CreateClient is not implemented"))
-}
-
-func (UnimplementedClientServiceHandler) UpdateClient(context.Context, *connect.Request[v1.UpdateClientRequest]) (*connect.Response[v1.UpdateClientResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.ClientService.UpdateClient is not implemented"))
-}
-
-func (UnimplementedClientServiceHandler) RotateClientSecret(context.Context, *connect.Request[v1.RotateClientSecretRequest]) (*connect.Response[v1.RotateClientSecretResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.ClientService.RotateClientSecret is not implemented"))
-}
-
-func (UnimplementedClientServiceHandler) SetClientDisabled(context.Context, *connect.Request[v1.SetClientDisabledRequest]) (*connect.Response[v1.SetClientDisabledResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.ClientService.SetClientDisabled is not implemented"))
 }
 
 // KeyServiceClient is a client for the hayat.admin.v1.KeyService service.

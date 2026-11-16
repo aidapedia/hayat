@@ -189,6 +189,60 @@ service DirectoryService {
   // A tenant's roster with each person's profile. Belonging, not permission:
   // ask PermissionsAt for what someone may do.
   rpc ListTenantMembers(ListTenantMembersRequest) returns (ListTenantMembersResponse);
+  // What each member was given in a tenant: grants made to them, to a group
+  // they are on, or to the whole tenant, and the nodes they own. What was
+  // granted, not what it adds up to: ask PermissionsAt for that. Only the
+  // tenant, its groups and the calling service's own resource types are listed.
+  rpc ListTenantGrants(ListTenantGrantsRequest) returns (ListTenantGrantsResponse);
+  // How every app looks for a person: one theme per account, chosen in Hayat's
+  // console. Apply it to their session; don't keep a copy, so a change shows
+  // on their next page load.
+  rpc GetUserAppearance(GetUserAppearanceRequest) returns (GetUserAppearanceResponse);
+}
+
+// A person's theme. Every field is optional: an empty one means "your app's
+// own default", so it only carries what the person changed. Colors are #rrggbb.
+message Appearance {
+  // The preset it started from ("tg-dark", "hayat-light", …) or "custom".
+  string preset = 1;
+  // system | light | dark: the neutral palette behind the colors left empty.
+  string mode = 2;
+  string accent = 3;
+  string background = 4;
+  string surface = 5;
+  string text = 6;
+  string muted = 7;
+  string border = 8;
+  // The sidebar follows the content colors; the four below are ignored.
+  bool sidebar_match_content = 9;
+  string sidebar_background = 10;
+  string sidebar_text = 11;
+  string sidebar_active = 12;
+  string sidebar_border = 13;
+  string success = 14;
+  string warning = 15;
+  string destructive = 16;
+  // system | inter | plex
+  string font = 17;
+  // The root font size in pixels, 12–18.
+  optional int32 text_size = 18;
+  // comfortable | compact | condensed
+  string density = 19;
+  // Corner radius in pixels, 0–18.
+  optional int32 radius = 20;
+  // Sidebar width in pixels, 200–320.
+  optional int32 sidebar_width = 21;
+  // narrow | default | full
+  string content_width = 22;
+}
+
+message GetUserAppearanceRequest {
+  string user_id = 1;
+}
+
+message GetUserAppearanceResponse {
+  // Absent when the person never chose a theme.
+  Appearance appearance = 1;
 }
 
 message Tenant {
@@ -221,6 +275,33 @@ message TenantMember {
 
 message ListTenantMembersResponse {
   repeated TenantMember members = 1;
+}
+
+message ListTenantGrantsRequest {
+  string tenant_id = 1;
+  // Only these members; empty for everyone on the roster.
+  repeated string user_ids = 2;
+}
+
+message MemberGrant {
+  string user_id = 1;
+  // Where it was granted, or the node they own.
+  Resource resource = 2;
+  // How it reaches the member: "owner" (they own the node), "user" (granted to
+  // them), "group" (to a group they are on) or "everyone" (to the tenant).
+  string via = 3;
+  // The role's slug and display name; empty when via is "owner".
+  string role = 4;
+  string role_name = 5;
+  // Reaches the nodes below as well.
+  bool inherit = 6;
+  // The group it was granted to, when via is "group".
+  string group_id = 7;
+  string group_name = 8;
+}
+
+message ListTenantGrantsResponse {
+  repeated MemberGrant grants = 1;
 }
 
 message User {

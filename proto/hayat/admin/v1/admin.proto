@@ -71,6 +71,8 @@ message Client {
   bool disabled = 8;
   google.protobuf.Timestamp created_at = 9;
   google.protobuf.Timestamp updated_at = 10;
+  // The service the client belongs to; `hayat` for the console's own.
+  string service_id = 11;
 }
 
 message SigningKey {
@@ -101,6 +103,60 @@ service AccountService {
   rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordResponse);
   rpc ListMySessions(ListMySessionsRequest) returns (ListMySessionsResponse);
   rpc RevokeMySession(RevokeMySessionRequest) returns (RevokeMySessionResponse);
+  // How every app looks for the caller: one theme per account, which every
+  // service reads through DirectoryService.GetUserAppearance.
+  rpc GetMyAppearance(GetMyAppearanceRequest) returns (GetMyAppearanceResponse);
+  rpc SetMyAppearance(SetMyAppearanceRequest) returns (SetMyAppearanceResponse);
+}
+
+// A person's theme. Every field is optional: an empty one means "the app's own
+// default", so it only carries what the person changed. Colors are #rrggbb.
+message Appearance {
+  // The preset it started from ("tg-dark", "hayat-light", …) or "custom".
+  string preset = 1;
+  // system | light | dark: the neutral palette behind the colors left empty.
+  string mode = 2;
+  string accent = 3;
+  string background = 4;
+  string surface = 5;
+  string text = 6;
+  string muted = 7;
+  string border = 8;
+  // The sidebar follows the content colors; the four below are ignored.
+  bool sidebar_match_content = 9;
+  string sidebar_background = 10;
+  string sidebar_text = 11;
+  string sidebar_active = 12;
+  string sidebar_border = 13;
+  string success = 14;
+  string warning = 15;
+  string destructive = 16;
+  // system | inter | plex
+  string font = 17;
+  // The root font size in pixels, 12–18.
+  optional int32 text_size = 18;
+  // comfortable | compact | condensed
+  string density = 19;
+  // Corner radius in pixels, 0–18.
+  optional int32 radius = 20;
+  // Sidebar width in pixels, 200–320.
+  optional int32 sidebar_width = 21;
+  // narrow | default | full
+  string content_width = 22;
+}
+
+message GetMyAppearanceRequest {}
+message GetMyAppearanceResponse {
+  // Absent when the caller never chose a theme.
+  Appearance appearance = 1;
+}
+
+message SetMyAppearanceRequest {
+  // Absent (or setting nothing) goes back to every app's defaults.
+  Appearance appearance = 1;
+}
+message SetMyAppearanceResponse {
+  Appearance appearance = 1;
 }
 
 message GetMeRequest {}
@@ -245,6 +301,8 @@ service TenantService {
   rpc ListTenants(ListTenantsRequest) returns (ListTenantsResponse);
   // Members, and anyone holding a permission on the tenant.
   rpc GetTenant(GetTenantRequest) returns (GetTenantResponse);
+  // The roster, a page at a time, in the order people joined. Allowed like GetTenant.
+  rpc ListMembers(ListMembersRequest) returns (ListMembersResponse);
   // Instance admin only.
   rpc CreateTenant(CreateTenantRequest) returns (CreateTenantResponse);
   // hayat.tenant.manage.
@@ -274,10 +332,22 @@ message GetTenantRequest {
 }
 message GetTenantResponse {
   Tenant tenant = 1;
-  repeated Member members = 2;
+  // The roster moved to ListMembers, which pages.
+  reserved 2;
+  reserved "members";
   // What the caller may do on the tenant node, so the console shows only
   // the actions the server would allow.
   repeated string my_permissions = 3;
+}
+
+message ListMembersRequest {
+  string tenant_id = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+}
+message ListMembersResponse {
+  repeated Member members = 1;
+  string next_page_token = 2;
 }
 
 message CreateTenantRequest {
@@ -331,67 +401,8 @@ message TransferOwnershipResponse {
   Tenant tenant = 1;
 }
 
-// ---------- OAuth clients ----------
-
-service ClientService {
-  rpc ListClients(ListClientsRequest) returns (ListClientsResponse);
-  rpc GetClient(GetClientRequest) returns (GetClientResponse);
-  // A confidential client's secret is returned here once and never again.
-  rpc CreateClient(CreateClientRequest) returns (CreateClientResponse);
-  rpc UpdateClient(UpdateClientRequest) returns (UpdateClientResponse);
-  rpc RotateClientSecret(RotateClientSecretRequest) returns (RotateClientSecretResponse);
-  rpc SetClientDisabled(SetClientDisabledRequest) returns (SetClientDisabledResponse);
-}
-
-message ListClientsRequest {}
-message ListClientsResponse {
-  repeated Client clients = 1;
-}
-
-message GetClientRequest {
-  string id = 1;
-}
-message GetClientResponse {
-  Client client = 1;
-}
-
-message CreateClientRequest {
-  string name = 1;
-  string kind = 2;
-  repeated string redirect_uris = 3;
-  repeated string post_logout_redirect_uris = 4;
-  repeated string grant_types = 5;
-}
-message CreateClientResponse {
-  Client client = 1;
-  string secret = 2;
-}
-
-message UpdateClientRequest {
-  string id = 1;
-  string name = 2;
-  repeated string redirect_uris = 3;
-  repeated string post_logout_redirect_uris = 4;
-  repeated string grant_types = 5;
-}
-message UpdateClientResponse {
-  Client client = 1;
-}
-
-message RotateClientSecretRequest {
-  string id = 1;
-}
-message RotateClientSecretResponse {
-  string secret = 1;
-}
-
-message SetClientDisabledRequest {
-  string id = 1;
-  bool disabled = 2;
-}
-message SetClientDisabledResponse {
-  Client client = 1;
-}
+// OAuth clients belong to services: RegistryService manages them, so a
+// service's owners manage its clients.
 
 // ---------- Signing keys ----------
 

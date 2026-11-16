@@ -12,6 +12,7 @@ import (
 
 	authzv1 "github.com/aidapedia/hayat/gen/go/hayat/authz/v1"
 	"github.com/aidapedia/hayat/internal/authz"
+	"github.com/aidapedia/hayat/internal/catalog"
 	"github.com/aidapedia/hayat/internal/identity"
 	"github.com/aidapedia/hayat/internal/revision"
 	"github.com/aidapedia/hayat/internal/store"
@@ -290,6 +291,31 @@ func (d *directoryService) BatchGetUsers(ctx context.Context, req *connect.Reque
 	return connect.NewResponse(resp), nil
 }
 
+// GetUserAppearance answers fresh every time: a service applies it to the
+// person's session and keeps no copy, so a change in Hayat's console shows on
+// their next page load.
+func (d *directoryService) GetUserAppearance(ctx context.Context, req *connect.Request[authzv1.GetUserAppearanceRequest]) (*connect.Response[authzv1.GetUserAppearanceResponse], error) {
+	id, err := parseUser(req.Msg.UserId)
+	if err != nil {
+		return nil, err
+	}
+	a, err := d.s.ids.Appearance(ctx, id)
+	if err != nil {
+		return nil, d.s.fail(err)
+	}
+	resp := &authzv1.GetUserAppearanceResponse{}
+	if a != nil {
+		resp.Appearance = &authzv1.Appearance{
+			Preset: a.Preset, Mode: a.Mode, Accent: a.Accent, Background: a.Background, Surface: a.Surface, Text: a.Text,
+			Muted: a.Muted, Border: a.Border, SidebarMatchContent: a.SidebarMatchContent, SidebarBackground: a.SidebarBackground,
+			SidebarText: a.SidebarText, SidebarActive: a.SidebarActive, SidebarBorder: a.SidebarBorder, Success: a.Success,
+			Warning: a.Warning, Destructive: a.Destructive, Font: a.Font, TextSize: a.TextSize, Density: a.Density,
+			Radius: a.Radius, SidebarWidth: a.SidebarWidth, ContentWidth: a.ContentWidth,
+		}
+	}
+	return connect.NewResponse(resp), nil
+}
+
 func toTenant(t tenancy.Tenant, nodeID uuid.UUID) *authzv1.Tenant {
 	out := &authzv1.Tenant{Id: t.ID.String(), Slug: t.Slug, Name: t.Name, MemberCount: int32(t.MemberCount)}
 	if t.OwnerID != uuid.Nil {
@@ -349,6 +375,41 @@ func (d *directoryService) ListTenantMembers(ctx context.Context, req *connect.R
 			continue
 		}
 		resp.Members = append(resp.Members, &authzv1.TenantMember{User: toUser(u), IsOwner: m.IsOwner, JoinedAt: timestamppb.New(m.JoinedAt)})
+	}
+	return connect.NewResponse(resp), nil
+}
+
+func (d *directoryService) ListTenantGrants(ctx context.Context, req *connect.Request[authzv1.ListTenantGrantsRequest]) (*connect.Response[authzv1.ListTenantGrantsResponse], error) {
+	tenantID, err := uuid.Parse(req.Msg.TenantId)
+	if err != nil {
+		return nil, invalid("tenant_id is not a valid id")
+	}
+	users := make([]uuid.UUID, 0, len(req.Msg.UserIds))
+	for _, raw := range req.Msg.UserIds {
+		id, err := parseUser(raw)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, id)
+	}
+	// The tenant's own nodes, and the caller's types: another service's
+	// resources are none of its business.
+	svc := callerService(ctx).ID
+	keep := func(typ string) bool {
+		return typ == catalog.TypeTenant || typ == catalog.TypeGroup || catalog.ServiceOf(typ) == svc
+	}
+	grants, err := d.s.tree.MemberGrants(ctx, tenantID, users, keep)
+	if err != nil {
+		return nil, d.s.fail(err)
+	}
+	resp := &authzv1.ListTenantGrantsResponse{}
+	for _, g := range grants {
+		out := &authzv1.MemberGrant{UserId: g.UserID.String(), Resource: toResource(g.Node), Via: g.Via,
+			Role: g.RoleSlug, RoleName: g.RoleName, Inherit: g.Inherit, GroupName: g.GroupName}
+		if g.GroupID != uuid.Nil {
+			out.GroupId = g.GroupID.String()
+		}
+		resp.Grants = append(resp.Grants, out)
 	}
 	return connect.NewResponse(resp), nil
 }

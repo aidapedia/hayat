@@ -170,7 +170,7 @@ func (c *catalogService) GetCatalog(ctx context.Context, _ *connect.Request[admi
 			ViaPlacement: t.ViaPlacement, RequiresMembership: t.RequiresMembership, Degradable: t.Degradable, Description: t.Description})
 	}
 	for _, p := range snap.Permissions {
-		resp.Permissions = append(resp.Permissions, &adminv1.PermissionInfo{Key: p.Key, Service: p.Service, Scope: p.Scope, Description: p.Description})
+		resp.Permissions = append(resp.Permissions, &adminv1.PermissionInfo{Key: p.Key, Service: p.Service, Scope: p.Scope, Label: p.Label, Description: p.Description})
 	}
 	slices.SortFunc(resp.Types, func(a, b *adminv1.NodeType) int { return strings.Compare(a.Key, b.Key) })
 	slices.SortFunc(resp.Permissions, func(a, b *adminv1.PermissionInfo) int { return strings.Compare(a.Key, b.Key) })
@@ -235,6 +235,65 @@ func (c *catalogService) DeleteRole(ctx context.Context, req *connect.Request[ad
 	return connect.NewResponse(&adminv1.DeleteRoleResponse{}), nil
 }
 
+// roleGrantLimit caps one ListRoleGrants answer; the console says when there are more.
+const roleGrantLimit = 200
+
+func (c *catalogService) ListRoleGrants(ctx context.Context, req *connect.Request[adminv1.ListRoleGrantsRequest]) (*connect.Response[adminv1.ListRoleGrantsResponse], error) {
+	// It names who holds access in every tenant, so only an instance admin may ask.
+	if err := c.s.requireAdmin(ctx); err != nil {
+		return nil, err
+	}
+	id, err := parseID(req.Msg.RoleId, "role id")
+	if err != nil {
+		return nil, err
+	}
+	grants, err := c.s.tree.RoleGrants(ctx, id, roleGrantLimit+1)
+	if err != nil {
+		return nil, c.s.fail(err)
+	}
+	resp := &adminv1.ListRoleGrantsResponse{}
+	if len(grants) > roleGrantLimit {
+		grants, resp.Truncated = grants[:roleGrantLimit], true
+	}
+	converted, err := c.s.toGrants(ctx, grants)
+	if err != nil {
+		return nil, c.s.fail(err)
+	}
+	// Several grants often sit on one node; read each node's chain once.
+	type place struct {
+		node tree.Node
+		path []string
+	}
+	places := map[uuid.UUID]place{}
+	for i, g := range grants {
+		p, ok := places[g.NodeID]
+		if !ok {
+			n, err := c.s.tree.Get(ctx, g.NodeID)
+			if err != nil {
+				return nil, c.s.fail(err)
+			}
+			chain, err := c.s.tree.Ancestors(ctx, n)
+			if err != nil {
+				return nil, c.s.fail(err)
+			}
+			p = place{node: n}
+			for _, a := range chain {
+				// The root is implied; the node itself is named on its own.
+				if a.ID != catalog.RootID && a.ID != n.ID {
+					p.path = append(p.path, a.Name)
+				}
+			}
+			places[g.NodeID] = p
+		}
+		rg := &adminv1.RoleGrant{Grant: converted[i], NodeType: p.node.Type, NodeName: p.node.Name, Path: p.path}
+		if p.node.TenantID != nil {
+			rg.TenantId = p.node.TenantID.String()
+		}
+		resp.Grants = append(resp.Grants, rg)
+	}
+	return connect.NewResponse(resp), nil
+}
+
 // ---------- RegistryService ----------
 
 type registryService struct{ s *Server }
@@ -260,8 +319,14 @@ func (r *registryService) toService(ctx context.Context, svc catalog.ServiceInfo
 	if err != nil {
 		return nil, err
 	}
+	counts, err := r.s.clients.CountByService(ctx)
+	if err != nil {
+		return nil, err
+	}
 	out := &adminv1.ServiceInfo{Id: svc.ID, DisplayName: svc.DisplayName, Description: svc.Description, ClientId: svc.ClientID,
-		ActiveVersion: int32(svc.ActiveVersion), CreatedAt: ts(svc.CreatedAt)}
+		ActiveVersion: int32(svc.ActiveVersion), CreatedAt: ts(svc.CreatedAt),
+		// Every registered service has one API credential; the rest sign people in.
+		SignInClients: int32(max(counts[svc.ID]-1, 0))}
 	for _, u := range users {
 		out.Owners = append(out.Owners, toUser(u))
 	}
@@ -314,6 +379,13 @@ func (r *registryService) ListServices(ctx context.Context, _ *connect.Request[a
 		return nil, r.s.fail(err)
 	}
 	resp := &adminv1.ListServicesResponse{}
+	if caller(ctx).User.IsAdmin() {
+		platform, err := r.platformService(ctx)
+		if err != nil {
+			return nil, r.s.fail(err)
+		}
+		resp.Services = append(resp.Services, platform)
+	}
 	for _, svc := range list {
 		info, err := r.toService(ctx, svc)
 		if err != nil {
@@ -330,6 +402,16 @@ func (r *registryService) ListServices(ctx context.Context, _ *connect.Request[a
 }
 
 func (r *registryService) GetService(ctx context.Context, req *connect.Request[adminv1.GetServiceRequest]) (*connect.Response[adminv1.GetServiceResponse], error) {
+	if req.Msg.Id == catalog.Platform {
+		if err := r.s.requireAdmin(ctx); err != nil {
+			return nil, err
+		}
+		platform, err := r.platformService(ctx)
+		if err != nil {
+			return nil, r.s.fail(err)
+		}
+		return connect.NewResponse(&adminv1.GetServiceResponse{Service: platform, CanManage: true}), nil
+	}
 	svc, n, err := r.serviceNode(ctx, req.Msg.Id)
 	if err != nil {
 		return nil, err
@@ -385,7 +467,7 @@ func (r *registryService) RegisterService(ctx context.Context, req *connect.Requ
 	if name == "" {
 		name = m.Id
 	}
-	client, secret, err := r.s.clients.Create(ctx, hoidc.ClientInput{Name: name + " (service API)", Kind: hoidc.KindConfidential,
+	client, secret, err := r.s.clients.Create(ctx, hoidc.ClientInput{ServiceID: m.Id, Name: name + " (service API)", Kind: hoidc.KindConfidential,
 		Grants: []string{"client_credentials"}}, actor(ctx))
 	if err != nil {
 		return nil, r.s.fail(err)
@@ -400,6 +482,28 @@ func (r *registryService) RegisterService(ctx context.Context, req *connect.Requ
 		return nil, r.s.fail(err)
 	}
 	return connect.NewResponse(&adminv1.RegisterServiceResponse{Service: info, ClientId: client.ID, ClientSecret: secret}), nil
+}
+
+func (r *registryService) UpdateService(ctx context.Context, req *connect.Request[adminv1.UpdateServiceRequest]) (*connect.Response[adminv1.UpdateServiceResponse], error) {
+	if req.Msg.Id == catalog.Platform {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("the built-in Hayat service can't be renamed"))
+	}
+	_, n, err := r.serviceNode(ctx, req.Msg.Id)
+	if err != nil {
+		return nil, err
+	}
+	if err := r.s.require(ctx, catalog.PermServiceManage, n); err != nil {
+		return nil, err
+	}
+	svc, err := r.s.cat.UpdateService(ctx, req.Msg.Id, req.Msg.DisplayName, req.Msg.Description, actor(ctx))
+	if err != nil {
+		return nil, r.s.fail(err)
+	}
+	info, err := r.toService(ctx, svc)
+	if err != nil {
+		return nil, r.s.fail(err)
+	}
+	return connect.NewResponse(&adminv1.UpdateServiceResponse{Service: info}), nil
 }
 
 func (r *registryService) AddServiceOwner(ctx context.Context, req *connect.Request[adminv1.AddServiceOwnerRequest]) (*connect.Response[adminv1.AddServiceOwnerResponse], error) {
@@ -596,6 +700,27 @@ func (t *treeAdminService) GetNode(ctx context.Context, req *connect.Request[adm
 		for _, u := range users {
 			resp.Members = append(resp.Members, &adminv1.Member{User: toUser(u), JoinedAt: ts(joined[u.ID])})
 		}
+		nested, err := t.s.tree.SubgroupMembers(ctx, n)
+		if err != nil {
+			return nil, t.s.fail(err)
+		}
+		ids = ids[:0]
+		for _, m := range nested {
+			ids = append(ids, m.UserID)
+		}
+		people, err := t.s.ids.GetUsers(ctx, ids)
+		if err != nil {
+			return nil, t.s.fail(err)
+		}
+		byID := map[uuid.UUID]identity.User{}
+		for _, u := range people {
+			byID[u.ID] = u
+		}
+		for _, m := range nested {
+			if u, ok := byID[m.UserID]; ok {
+				resp.SubgroupMembers = append(resp.SubgroupMembers, &adminv1.SubgroupMember{User: toUser(u), Groups: toNodes(m.Groups)})
+			}
+		}
 	}
 	r, err := t.s.engine.At(ctx, caller(ctx).User.ID, n, authz.Consistency{Fresh: true})
 	if err != nil {
@@ -650,7 +775,9 @@ func (t *treeAdminService) RenameGroup(ctx context.Context, req *connect.Request
 
 // MoveNode needs organise where the node leaves and where it lands. Moving a
 // resource whose type grants access by placement re-decides who can open it,
-// so that also needs the right to grant on the resource (or owning it).
+// so that also needs the right to grant on the resource (or owning it); moving
+// a group puts its people in the groups above where it lands, so that needs
+// the right to grant there.
 func (t *treeAdminService) MoveNode(ctx context.Context, req *connect.Request[adminv1.MoveNodeRequest]) (*connect.Response[adminv1.MoveNodeResponse], error) {
 	n, err := t.s.node(ctx, req.Msg.Id)
 	if err != nil {
@@ -678,6 +805,13 @@ func (t *treeAdminService) MoveNode(ctx context.Context, req *connect.Request[ad
 	}
 	if snap.Types[n.Type].ViaPlacement {
 		if err := t.s.require(ctx, catalog.PermResourcesGrant, n); err != nil {
+			return nil, err
+		}
+	}
+	// A group's people count in every group above it, so where it lands
+	// decides which grants reach them: that is granting there.
+	if n.Type == catalog.TypeGroup {
+		if err := t.s.require(ctx, catalog.PermResourcesGrant, dest); err != nil {
 			return nil, err
 		}
 	}
@@ -809,6 +943,60 @@ func (t *treeAdminService) RemoveGroupMember(ctx context.Context, req *connect.R
 		return nil, t.s.fail(err)
 	}
 	return connect.NewResponse(&adminv1.RemoveGroupMemberResponse{}), nil
+}
+
+// ListNodeAccess is open to whoever may see the node: the grants, owners and
+// rosters it adds up are each readable there already, node by node.
+// Accounts that aren't active reach nothing, so they are left out.
+func (t *treeAdminService) ListNodeAccess(ctx context.Context, req *connect.Request[adminv1.ListNodeAccessRequest]) (*connect.Response[adminv1.ListNodeAccessResponse], error) {
+	n, err := t.s.node(ctx, req.Msg.NodeId)
+	if err != nil {
+		return nil, err
+	}
+	if err := t.canSee(ctx, n); err != nil {
+		return nil, err
+	}
+	entries, err := t.s.tree.NodeAccess(ctx, n)
+	if err != nil {
+		return nil, t.s.fail(err)
+	}
+	ids := make([]uuid.UUID, 0, len(entries))
+	for _, a := range entries {
+		ids = append(ids, a.UserID)
+	}
+	users, err := t.s.ids.GetUsers(ctx, ids)
+	if err != nil {
+		return nil, t.s.fail(err)
+	}
+	byID := map[uuid.UUID]identity.User{}
+	for _, u := range users {
+		if u.Status == identity.StatusActive {
+			byID[u.ID] = u
+		}
+	}
+	resp := &adminv1.ListNodeAccessResponse{}
+	for _, a := range entries {
+		u, ok := byID[a.UserID]
+		if !ok {
+			continue
+		}
+		out := &adminv1.NodeAccess{User: toUser(u), Via: a.Via, Source: toNode(a.Source), RoleName: a.RoleName,
+			Inherit: a.Inherit, GroupName: a.GroupName, Permission: a.Permission}
+		if a.RoleID != uuid.Nil {
+			out.RoleId = a.RoleID.String()
+		}
+		if a.GroupID != uuid.Nil {
+			out.GroupId = a.GroupID.String()
+		}
+		if a.ThroughID != uuid.Nil {
+			out.ThroughGroupId, out.ThroughGroupName = a.ThroughID.String(), a.ThroughName
+		}
+		if a.ExpiresAt != nil {
+			out.ExpiresAt = ts(*a.ExpiresAt)
+		}
+		resp.Entries = append(resp.Entries, out)
+	}
+	return connect.NewResponse(resp), nil
 }
 
 func (t *treeAdminService) WhoHasAccess(ctx context.Context, req *connect.Request[adminv1.WhoHasAccessRequest]) (*connect.Response[adminv1.WhoHasAccessResponse], error) {

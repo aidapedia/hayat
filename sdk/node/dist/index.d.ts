@@ -71,11 +71,14 @@ export declare class Hayat {
     private dropTenant;
     /**
      * Verify a user's access token offline: signature, issuer, expiry, and that
-     * it was issued to clientId (your application's sign-in client).
+     * it was issued for `audience`. A sign-in token's `aud` names its client and
+     * the client's service, so pass your service's namespace ("billing") to
+     * accept any of its sign-in clients, or one client's id to accept only that
+     * client. Leave it out to accept any.
      */
-    verifyAccessToken(token: string, clientId?: string): Promise<UserClaims>;
+    verifyAccessToken(token: string, audience?: string): Promise<UserClaims>;
     /** Express/Connect-style middleware: verifies the bearer token and sets req.hayatUser. */
-    middleware(clientId?: string): (req: {
+    middleware(audience?: string): (req: {
         headers: Record<string, string | string[] | undefined>;
         hayatUser?: UserClaims;
     }, res: {

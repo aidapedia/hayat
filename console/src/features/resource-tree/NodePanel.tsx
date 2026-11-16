@@ -2,16 +2,16 @@ import { useMemo, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { FolderPlus, MoveRight, Pencil, Search, ShieldPlus, Trash2, UserMinus, UserPlus, X } from 'lucide-react'
-import { TreeAdminService, type Node } from '@/shared/api/gen/hayat/admin/v1/policy_pb'
+import { TreeAdminService, type Node, type SubgroupMember } from '@/shared/api/gen/hayat/admin/v1/policy_pb'
 import type { Member } from '@/shared/api/gen/hayat/admin/v1/admin_pb'
 import { errorMessage, useClient } from '@/shared/api/client'
 import { useQuery } from '@/shared/hooks/use-query'
-import { formatDate, formatDateTime } from '@/shared/lib/datetime'
+import { formatDateTime } from '@/shared/lib/datetime'
 import { CopyField, DetailList, ErrorState, LoadingState, PersonRow } from '@/shared/ui/bits'
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/shared/ui/breadcrumb'
 import { Button } from '@/shared/ui/button'
 import { ConfirmDialog } from '@/shared/ui/confirm-dialog'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
+import { AccessList } from './AccessList'
 import { AddGroupMemberDialog, CreateGroupDialog, GrantDialog, MoveDialog, RenameGroupDialog } from './dialogs'
 import { NodeIcon } from './NodeIcon'
 import { childrenMap, GROUP, isContainer, nodeHref, TENANT, typeLabel } from './tree'
@@ -42,98 +42,33 @@ function Empty({ children }: { children: ReactNode }) {
   return <p className="rounded-[10px] border border-dashed px-3 py-4 text-center text-[12px] text-faint">{children}</p>
 }
 
-function PermissionSelect({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: string[] }) {
+/**
+ * Someone in this group because they are on a group inside it. Read-only
+ * here: they leave by being taken off that group's roster.
+ */
+function SubgroupMemberRow({ member, tenantId }: { member: SubgroupMember; tenantId: string }) {
+  const via = member.groups[0]
   return (
-    <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="w-full font-mono text-[12px]">
-        <SelectValue placeholder="Choose a permission" />
-      </SelectTrigger>
-      <SelectContent>
-        {options.map((p) => (
-          <SelectItem key={p} value={p} className="font-mono text-[12px]">
-            {p}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  )
-}
-
-/** Who really holds a permission here: through the chain, rosters, placement and ownership. */
-function WhoHasAccess({ node, permissions }: { node: Node; permissions: string[] }) {
-  const tree = useClient(TreeAdminService)
-  const [perm, setPerm] = useState('')
-  const { data, error, loading } = useQuery(
-    () => (perm ? tree.whoHasAccess({ nodeId: node.id, permission: perm }).then((r) => r.holders) : Promise.resolve(undefined)),
-    [tree, node.id, perm],
-  )
-  return (
-    <div className="flex flex-col gap-3 rounded-[10px] border p-3">
-      <PermissionSelect value={perm} onChange={setPerm} options={permissions} />
-      {!perm ? (
-        <p className="text-[12px] text-faint">Pick a permission to list everyone who holds it here, and why.</p>
-      ) : error ? (
-        <p className="text-[12px] text-destructive">{error}</p>
-      ) : loading && !data ? (
-        <LoadingState />
-      ) : !data || data.length === 0 ? (
-        <p className="text-[12px] text-faint">Nobody holds it here.</p>
-      ) : (
-        <ul className="flex flex-col gap-2.5">
-          {data.map((h) => (
-            <li key={h.user!.id} className="flex flex-col gap-1">
-              <PersonRow name={h.user!.name} email={h.user!.email} />
-              <span className="pl-10 text-[12px] text-muted-foreground">{h.reason?.text}</span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  )
-}
-
-/** Why one person may, or may not, do something here. */
-function ExplainAccess({ node, permissions, members }: { node: Node; permissions: string[]; members: Member[] }) {
-  const tree = useClient(TreeAdminService)
-  const [user, setUser] = useState('')
-  const [perm, setPerm] = useState('')
-  const { data, error } = useQuery(
-    () => (user && perm ? tree.explainAccess({ nodeId: node.id, userId: user, permission: perm }) : Promise.resolve(undefined)),
-    [tree, node.id, user, perm],
-  )
-  return (
-    <div className="flex flex-col gap-3 rounded-[10px] border p-3">
-      <Select value={user} onValueChange={setUser}>
-        <SelectTrigger className="w-full">
-          <SelectValue placeholder="Choose a person" />
-        </SelectTrigger>
-        <SelectContent>
-          {members.map((m) => (
-            <SelectItem key={m.user!.id} value={m.user!.id}>
-              {m.user!.name || m.user!.email}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <PermissionSelect value={perm} onChange={setPerm} options={permissions} />
-      {error && <p className="text-[12px] text-destructive">{error}</p>}
-      {data && (
-        <div
-          className={`rounded-[10px] border px-3 py-2 text-[13px] ${data.allowed ? 'border-success/30 bg-success/10 text-success' : 'border-destructive/30 bg-destructive/10 text-destructive'}`}
+    <li className="flex items-center justify-between gap-3 px-3 py-2.5">
+      <PersonRow name={member.user!.name} email={member.user!.email} />
+      {via && (
+        <Link
+          to={nodeHref(tenantId, via.id)}
+          title={`On ${member.groups.map((g) => g.name).join(', ')}. Remove them there.`}
+          className="inline-flex max-w-[45%] shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] text-muted-foreground hover:text-foreground"
         >
-          <div className="font-semibold">{data.allowed ? 'Allowed' : 'Not allowed'}</div>
-          <div className="mt-0.5 text-[12px] text-foreground/80">
-            {data.allowed ? data.reason?.text : 'No grant, ownership or placement on the way down gives it.'}
-          </div>
-        </div>
+          <NodeIcon type={GROUP} className="size-3 shrink-0" />
+          <span className="truncate">via {via.name}</span>
+          {member.groups.length > 1 && <span className="text-faint">+{member.groups.length - 1}</span>}
+        </Link>
       )}
-    </div>
+    </li>
   )
 }
 
 /**
  * The selected node, in the right-hand card: what it is, where it sits, what
- * is inside, who was granted what here, its roster, and who really has access.
+ * is inside, who reaches it (by role), and its roster.
  */
 export function NodePanel({
   tenantId,
@@ -316,8 +251,7 @@ export function NodePanel({
         )}
 
         <PanelSection
-          title="Access granted here"
-          count={data.grants.length}
+          title="Access"
           action={
             can(P.grant) && (
               <Button variant="outline" size="xs" onClick={() => setDialog('grant')}>
@@ -326,58 +260,36 @@ export function NodePanel({
             )
           }
         >
-          {data.grants.length === 0 ? (
-            <Empty>Nothing granted on this node itself. What was granted above still reaches it.</Empty>
-          ) : (
-            <ul className="divide-y rounded-[10px] border">
-              {data.grants.map((g) => (
-                <li key={g.id} className="flex items-center gap-3 px-3 py-2.5">
-                  <div className="min-w-0 flex-1">
-                    {g.principalType === 'user' ? (
-                      <PersonRow name={g.principalName} email={g.principalEmail} />
-                    ) : (
-                      <span className="flex items-center gap-2 text-[13px] font-semibold">
-                        <span className="flex size-[30px] items-center justify-center rounded-full bg-accent">
-                          <NodeIcon type={GROUP} className="text-muted-foreground" />
-                        </span>
-                        <span className="truncate">{g.principalName}</span>
-                      </span>
-                    )}
-                  </div>
-                  <div className="shrink-0 text-right">
-                    <div className="text-[12px] font-medium">{g.roleName}</div>
-                    <div className="text-[11px] text-faint">
-                      {g.inherit ? 'Here and below' : 'This node only'}
-                      {g.expiresAt && ` · until ${formatDate(g.expiresAt)}`}
-                    </div>
-                  </div>
-                  {can(P.grant) && (
-                    <Button
-                      variant="ghost"
-                      size="icon-xs"
-                      aria-label="Remove grant"
-                      onClick={() =>
-                        setConfirm({
-                          title: 'Remove this grant?',
-                          body: `${g.principalName || g.principalEmail} loses ${g.roleName} here${g.inherit ? ' and below' : ''}, unless something else gives it.`,
-                          label: 'Remove grant',
-                          run: () => run(() => tree.removeGrant({ id: g.id }), 'Grant removed'),
-                        })
+          <AccessList
+            node={n}
+            tenantId={tenantId}
+            tenantName={tenantName}
+            grants={data.grants}
+            version={data}
+            onRemoveGrants={
+              can(P.grant)
+                ? async (gs) => {
+                    let removed = 0
+                    try {
+                      for (const g of gs) {
+                        await tree.removeGrant({ id: g.id })
+                        removed++
                       }
-                    >
-                      <Trash2 />
-                    </Button>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
+                      toast.success(removed === 1 ? 'Grant removed' : `${removed} grants removed`)
+                    } catch (err) {
+                      toast.error(removed ? `${removed} removed, then: ${errorMessage(err)}` : errorMessage(err))
+                    }
+                    await refresh()
+                  }
+                : undefined
+            }
+          />
         </PanelSection>
 
         {isGroup && (
           <PanelSection
             title="People in this group"
-            count={data.members.length}
+            count={data.members.length + data.subgroupMembers.length}
             action={
               can(P.groups) && (
                 <Button variant="outline" size="xs" onClick={() => setDialog('member')}>
@@ -386,8 +298,8 @@ export function NodePanel({
               )
             }
           >
-            {data.members.length === 0 ? (
-              <Empty>Nobody yet. Grants to the group reach whoever is listed here.</Empty>
+            {data.members.length + data.subgroupMembers.length === 0 ? (
+              <Empty>Nobody yet. Grants to the group reach whoever is listed here, and everyone in the groups inside it.</Empty>
             ) : (
               <ul className="divide-y rounded-[10px] border">
                 {data.members.map((m) => (
@@ -405,20 +317,12 @@ export function NodePanel({
                     )}
                   </li>
                 ))}
+                {data.subgroupMembers.map((m) => (
+                  <SubgroupMemberRow key={m.user!.id} member={m} tenantId={tenantId} />
+                ))}
               </ul>
             )}
           </PanelSection>
-        )}
-
-        {can(P.grant) && data.permissions.length > 0 && (
-          <div className="grid grid-cols-2 gap-x-4 gap-y-6 max-[1200px]:grid-cols-1">
-            <PanelSection title="Who has access">
-              <WhoHasAccess node={n} permissions={data.permissions} />
-            </PanelSection>
-            <PanelSection title="Check a person">
-              <ExplainAccess node={n} permissions={data.permissions} members={members} />
-            </PanelSection>
-          </div>
         )}
 
         {!can(P.grant) && (

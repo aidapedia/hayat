@@ -27,6 +27,13 @@ export function childrenMap(nodes: Node[]) {
   return map
 }
 
+/** The trail of names from the tenant down to a node, the node itself last. */
+export function nodePath(byId: Map<string, Node>, node: Node): string[] {
+  const parts: string[] = []
+  for (let cur: Node | undefined = node; cur; cur = byId.get(cur.parentId)) parts.unshift(cur.name)
+  return parts
+}
+
 /** Ids of every ancestor of `id` inside the list: what to expand to reveal it. */
 export function ancestorIds(nodes: Node[], id: string) {
   const byId = new Map(nodes.map((n) => [n.id, n]))

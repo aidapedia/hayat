@@ -42,9 +42,11 @@ func (a *audience) UnmarshalJSON(b []byte) error {
 var ErrInvalidToken = errors.New("hayat: invalid access token")
 
 // VerifyAccessToken checks a user's access token offline: signature against
-// the published keys, issuer, expiry, and that it was issued to clientID (your
-// application's sign-in client). Pass "" to accept any client.
-func (c *Client) VerifyAccessToken(ctx context.Context, raw, clientID string) (*UserClaims, error) {
+// the published keys, issuer, expiry, and that it was issued for audience.
+// A sign-in token's `aud` names its client and the client's service, so pass
+// your service's namespace ("billing") to accept any of its sign-in clients,
+// or one client's id to accept only that client. Pass "" to accept any.
+func (c *Client) VerifyAccessToken(ctx context.Context, raw, audience string) (*UserClaims, error) {
 	sig, err := jose.ParseSigned(raw, []jose.SignatureAlgorithm{jose.ES256, jose.RS256, jose.EdDSA})
 	if err != nil || len(sig.Signatures) != 1 {
 		return nil, ErrInvalidToken
@@ -67,7 +69,7 @@ func (c *Client) VerifyAccessToken(ctx context.Context, raw, clientID string) (*
 		return nil, ErrInvalidToken
 	case strings.HasPrefix(claims.Subject, "client:"):
 		return nil, ErrInvalidToken // a service's token, not a person's
-	case clientID != "" && claims.ClientID != clientID && !slices.Contains(claims.Audience, clientID):
+	case audience != "" && claims.ClientID != audience && !slices.Contains(claims.Audience, audience):
 		return nil, ErrInvalidToken
 	}
 	return &claims, nil
@@ -75,8 +77,9 @@ func (c *Client) VerifyAccessToken(ctx context.Context, raw, clientID string) (*
 
 // Middleware verifies the bearer token on each request and puts the claims in
 // the context (read them with ClaimsFrom). Requests without a valid token get
-// 401.
-func (c *Client) Middleware(clientID string) func(http.Handler) http.Handler {
+// 401. audience is as for VerifyAccessToken: your service's namespace, or one
+// sign-in client's id.
+func (c *Client) Middleware(audience string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			raw, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer ")
@@ -84,7 +87,7 @@ func (c *Client) Middleware(clientID string) func(http.Handler) http.Handler {
 				http.Error(w, "sign in required", http.StatusUnauthorized)
 				return
 			}
-			claims, err := c.VerifyAccessToken(r.Context(), raw, clientID)
+			claims, err := c.VerifyAccessToken(r.Context(), raw, audience)
 			if err != nil {
 				http.Error(w, "sign in required", http.StatusUnauthorized)
 				return
