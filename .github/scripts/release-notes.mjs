@@ -13,7 +13,7 @@
 // release is never blocked on the model.
 //
 // Env: DEEPSEEK_API_KEY (optional), DEEPSEEK_MODEL (default deepseek-chat),
-//      GITHUB_REPOSITORY (owner/name), GH_TOKEN (optional: PR bodies + authors).
+//      GITHUB_REPOSITORY (owner/name), GH_TOKEN (optional: PR titles + bodies for the model).
 import { execFileSync } from 'node:child_process'
 import { mkdirSync, writeFileSync } from 'node:fs'
 
@@ -67,27 +67,23 @@ async function pullRequest(number) {
   }
 }
 
-// Merge commits ("Merge pull request #12 from …") and squash merges ("title (#12)")
-// name their PR; everything else is a direct commit.
+// The change list is one line per commit, including the commits inside a merged
+// PR; merge commits themselves are left out. PRs are still read — their titles and
+// bodies tell the model what a group of commits was for.
 const prs = []
-const inPr = new Set()
-for (const [sha, subject, body] of records('%H%x1f%s%x1f%b', '--merges')) {
+for (const [, subject, body] of records('%H%x1f%s%x1f%b', '--merges')) {
   const number = subject.match(/^Merge pull request #(\d+)/)?.[1]
-  if (!number) continue
-  prs.push({ number, title: (body ?? '').split('\n')[0].trim() || subject })
-  for (const c of git('log', '--format=%H', `${sha}^1..${sha}^2`).split('\n')) inPr.add(c)
+  if (number) prs.push({ number, title: (body ?? '').split('\n')[0].trim() || subject })
 }
 const commits = []
 for (const [sha, subject, body] of records('%H%x1f%s%x1f%b', '--no-merges')) {
-  if (inPr.has(sha)) continue
+  // A squash merge ("title (#12)") names its PR; the commit stays in the list.
   const squashed = subject.match(/^(.*) \(#(\d+)\)$/)
   if (squashed) prs.push({ number: squashed[2], title: squashed[1] })
-  else commits.push({ sha, subject, body: (body ?? '').trim() })
+  commits.push({ sha, subject, body: (body ?? '').trim() })
 }
 for (const pr of prs) {
   const data = await pullRequest(pr.number)
-  pr.url = data?.html_url ?? `${repoUrl}/pull/${pr.number}`
-  pr.author = data?.user?.login
   pr.title = data?.title ?? pr.title
   pr.body = (data?.body ?? '').trim()
 }
@@ -95,12 +91,9 @@ for (const pr of prs) {
 const shown = prs.filter((pr) => !SKIP.test(pr.title))
 const direct = commits.filter((c) => !SKIP.test(c.subject))
 
-// The site's changelog reads exactly these two line shapes (aidapedia
-// packages/shared/src/lib/releases.ts), so keep them as they are.
-const allChanges = [
-  ...shown.map((pr) => `* ${pr.title}${pr.author ? ` by @${pr.author}` : ''} in ${pr.url}`),
-  ...direct.map((c) => `* [${c.subject}](${repoUrl}/commit/${c.sha})`),
-].join('\n')
+// The site's changelog reads this line shape (aidapedia
+// packages/shared/src/lib/releases.ts): `* [type: subject](<commit>)`.
+const allChanges = direct.map((c) => `* [${c.subject}](${repoUrl}/commit/${c.sha})`).join('\n')
 
 // ── The model's draft ───────────────────────────────────────────────────────
 function prompt() {
