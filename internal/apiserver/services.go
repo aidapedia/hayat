@@ -14,6 +14,7 @@ import (
 	"github.com/aidapedia/hayat/internal/authz"
 	"github.com/aidapedia/hayat/internal/catalog"
 	"github.com/aidapedia/hayat/internal/identity"
+	"github.com/aidapedia/hayat/internal/media"
 	"github.com/aidapedia/hayat/internal/revision"
 	"github.com/aidapedia/hayat/internal/store"
 	"github.com/aidapedia/hayat/internal/tenancy"
@@ -316,8 +317,8 @@ func (d *directoryService) GetUserAppearance(ctx context.Context, req *connect.R
 	return connect.NewResponse(resp), nil
 }
 
-func toTenant(t tenancy.Tenant, nodeID uuid.UUID) *authzv1.Tenant {
-	out := &authzv1.Tenant{Id: t.ID.String(), Slug: t.Slug, Name: t.Name, MemberCount: int32(t.MemberCount)}
+func toTenant(t tenancy.Tenant, nodeID uuid.UUID, issuer string) *authzv1.Tenant {
+	out := &authzv1.Tenant{Id: t.ID.String(), Slug: t.Slug, Name: t.Name, MemberCount: int32(t.MemberCount), LogoUrl: media.Link(issuer, t.Logo)}
 	if t.OwnerID != uuid.Nil {
 		out.OwnerUserId = t.OwnerID.String()
 	}
@@ -342,7 +343,7 @@ func (d *directoryService) ListUserTenants(ctx context.Context, req *connect.Req
 		if n, err := d.s.tree.ByRef(ctx, tenancy.TypeTenant, t.ID.String()); err == nil {
 			nodeID = n.ID
 		}
-		resp.Tenants = append(resp.Tenants, toTenant(t, nodeID))
+		resp.Tenants = append(resp.Tenants, toTenant(t, nodeID, d.s.cfg.Issuer))
 	}
 	return connect.NewResponse(resp), nil
 }

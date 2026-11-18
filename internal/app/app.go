@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -21,7 +22,9 @@ import (
 	"github.com/aidapedia/hayat/internal/config"
 	"github.com/aidapedia/hayat/internal/crypto"
 	"github.com/aidapedia/hayat/internal/identity"
+	"github.com/aidapedia/hayat/internal/loginpage"
 	"github.com/aidapedia/hayat/internal/mail"
+	"github.com/aidapedia/hayat/internal/media"
 	hoidc "github.com/aidapedia/hayat/internal/oidc"
 	"github.com/aidapedia/hayat/internal/ratelimit"
 	"github.com/aidapedia/hayat/internal/revision"
@@ -52,6 +55,8 @@ type App struct {
 	Catalog *catalog.Service
 	Tree    *tree.Service
 	Engine  *authz.Engine
+	Pages   *loginpage.Service
+	Media   *media.Service
 	Log     *slog.Logger
 }
 
@@ -68,10 +73,16 @@ func New(cfg config.Config, s *store.Store, log *slog.Logger) (*App, error) {
 	// at_least_rev carry freshness.
 	revs := revision.NewReader(s, time.Second)
 	cat := catalog.New(s, revs)
+	blobs, err := media.NewStore(cfg.Storage)
+	if err != nil {
+		return nil, err
+	}
+	med := media.New(s, blobs, cfg.Issuer, log)
 	return &App{
 		Cfg: cfg, Store: s, IDs: ids, Tenants: tenancy.New(s), Clients: clients, Keys: keys, Log: log,
 		Storage: hoidc.NewStorage(s, ids, clients, keys, cfg.AccessTokenTTL, cfg.RefreshTokenTTL),
 		Revs:    revs, Catalog: cat, Tree: tree.New(s, cat, revs), Engine: authz.New(s, cat, ids, revs),
+		Pages: loginpage.New(s, cfg.MasterKey, med), Media: med,
 	}, nil
 }
 
@@ -97,7 +108,7 @@ func (a *App) AuthHandler(ctx context.Context) (http.Handler, func(), error) {
 		closeLimiter()
 		return nil, nil, err
 	}
-	srv, err := authserver.New(a.Cfg, a.Store, a.IDs, a.Storage, a.Clients, provider, limiter, a.Log)
+	srv, err := authserver.New(a.Cfg, a.Store, a.IDs, a.Storage, a.Clients, a.Pages, a.Catalog, a.Media, provider, limiter, a.Log)
 	if err != nil {
 		closeLimiter()
 		return nil, nil, err
@@ -112,7 +123,7 @@ func (a *App) AuthHandler(ctx context.Context) (http.Handler, func(), error) {
 
 func (a *App) AdminHandler() http.Handler {
 	return adminserver.New(a.Cfg, adminserver.Deps{Store: a.Store, IDs: a.IDs, Tenants: a.Tenants, Clients: a.Clients, Keys: a.Keys,
-		Storage: a.Storage, Catalog: a.Catalog, Tree: a.Tree, Engine: a.Engine}, a.Log).Handler()
+		Storage: a.Storage, Catalog: a.Catalog, Tree: a.Tree, Engine: a.Engine, Pages: a.Pages, Media: a.Media}, a.Log).Handler()
 }
 
 func (a *App) APIHandler() http.Handler {
@@ -155,6 +166,21 @@ func (a *App) Serve(ctx context.Context, roles []string) error {
 	var workers sync.WaitGroup
 	wctx, stopWorkers := context.WithCancel(ctx)
 	defer stopWorkers()
+
+	// The auth role serves images and the admin role keeps them: both need the
+	// store to work, so they refuse to start without it.
+	if slices.Contains(roles, RoleAuth) || slices.Contains(roles, RoleAdmin) {
+		if err := a.Media.Check(ctx); err != nil {
+			return fmt.Errorf("image storage: %w", err)
+		}
+	}
+	if slices.Contains(roles, RoleAdmin) {
+		if n, err := a.Media.AdoptLoginPageAssets(ctx); err != nil {
+			a.Log.Error("move login page logos into image storage", "err", err)
+		} else if n > 0 {
+			a.Log.Info("moved login page logos into image storage", "count", n)
+		}
+	}
 
 	for _, role := range roles {
 		switch role {

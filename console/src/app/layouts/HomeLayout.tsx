@@ -263,14 +263,14 @@ function AccountMenu() {
       <DropdownMenuTrigger asChild>
         {collapsed ? (
           <button aria-label="Account" className="flex size-10 items-center justify-center rounded-[10px] hover:bg-sidebar-accent">
-            <PersonAvatar name={user.name} email={user.email} size={30} />
+            <PersonAvatar name={user.name} email={user.email} src={user.avatarUrl} size={30} />
           </button>
         ) : (
           <button
             aria-label="Account"
             className="flex w-full items-center gap-2.5 rounded-xl px-2 py-2 text-left transition-colors hover:bg-sidebar-accent data-[state=open]:bg-sidebar-accent"
           >
-            <PersonAvatar name={user.name} email={user.email} size={30} />
+            <PersonAvatar name={user.name} email={user.email} src={user.avatarUrl} size={30} />
             <span className="min-w-0 flex-1 truncate text-[13px] font-semibold">{user.name || user.email}</span>
             <MoreHorizontal className="size-4 shrink-0 text-faint" />
           </button>

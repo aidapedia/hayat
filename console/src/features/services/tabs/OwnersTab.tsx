@@ -102,7 +102,7 @@ export function OwnersTab({ service: s, canManage, onChanged }: { service: Servi
               {pageRows.map((o) => (
                 <TableRow key={o.id}>
                   <TableCell>
-                    <PersonRow name={o.name} email={o.email} trailing={o.id === me.user?.id ? <Pill>You</Pill> : undefined} />
+                    <PersonRow name={o.name} email={o.email} src={o.avatarUrl} trailing={o.id === me.user?.id ? <Pill>You</Pill> : undefined} />
                   </TableCell>
                   <TableCell>{o.status === 'pending' ? <Pill className="border-warning/30 text-warning">Invited</Pill> : <StatusBadge status={o.status} />}</TableCell>
                   <TableCell className="text-right">

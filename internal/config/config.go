@@ -61,9 +61,31 @@ type Config struct {
 	RefreshTokenTTL time.Duration
 	KeyRotation     time.Duration
 
+	// Storage is where uploaded images (avatars, logos) are kept.
+	Storage Storage
+
 	// Dev relaxes rules that only make sense in production: http redirect URIs
 	// and non-Secure cookies. Never set it on a public deployment.
 	Dev bool
+}
+
+// Storage picks where uploaded images live. The auth role serves them and
+// the admin role writes them, so both must see the same files: with "local"
+// (the default) they mount the same directory — one volume in compose, a
+// ReadWriteMany volume in Kubernetes; "s3" needs nothing shared.
+type Storage struct {
+	Backend string // local | s3
+	Dir     string // local: where files are written
+
+	S3Endpoint  string // https://s3.amazonaws.com, https://<account>.r2.cloudflarestorage.com, http://minio:9000
+	S3Region    string
+	S3Bucket    string
+	S3Prefix    string // key prefix inside the bucket, e.g. "hayat/"
+	S3AccessKey string
+	S3SecretKey string
+	// S3PathStyle addresses the bucket as <endpoint>/<bucket>/… instead of
+	// <bucket>.<endpoint>/…; MinIO and most self-hosted stores need it.
+	S3PathStyle bool
 }
 
 // SecureCookies is true whenever the issuer is served over HTTPS.
@@ -91,6 +113,17 @@ func Load() (Config, error) {
 		SMTPURL:     os.Getenv("HAYAT_SMTP_URL"),
 		MailFrom:    env("HAYAT_MAIL_FROM", "Hayat <no-reply@localhost>"),
 		Dev:         envBool("HAYAT_DEV", false),
+		Storage: Storage{
+			Backend:     env("HAYAT_STORAGE", "local"),
+			Dir:         env("HAYAT_STORAGE_DIR", "/var/lib/hayat/media"),
+			S3Endpoint:  strings.TrimRight(env("HAYAT_S3_ENDPOINT", "https://s3.amazonaws.com"), "/"),
+			S3Region:    env("HAYAT_S3_REGION", "us-east-1"),
+			S3Bucket:    os.Getenv("HAYAT_S3_BUCKET"),
+			S3Prefix:    env("HAYAT_S3_PREFIX", "hayat/"),
+			S3AccessKey: os.Getenv("HAYAT_S3_ACCESS_KEY_ID"),
+			S3SecretKey: os.Getenv("HAYAT_S3_SECRET_ACCESS_KEY"),
+			S3PathStyle: envBool("HAYAT_S3_PATH_STYLE", false),
+		},
 	}
 
 	var err error
@@ -120,6 +153,9 @@ func Load() (Config, error) {
 		return c, errors.New("HAYAT_ISSUER must be https:// unless HAYAT_DEV=true")
 	}
 	if c.MasterKey, err = decodeKey(os.Getenv("HAYAT_MASTER_KEY")); err != nil {
+		return c, err
+	}
+	if err := c.Storage.check(); err != nil {
 		return c, err
 	}
 	return c, nil
@@ -164,4 +200,23 @@ func envDuration(key string, fallback time.Duration) (time.Duration, error) {
 		return 0, fmt.Errorf("%s: %w", key, err)
 	}
 	return d, nil
+}
+
+func (st Storage) check() error {
+	switch st.Backend {
+	case "local":
+		if st.Dir == "" {
+			return errors.New("HAYAT_STORAGE=local needs HAYAT_STORAGE_DIR, a directory the auth and admin roles both mount")
+		}
+		return nil
+	case "s3":
+		if st.S3Bucket == "" || st.S3AccessKey == "" || st.S3SecretKey == "" {
+			return errors.New("HAYAT_STORAGE=s3 needs HAYAT_S3_BUCKET, HAYAT_S3_ACCESS_KEY_ID and HAYAT_S3_SECRET_ACCESS_KEY")
+		}
+		if u, err := url.ParseRequestURI(st.S3Endpoint); err != nil || u.Host == "" {
+			return fmt.Errorf("HAYAT_S3_ENDPOINT is not a URL: %q", st.S3Endpoint)
+		}
+		return nil
+	}
+	return fmt.Errorf("HAYAT_STORAGE must be local or s3, got %q", st.Backend)
 }

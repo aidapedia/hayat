@@ -797,3 +797,27 @@ func (s *Service) ensureAnotherAdmin(ctx context.Context, tx pgx.Tx, except uuid
 	}
 	return nil
 }
+
+// SetAvatar sets the person's picture, the OIDC picture claim: a URL of an
+// image Hayat keeps (internal/media), or "" for none.
+func (s *Service) SetAvatar(ctx context.Context, id uuid.UUID, url, actor string) (User, error) {
+	if len(url) > 500 {
+		return User{}, errs.New("that picture address is too long")
+	}
+	var u User
+	err := s.store.Tx(ctx, func(tx pgx.Tx) error {
+		region, err := s.regionOf(ctx, tx, id)
+		if err != nil {
+			return err
+		}
+		if _, err := tx.Exec(ctx, `UPDATE users SET avatar_url = $3, updated_at = now() WHERE region = $1 AND id = $2`, region, id, url); err != nil {
+			return err
+		}
+		if err := audit.Write(ctx, tx, region, actor, "user.avatar_changed", "user:"+id.String(), nil); err != nil {
+			return err
+		}
+		u, err = s.getUser(ctx, tx, id)
+		return err
+	})
+	return u, err
+}

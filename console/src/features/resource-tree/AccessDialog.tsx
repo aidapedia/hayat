@@ -111,7 +111,7 @@ export function AccessDialog({
                     <Lock aria-label="Can't be ungranted here" className="size-4 shrink-0 text-faint" />
                   ))}
                 <div className="min-w-0 flex-1">
-                  <PersonRow name={p.user.name} email={p.user.email} />
+                  <PersonRow name={p.user.name} email={p.user.email} src={p.user.avatarUrl} />
                 </div>
                 <span className="max-w-[45%] shrink-0 text-right text-[11px]">
                   {p.ways.map((w, i) => (

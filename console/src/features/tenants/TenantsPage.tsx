@@ -7,7 +7,7 @@ import { errorMessage, useClient } from '@/shared/api/client'
 import { useServerPagination } from '@/shared/ui/table/usePagination'
 import { formatDate } from '@/shared/lib/datetime'
 import { useMe } from '@/features/auth'
-import { EmptyState, ErrorState, Field, LoadingState, SearchInput } from '@/shared/ui/bits'
+import { EmptyState, ErrorState, Field, LoadingState, LogoTile, SearchInput } from '@/shared/ui/bits'
 import { Button } from '@/shared/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
 import { Input } from '@/shared/ui/input'
@@ -152,8 +152,13 @@ export default function TenantsPage() {
                 {list.items.map((t) => (
                   <TableRow key={t.id} className="cursor-pointer" onClick={() => navigate(`/tenants/${t.id}`)}>
                     <TableCell>
-                      <div className="text-[13px] font-semibold">{t.name}</div>
-                      <div className="font-mono text-[12px] text-faint">{t.slug}</div>
+                      <div className="flex items-center gap-2.5">
+                        <LogoTile name={t.name} src={t.logoUrl} size={30} />
+                        <div className="min-w-0">
+                          <div className="text-[13px] font-semibold">{t.name}</div>
+                          <div className="font-mono text-[12px] text-faint">{t.slug}</div>
+                        </div>
+                      </div>
                     </TableCell>
                     <TableCell className="text-[13px] tabular-nums">{t.memberCount}</TableCell>
                     <TableCell className="text-[12px] text-muted-foreground">{t.region}</TableCell>

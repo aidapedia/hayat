@@ -54,6 +54,7 @@ func newEnv(t *testing.T) *env {
 	t.Cleanup(apiSrv.Close)
 
 	cfg := config.Config{Region: "default", Issuer: authSrv.URL, ConsoleURL: consoleURL, MasterKey: make([]byte, 32),
+		Storage:    config.Storage{Backend: "local", Dir: t.TempDir()},
 		SessionTTL: time.Hour, AccessTokenTTL: 10 * time.Minute, RefreshTokenTTL: time.Hour, Dev: true}
 	a, err := app.New(cfg, s, log)
 	if err != nil {

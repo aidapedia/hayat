@@ -15,6 +15,7 @@ import (
 	"github.com/aidapedia/hayat/internal/authz"
 	"github.com/aidapedia/hayat/internal/catalog"
 	"github.com/aidapedia/hayat/internal/identity"
+	"github.com/aidapedia/hayat/internal/media"
 	hoidc "github.com/aidapedia/hayat/internal/oidc"
 	"github.com/aidapedia/hayat/internal/tree"
 )
@@ -326,7 +327,7 @@ func (r *registryService) toService(ctx context.Context, svc catalog.ServiceInfo
 	out := &adminv1.ServiceInfo{Id: svc.ID, DisplayName: svc.DisplayName, Description: svc.Description, ClientId: svc.ClientID,
 		ActiveVersion: int32(svc.ActiveVersion), CreatedAt: ts(svc.CreatedAt),
 		// Every registered service has one API credential; the rest sign people in.
-		SignInClients: int32(max(counts[svc.ID]-1, 0))}
+		SignInClients: int32(max(counts[svc.ID]-1, 0)), LogoUrl: media.Link(r.s.cfg.Issuer, svc.Logo)}
 	for _, u := range users {
 		out.Owners = append(out.Owners, toUser(u))
 	}
@@ -656,7 +657,7 @@ func (t *treeAdminService) GetTenantTree(ctx context.Context, req *connect.Reque
 	if err != nil {
 		return nil, t.s.fail(err)
 	}
-	return connect.NewResponse(&adminv1.GetTenantTreeResponse{Tenant: toTenant(tn), Nodes: toNodes(nodes)}), nil
+	return connect.NewResponse(&adminv1.GetTenantTreeResponse{Tenant: t.s.toTenant(tn), Nodes: toNodes(nodes)}), nil
 }
 
 func (t *treeAdminService) GetNode(ctx context.Context, req *connect.Request[adminv1.GetNodeRequest]) (*connect.Response[adminv1.GetNodeResponse], error) {

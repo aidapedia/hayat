@@ -19,19 +19,24 @@ import (
 	jose "github.com/go-jose/go-jose/v4"
 
 	"github.com/aidapedia/hayat/internal/authserver"
+	"github.com/aidapedia/hayat/internal/catalog"
 	"github.com/aidapedia/hayat/internal/config"
 	"github.com/aidapedia/hayat/internal/crypto"
 	"github.com/aidapedia/hayat/internal/identity"
+	"github.com/aidapedia/hayat/internal/loginpage"
+	"github.com/aidapedia/hayat/internal/media"
 	hoidc "github.com/aidapedia/hayat/internal/oidc"
 	"github.com/aidapedia/hayat/internal/ratelimit"
+	"github.com/aidapedia/hayat/internal/revision"
 	"github.com/aidapedia/hayat/internal/testdb"
 )
 
 const redirectURI = "http://console.test/callback"
 
 type harness struct {
-	t   *testing.T
-	url string
+	t     *testing.T
+	url   string
+	pages *loginpage.Service
 }
 
 func newHarness(t *testing.T) *harness {
@@ -62,7 +67,11 @@ func newHarness(t *testing.T) *harness {
 	if err != nil {
 		t.Fatal(err)
 	}
-	as, err := authserver.New(cfg, s, ids, storage, clients, provider, ratelimit.NewMemory(), log)
+	blobs, _ := media.NewStore(config.Storage{Backend: "local", Dir: t.TempDir()})
+	med := media.New(s, blobs, cfg.Issuer, log)
+	pages := loginpage.New(s, key, med)
+	cat := catalog.New(s, revision.NewReader(s, time.Second))
+	as, err := authserver.New(cfg, s, ids, storage, clients, pages, cat, med, provider, ratelimit.NewMemory(), log)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -71,7 +80,7 @@ func newHarness(t *testing.T) *harness {
 	if _, err := ids.CreateAdmin(ctx, "ana@example.com", "Ana", "correct horse battery"); err != nil {
 		t.Fatal(err)
 	}
-	return &harness{t: t, url: srv.URL}
+	return &harness{t: t, url: srv.URL, pages: pages}
 }
 
 func browser() *http.Client {

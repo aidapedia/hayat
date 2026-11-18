@@ -7,6 +7,7 @@ import { useQuery } from '@/shared/hooks/use-query'
 import { useAuth, useMe } from '@/features/auth'
 import { ErrorState, Field, LoadingState, PersonAvatar, Pill } from '@/shared/ui/bits'
 import { Button } from '@/shared/ui/button'
+import { ImageUpload } from '@/shared/ui/image-upload'
 import { PasswordInput } from '@/shared/ui/password-input'
 import { Narrow, PageHeader, Section } from '@/shared/ui/page/PageHeader'
 import { ProfileForm } from './ProfileForm'
@@ -74,7 +75,7 @@ export default function AccountPage() {
       <PageHeader
         title={user.name || user.email}
         desc={user.email}
-        media={<PersonAvatar name={user.name} email={user.email} size={44} />}
+        media={<PersonAvatar name={user.name} email={user.email} src={user.avatarUrl} size={44} />}
         meta={isAdmin ? <Pill className="border-primary/30 text-primary">Instance admin</Pill> : undefined}
         action={
           <Button variant="outline" size="lg" onClick={() => void signOut()}>
@@ -84,6 +85,24 @@ export default function AccountPage() {
       />
       <div className="mt-7">
         <Narrow width={880}>
+          <Section title="Picture" desc="Shown wherever you appear, in Hayat and in every app you sign in to with it.">
+            <div className="rounded-xl border p-5">
+              <ImageUpload
+                label="Your picture"
+                hint="PNG, JPEG or WebP, up to 5 MB. It's cropped to a square."
+                preview={<PersonAvatar name={user.name} email={user.email} src={user.avatarUrl} size={56} />}
+                hasImage={!!user.avatarUrl}
+                onUpload={async (data) => {
+                  await account.setMyAvatar({ data })
+                  await reload()
+                }}
+                onRemove={async () => {
+                  await account.setMyAvatar({ data: new Uint8Array() })
+                  await reload()
+                }}
+              />
+            </div>
+          </Section>
           <Section title="Profile" desc="Applications that sign you in with Hayat receive these details.">
             <ProfileForm
               user={user}

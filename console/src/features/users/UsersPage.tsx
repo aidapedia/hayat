@@ -75,6 +75,7 @@ export default function UsersPage() {
                       <PersonRow
                         name={u.name}
                         email={u.email}
+                        src={u.avatarUrl}
                         trailing={u.isAdmin ? <Pill className="border-primary/30 text-primary">Admin</Pill> : undefined}
                       />
                     </TableCell>

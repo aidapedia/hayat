@@ -89,6 +89,22 @@ enterprise SSO, MFA) is next.
   `my_permissions` holds it.
 - **The console is optional.** Sign-in pages live in the binary
   (`internal/authserver/templates`), never in the console.
+- **A service's login page is data, never markup** (`internal/loginpage`). Its
+  owners (`hayat.service.manage`; instance admins for `hayat`) edit a draft and
+  publish it; Hayat's own templates draw it, so a design can't change the form,
+  load anything from elsewhere or skip "Secured by Hayat". Colors are made
+  readable on the server; logos are PNG/JPEG/WebP only (an SVG on the sign-in
+  origin could run script); the brand's `<style>` goes through a CSP nonce. A
+  failure to read a design falls back to Hayat's page, never blocks sign-in.
+- **Every uploaded image goes through `internal/media`**: decoded, size-capped,
+  resized and re-encoded (so EXIF and anything that isn't pixels is dropped),
+  then served by the auth role at `<issuer>/media/<id>` — never a bucket URL, so
+  buckets stay private and the sign-in pages load only from 'self'. An image
+  never changes: a new upload is a new id, and the replaced one is deleted.
+  Where bytes live is `HAYAT_STORAGE`: `local` (default, a volume the auth and
+  admin roles both mount) or `s3`. **Never the database** — no blob tables:
+  they bloat backups and YugabyteDB would copy every image to every region.
+  Auth and admin `Check` the store at boot; api and worker never touch it.
 - **The admin API accepts only console tokens** and checks the session live on every call.
 
 ## Where things are
@@ -108,7 +124,9 @@ internal/catalog      node types, permissions, roles, services, contracts
 internal/tree         nodes, groups, rosters, grants, resource upserts
 internal/authz        the decision engine: At, Check, LookupResources, LookupSubjects
 internal/apiserver    the api role: gRPC/Connect for services (proto/hayat/authz/v1)
-internal/authserver   the auth role: provider + hosted pages
+internal/authserver   the auth role: provider + hosted pages (+ a service's login page, /preview/login, /brand/asset)
+internal/loginpage    each service's login page: draft, published versions, logos, preview tokens, theme CSS
+internal/media        uploaded images (avatars, tenant/service/login-page logos): checks + resizes, Store = local | s3 (SigV4)
 internal/adminserver  the admin role: Connect handlers for proto/hayat/admin/v1
 internal/worker       outbox mail, cleanup, key rotation (leased)
 internal/app          wires modules into roles

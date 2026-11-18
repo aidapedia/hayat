@@ -127,7 +127,7 @@ export function OverviewTab({ data, onChanged }: { data: GetServiceResponse; onC
             <div className="divide-y rounded-xl border">
               {s.owners.map((o) => (
                 <div key={o.id} className="px-3 py-2.5">
-                  <PersonRow name={o.name} email={o.email} />
+                  <PersonRow name={o.name} email={o.email} src={o.avatarUrl} />
                 </div>
               ))}
             </div>

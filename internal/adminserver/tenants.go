@@ -61,7 +61,7 @@ func (t *tenantService) ListTenants(ctx context.Context, req *connect.Request[ad
 				mine = append(mine, tn)
 			}
 		}
-		return connect.NewResponse(&adminv1.ListTenantsResponse{Tenants: toTenants(mine)}), nil
+		return connect.NewResponse(&adminv1.ListTenantsResponse{Tenants: t.s.toTenants(mine)}), nil
 	}
 	size := pageSize(req.Msg.PageSize)
 	list, err := t.s.tenants.List(ctx, req.Msg.Query, parsePageToken(req.Msg.PageToken), size+1)
@@ -73,7 +73,7 @@ func (t *tenantService) ListTenants(ctx context.Context, req *connect.Request[ad
 		list = list[:size]
 		resp.NextPageToken = pageToken(list[size-1].CreatedAt)
 	}
-	resp.Tenants = toTenants(list)
+	resp.Tenants = t.s.toTenants(list)
 	return connect.NewResponse(resp), nil
 }
 
@@ -94,7 +94,7 @@ func (t *tenantService) GetTenant(ctx context.Context, req *connect.Request[admi
 	if err != nil {
 		return nil, err
 	}
-	return connect.NewResponse(&adminv1.GetTenantResponse{Tenant: toTenant(tn), MyPermissions: perms}), nil
+	return connect.NewResponse(&adminv1.GetTenantResponse{Tenant: t.s.toTenant(tn), MyPermissions: perms}), nil
 }
 
 func (t *tenantService) ListMembers(ctx context.Context, req *connect.Request[adminv1.ListMembersRequest]) (*connect.Response[adminv1.ListMembersResponse], error) {
@@ -206,7 +206,7 @@ func (t *tenantService) CreateTenant(ctx context.Context, req *connect.Request[a
 	if err != nil {
 		return nil, t.s.fail(err)
 	}
-	return connect.NewResponse(&adminv1.CreateTenantResponse{Tenant: toTenant(tn)}), nil
+	return connect.NewResponse(&adminv1.CreateTenantResponse{Tenant: t.s.toTenant(tn)}), nil
 }
 
 func (t *tenantService) RenameTenant(ctx context.Context, req *connect.Request[adminv1.RenameTenantRequest]) (*connect.Response[adminv1.RenameTenantResponse], error) {
@@ -218,7 +218,7 @@ func (t *tenantService) RenameTenant(ctx context.Context, req *connect.Request[a
 	if err != nil {
 		return nil, t.s.fail(err)
 	}
-	return connect.NewResponse(&adminv1.RenameTenantResponse{Tenant: toTenant(tn)}), nil
+	return connect.NewResponse(&adminv1.RenameTenantResponse{Tenant: t.s.toTenant(tn)}), nil
 }
 
 func (t *tenantService) DeleteTenant(ctx context.Context, req *connect.Request[adminv1.DeleteTenantRequest]) (*connect.Response[adminv1.DeleteTenantResponse], error) {
@@ -299,5 +299,5 @@ func (t *tenantService) TransferOwnership(ctx context.Context, req *connect.Requ
 	if err != nil {
 		return nil, t.s.fail(err)
 	}
-	return connect.NewResponse(&adminv1.TransferOwnershipResponse{Tenant: toTenant(tn)}), nil
+	return connect.NewResponse(&adminv1.TransferOwnershipResponse{Tenant: t.s.toTenant(tn)}), nil
 }

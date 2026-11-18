@@ -18,7 +18,7 @@ func (a *accountService) GetMe(ctx context.Context, _ *connect.Request[adminv1.G
 	if err != nil {
 		return nil, a.s.fail(err)
 	}
-	return connect.NewResponse(&adminv1.GetMeResponse{User: toUser(me), Tenants: toTenants(tenants)}), nil
+	return connect.NewResponse(&adminv1.GetMeResponse{User: toUser(me), Tenants: a.s.toTenants(tenants)}), nil
 }
 
 func (a *accountService) UpdateMe(ctx context.Context, req *connect.Request[adminv1.UpdateMeRequest]) (*connect.Response[adminv1.UpdateMeResponse], error) {

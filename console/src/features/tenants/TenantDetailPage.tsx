@@ -8,7 +8,8 @@ import { errorMessage, useClient } from '@/shared/api/client'
 import { useServerPagination } from '@/shared/ui/table/usePagination'
 import { useQuery } from '@/shared/hooks/use-query'
 import { formatDate, formatDateTime } from '@/shared/lib/datetime'
-import { CopyField, DetailList, ErrorState, Field, LoadingState, PersonRow, Pill, StatusBadge } from '@/shared/ui/bits'
+import { CopyField, DetailList, ErrorState, Field, LoadingState, LogoTile, PersonRow, Pill, StatusBadge } from '@/shared/ui/bits'
+import { ImageUpload } from '@/shared/ui/image-upload'
 import { Button } from '@/shared/ui/button'
 import { ConfirmDialog } from '@/shared/ui/confirm-dialog'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
@@ -71,10 +72,16 @@ function AddMemberDialog({ tenantId, open, onOpenChange, onAdded }: { tenantId: 
   )
 }
 
-function RenameDialog({ id, current, open, onOpenChange, onDone }: { id: string; current: string; open: boolean; onOpenChange: (o: boolean) => void; onDone: () => void }) {
+function RenameDialog({ id, current, logoUrl, open, onOpenChange, onDone }: { id: string; current: string; logoUrl: string; open: boolean; onOpenChange: (o: boolean) => void; onDone: () => void }) {
   const tenants = useClient(TenantService)
   const [name, setName] = useState(current)
   const [busy, setBusy] = useState(false)
+  const [logo, setLogo] = useState(logoUrl)
+  const setImage = async (data: Uint8Array) => {
+    const res = await tenants.setTenantLogo({ id, data })
+    setLogo(res.tenant?.logoUrl ?? '')
+    onDone()
+  }
   const submit = async (e: FormEvent) => {
     e.preventDefault()
     setBusy(true)
@@ -94,9 +101,16 @@ function RenameDialog({ id, current, open, onOpenChange, onDone }: { id: string;
       <DialogContent className="sm:max-w-md">
         <form onSubmit={submit} className="flex flex-col gap-4">
           <DialogHeader>
-            <DialogTitle className="text-[15px]">Rename tenant</DialogTitle>
-            <DialogDescription className="text-[13px]">The slug stays the same.</DialogDescription>
+            <DialogTitle className="text-[15px]">Edit tenant</DialogTitle>
+            <DialogDescription className="text-[13px]">Every service shows this name and logo. The slug stays the same.</DialogDescription>
           </DialogHeader>
+          <ImageUpload
+            label="Logo"
+            preview={<LogoTile name={name || current} src={logo} size={44} />}
+            hasImage={!!logo}
+            onUpload={setImage}
+            onRemove={() => setImage(new Uint8Array())}
+          />
           <Field label="Name" htmlFor="r-name">
             <Input id="r-name" value={name} onChange={(e) => setName(e.target.value)} required autoFocus />
           </Field>
@@ -105,7 +119,7 @@ function RenameDialog({ id, current, open, onOpenChange, onDone }: { id: string;
               Cancel
             </Button>
             <Button type="submit" disabled={busy || !name || name === current}>
-              {busy ? 'Saving…' : 'Rename'}
+              {busy ? 'Saving…' : 'Save name'}
             </Button>
           </DialogFooter>
         </form>
@@ -120,6 +134,7 @@ function MemberPerson({ member: m, link }: { member: Member; link: boolean }) {
     <PersonRow
       name={m.user?.name}
       email={m.user?.email ?? ''}
+      src={m.user?.avatarUrl}
       trailing={m.isOwner ? <Pill className="border-primary/30 text-primary">Owner</Pill> : undefined}
     />
   )
@@ -162,6 +177,7 @@ export default function TenantDetailPage() {
       <PageHeader
         title={t.name}
         crumbs={[{ label: t.name }]}
+        media={<LogoTile name={t.name} src={t.logoUrl} size={44} />}
         meta={<Pill className="font-mono normal-case">{t.slug}</Pill>}
         desc={`${t.memberCount} ${t.memberCount === 1 ? 'member' : 'members'}`}
         action={
@@ -173,7 +189,7 @@ export default function TenantDetailPage() {
             </Button>
             {canRename && (
               <Button variant="outline" size="lg" onClick={() => setRenaming(true)}>
-                <Pencil /> Rename
+                <Pencil /> Edit
               </Button>
             )}
             {isAdmin && (
@@ -322,7 +338,7 @@ export default function TenantDetailPage() {
       </div>
 
       <AddMemberDialog tenantId={id} open={adding} onOpenChange={setAdding} onAdded={reloadAll} />
-      {renaming && <RenameDialog id={id} current={t.name} open={renaming} onOpenChange={setRenaming} onDone={reload} />}
+      {renaming && <RenameDialog id={id} current={t.name} logoUrl={t.logoUrl} open={renaming} onOpenChange={setRenaming} onDone={reload} />}
       <ConfirmDialog
         open={!!pending}
         onOpenChange={(o) => !o && setPending(null)}

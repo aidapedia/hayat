@@ -51,8 +51,10 @@ type Tenant struct {
 	Name        string
 	OwnerID     uuid.UUID
 	MemberCount int
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	// Logo is a media id, empty for none.
+	Logo      string
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 type Member struct {
@@ -88,14 +90,14 @@ func Slugify(name string) string {
 
 const tenantColumns = `t.id, t.region, t.slug, t.name, n.owner_id,
 	(SELECT count(*) FROM group_members m WHERE m.region = t.region AND m.group_id = n.id),
-	t.created_at, t.updated_at`
+	t.logo, t.created_at, t.updated_at`
 
 const tenantFrom = ` FROM tenants t JOIN nodes n ON n.region = t.region AND n.tenant_id = t.id AND n.type = 'hayat/tenant'`
 
 func scanTenant(row pgx.Row) (Tenant, error) {
 	var t Tenant
 	var owner *uuid.UUID
-	err := row.Scan(&t.ID, &t.Region, &t.Slug, &t.Name, &owner, &t.MemberCount, &t.CreatedAt, &t.UpdatedAt)
+	err := row.Scan(&t.ID, &t.Region, &t.Slug, &t.Name, &owner, &t.MemberCount, &t.Logo, &t.CreatedAt, &t.UpdatedAt)
 	if owner != nil {
 		t.OwnerID = *owner
 	}
@@ -475,6 +477,26 @@ func (s *Service) TransferOwnership(ctx context.Context, tenantID, userID uuid.U
 			return err
 		}
 		t, err = s.get(ctx, tx, tenantID)
+		return err
+	})
+	return t, err
+}
+
+// SetLogo points the tenant at a logo kept by internal/media; "" removes it.
+func (s *Service) SetLogo(ctx context.Context, id uuid.UUID, logo, actor string) (Tenant, error) {
+	var t Tenant
+	err := s.store.Tx(ctx, func(tx pgx.Tx) error {
+		region, err := s.regionOf(ctx, tx, id)
+		if err != nil {
+			return err
+		}
+		if _, err := tx.Exec(ctx, `UPDATE tenants SET logo = $3, updated_at = now() WHERE region = $1 AND id = $2`, region, id, logo); err != nil {
+			return err
+		}
+		if err := audit.Write(ctx, tx, region, actor, "tenant.logo_changed", "tenant:"+id.String(), map[string]any{"logo": logo}); err != nil {
+			return err
+		}
+		t, err = s.get(ctx, tx, id)
 		return err
 	})
 	return t, err

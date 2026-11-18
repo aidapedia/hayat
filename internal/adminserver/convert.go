@@ -10,6 +10,7 @@ import (
 	adminv1 "github.com/aidapedia/hayat/gen/go/hayat/admin/v1"
 	"github.com/aidapedia/hayat/internal/audit"
 	"github.com/aidapedia/hayat/internal/identity"
+	"github.com/aidapedia/hayat/internal/media"
 	hoidc "github.com/aidapedia/hayat/internal/oidc"
 	"github.com/aidapedia/hayat/internal/tenancy"
 )
@@ -47,17 +48,17 @@ func toSessions(list []identity.Session, current string) []*adminv1.Session {
 	return out
 }
 
-func toTenant(t tenancy.Tenant) *adminv1.Tenant {
+func (s *Server) toTenant(t tenancy.Tenant) *adminv1.Tenant {
 	return &adminv1.Tenant{
 		Id: t.ID.String(), Slug: t.Slug, Name: t.Name, OwnerId: t.OwnerID.String(), MemberCount: int32(t.MemberCount),
-		Region: t.Region, CreatedAt: ts(t.CreatedAt), UpdatedAt: ts(t.UpdatedAt),
+		Region: t.Region, CreatedAt: ts(t.CreatedAt), UpdatedAt: ts(t.UpdatedAt), LogoUrl: media.Link(s.cfg.Issuer, t.Logo),
 	}
 }
 
-func toTenants(list []tenancy.Tenant) []*adminv1.Tenant {
+func (s *Server) toTenants(list []tenancy.Tenant) []*adminv1.Tenant {
 	out := make([]*adminv1.Tenant, 0, len(list))
 	for _, t := range list {
-		out = append(out, toTenant(t))
+		out = append(out, s.toTenant(t))
 	}
 	return out
 }
