@@ -71,6 +71,9 @@ message CheckRequest {
   Consistency consistency = 4;
   // Return the reason. Off by default to keep answers small.
   bool explain = 5;
+  // Ask about an agent instead of a person: set agent_id and leave user_id
+  // empty. An agent holds less than a person could: see AgentService.
+  string agent_id = 6;
 }
 
 message CheckResponse {
@@ -95,6 +98,8 @@ message PermissionsAtRequest {
   string user_id = 1;
   ResourceRef resource = 2;
   Consistency consistency = 3;
+  // An agent instead of a person, as in CheckRequest.
+  string agent_id = 4;
 }
 
 message PermissionsAtResponse {
@@ -112,6 +117,8 @@ message LookupResourcesRequest {
   int32 page_size = 5;
   string page_token = 6;
   Consistency consistency = 7;
+  // An agent instead of a person, as in CheckRequest.
+  string agent_id = 8;
 }
 
 message LookupResourcesResponse {
@@ -126,8 +133,11 @@ message LookupSubjectsRequest {
 }
 
 message Subject {
+  // A person's id; empty when the subject is an agent.
   string user_id = 1;
   Reason reason = 2;
+  // An agent's id; empty when the subject is a person.
+  string agent_id = 3;
 }
 
 message LookupSubjectsResponse {
@@ -359,6 +369,62 @@ message PolicyEvent {
   int64 rev = 3;
   string kind = 4;
   google.protobuf.Timestamp at = 5;
+}
+
+// ---------- Agents ----------
+
+// Agents are members that aren't people: they hold roles and work in
+// services, but never sign in. Each lives in one tenant and answers to a
+// person there (its sponsor); if the sponsor leaves, it pauses. A service sees
+// only the agents that work in it, and may act as one with an agent token.
+service AgentService {
+  rpc GetAgent(GetAgentRequest) returns (GetAgentResponse);
+  // The tenant's agents that work in the calling service.
+  rpc ListTenantAgents(ListTenantAgentsRequest) returns (ListTenantAgentsResponse);
+  // A short-lived token to act as the agent: sub "agent:<id>", aud the calling
+  // service. Refused unless the agent and its sponsor are active and the agent
+  // works in the calling service. Check every action as the agent (agent_id).
+  rpc IssueAgentToken(IssueAgentTokenRequest) returns (IssueAgentTokenResponse);
+}
+
+message Agent {
+  string id = 1;
+  string tenant_id = 2;
+  string handle = 3;
+  string name = 4;
+  string sponsor_user_id = 5;
+  // active | paused | disabled
+  string status = 6;
+  // Why it isn't active: "sponsor_left", or empty when a person paused it.
+  string status_reason = 7;
+  // The services (namespaces) it works in.
+  repeated string services = 8;
+  repeated string group_ids = 9;
+}
+
+message GetAgentRequest {
+  string agent_id = 1;
+}
+
+message GetAgentResponse {
+  Agent agent = 1;
+}
+
+message ListTenantAgentsRequest {
+  string tenant_id = 1;
+}
+
+message ListTenantAgentsResponse {
+  repeated Agent agents = 1;
+}
+
+message IssueAgentTokenRequest {
+  string agent_id = 1;
+}
+
+message IssueAgentTokenResponse {
+  string access_token = 1;
+  google.protobuf.Timestamp expires_at = 2;
 }
 
 // ---------- Contracts from CI ----------

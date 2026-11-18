@@ -26,6 +26,7 @@ const (
 	PermResourcesGrant    = "hayat.resources.grant"
 	PermContractsApprove  = "hayat.contracts.approve"
 	PermServiceManage     = "hayat.service.manage"
+	PermAgentsManage      = "hayat.agents.manage"
 )
 
 var platformTypes = []NodeType{
@@ -45,6 +46,7 @@ var platformPermissions = []Permission{
 	{Key: PermResourcesGrant, Service: Platform, Scope: TypeGroup, Label: "Grant access", Description: "Give a person or group a role on a node, and take it away."},
 	{Key: PermContractsApprove, Service: Platform, Scope: TypeService, Label: "Approve contracts", Description: "Approve contract versions that touch this service's namespace."},
 	{Key: PermServiceManage, Service: Platform, Scope: TypeService, Label: "Manage the service", Description: "Name the service's owners and rotate its API secret."},
+	{Key: PermAgentsManage, Service: Platform, Scope: TypeTenant, Label: "Manage agents", Description: "Add the tenant's agents, pause them, and change who sponsors them."},
 }
 
 // Built-in roles, with fixed ids so grants made from them survive anything.
@@ -60,7 +62,7 @@ var platformRoles = []Role{
 	{ID: RoleTenantAdmin, Slug: "hayat.tenant-admin", Name: "Tenant admin", Service: Platform,
 		Description: "Runs a tenant: its members, groups, and who may do what in it.",
 		AppliesTo:   []string{TypeRoot, TypeTenant},
-		Permissions: []string{PermTenantManage, PermMembersManage, PermGroupsManage, PermResourcesOrganise, PermResourcesGrant}},
+		Permissions: []string{PermTenantManage, PermMembersManage, PermGroupsManage, PermResourcesOrganise, PermResourcesGrant, PermAgentsManage}},
 	{ID: RoleGroupManager, Slug: "hayat.group-manager", Name: "Group manager", Service: Platform,
 		Description: "Runs one group: its members, what is filed in it, and grants inside it.",
 		AppliesTo:   []string{TypeGroup},

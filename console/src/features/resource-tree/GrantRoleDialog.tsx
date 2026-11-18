@@ -15,7 +15,7 @@ import { Switch } from '@/shared/ui/switch'
 import { allMembers, allTenants } from './api'
 import { Shell, useSubmit } from './dialogs'
 import { NodeIcon } from './NodeIcon'
-import { PrincipalPicker } from './PrincipalPicker'
+import { PrincipalPicker, type PrincipalKind } from './PrincipalPicker'
 import { GROUP, isContainer, nodePath, TENANT, typeLabel } from './tree'
 
 /** "Tenant, Group" — the node types this role may be granted on. */
@@ -47,7 +47,7 @@ export function GrantRoleDialog({ role, onClose, onDone }: { role: Role; onClose
 
   const [nodeId, setNodeId] = useState('')
   const [query, setQuery] = useState('')
-  const [kind, setKind] = useState<'user' | 'group'>('user')
+  const [kind, setKind] = useState<PrincipalKind>('user')
   const [principal, setPrincipal] = useState('')
   const [inherit, setInherit] = useState(true)
   const [expires, setExpires] = useState('')
@@ -158,6 +158,7 @@ export function GrantRoleDialog({ role, onClose, onDone }: { role: Role; onClose
 
       <Field label="To">
         <PrincipalPicker
+          tenantId={tenantId}
           kind={kind}
           principal={principal}
           members={members.data ?? []}

@@ -26,6 +26,7 @@ import (
 	"github.com/zitadel/oidc/v3/pkg/op"
 
 	"github.com/aidapedia/hayat/gen/go/hayat/admin/v1/adminv1connect"
+	"github.com/aidapedia/hayat/internal/agents"
 	"github.com/aidapedia/hayat/internal/audit"
 	"github.com/aidapedia/hayat/internal/authz"
 	"github.com/aidapedia/hayat/internal/catalog"
@@ -102,6 +103,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle(adminv1connect.NewTreeAdminServiceHandler(&treeAdminService{s}, user))
 	mux.Handle(adminv1connect.NewLoginPageServiceHandler(&loginPageService{s}, user))
 	mux.Handle(adminv1connect.NewSignInServiceHandler(&signInService{s}, user))
+	mux.Handle(adminv1connect.NewAgentServiceHandler(&agentService{s: s, agents: agents.New(s.store)}, user))
 
 	// What the console needs to start its sign-in: where Hayat is and which
 	// client it is. Public on purpose; nothing here is secret.

@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 import { FolderTree } from 'lucide-react'
 import { TenantService } from '@/shared/api/gen/hayat/admin/v1/admin_pb'
 import { useMe } from '@/features/auth'
+import { TenantAgents } from '@/features/agents'
 import { TenantSignIn } from '@/features/sign-in'
 import { useClient } from '@/shared/api/client'
 import { useQuery } from '@/shared/hooks/use-query'
@@ -40,10 +41,11 @@ export default function TenantDetailPage() {
 
   const tabs: PageTab[] = [
     { to: base, label: `Members · ${t.memberCount}`, end: true },
+    { to: `${base}/agents`, label: 'Agents' },
     ...(canEdit ? [{ to: `${base}/sign-in`, label: 'Company sign-in' }] : []),
     { to: `${base}/settings`, label: settingsLabel },
   ]
-  const known = ['', 'settings', ...(canEdit ? ['sign-in'] : [])]
+  const known = ['', 'agents', 'settings', ...(canEdit ? ['sign-in'] : [])]
   if (!known.includes(tab)) return <Navigate to={base} replace />
 
   const setLogo = canEdit
@@ -64,6 +66,9 @@ export default function TenantDetailPage() {
         </Section>
         </Narrow>
       )
+      break
+    case 'agents':
+      body = <TenantAgents tenant={t} />
       break
     case 'settings':
       body = <TenantSettings tenant={t} canEdit={canEdit} canDelete={isAdmin} onChanged={reload} />

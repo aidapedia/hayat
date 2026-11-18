@@ -13,7 +13,7 @@ import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Combobox } from '@/shared/ui/combobox'
 import { Switch } from '@/shared/ui/switch'
-import { memberOption, PrincipalPicker } from './PrincipalPicker'
+import { memberOption, PrincipalPicker, type PrincipalKind } from './PrincipalPicker'
 import { GROUP, nodePath } from './tree'
 
 
@@ -178,7 +178,7 @@ export function GrantDialog({
   const tree = useClient(TreeAdminService)
   const catalog = useClient(CatalogService)
   const { data: roles } = useQuery(() => catalog.listRoles({}).then((r) => r.roles), [catalog])
-  const [kind, setKind] = useState<'user' | 'group'>('user')
+  const [kind, setKind] = useState<PrincipalKind>('user')
   const [principal, setPrincipal] = useState('')
   const [role, setRole] = useState('')
   const [inherit, setInherit] = useState(true)
@@ -200,6 +200,7 @@ export function GrantDialog({
     <Shell title={`Grant a role on ${node.name}`} submitLabel="Grant" busy={busy} disabled={!principal || !role} onClose={onClose} onSubmit={submit}>
       <Field label="To">
         <PrincipalPicker
+          tenantId={node.tenantId}
           kind={kind}
           principal={principal}
           members={members}

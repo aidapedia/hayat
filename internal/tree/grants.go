@@ -16,6 +16,7 @@ import (
 const (
 	PrincipalUser  = "user"
 	PrincipalGroup = "group"
+	PrincipalAgent = "agent"
 )
 
 // Grant is a role given to a principal on a node. It is what was granted
@@ -146,8 +147,27 @@ func (t *Service) AddGrant(ctx context.Context, in GrantInput, actor string) (Gr
 			if (p.Type != catalog.TypeGroup && p.Type != catalog.TypeTenant) || p.TenantID == nil || *p.TenantID != *n.TenantID {
 				return errs.New("grant to a group of this tenant, or to the tenant itself for everyone in it")
 			}
+		case PrincipalAgent:
+			// An agent works only inside its own tenant, and never holds what
+			// only people may: Hayat's own permissions or a people_only one.
+			if n.TenantID == nil {
+				return errs.New("an agent can only be granted roles inside its tenant")
+			}
+			var tenant uuid.UUID
+			err := tx.QueryRow(ctx, `SELECT tenant_id FROM agent_refs WHERE id = $1`, in.PrincipalID).Scan(&tenant)
+			if err != nil {
+				return errs.New("that agent doesn't exist")
+			}
+			if tenant != *n.TenantID {
+				return errs.New("that agent belongs to another tenant")
+			}
+			for _, p := range role.Permissions {
+				if perm := snap.Permissions[p]; perm.PeopleOnly || perm.Service == catalog.Platform {
+					return errs.Newf("the role %q holds %q, which only people may hold", role.Name, p)
+				}
+			}
 		default:
-			return errs.New("a principal is a user or a group")
+			return errs.New("a principal is a user, a group or an agent")
 		}
 		g, err = scanGrant(tx.QueryRow(ctx, `INSERT INTO grants (region, id, tenant_id, node_id, principal_type, principal_id, role_id, inherit, expires_at, created_by)
 			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)

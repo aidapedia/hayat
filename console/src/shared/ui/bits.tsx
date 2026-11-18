@@ -72,6 +72,7 @@ export function PersonRow({ name, email, src, trailing }: { name?: string; email
 const STATUS: Record<string, { label: string; className: string }> = {
   active: { label: 'Active', className: 'border-success/30 bg-success/10 text-success' },
   pending: { label: 'Pending', className: 'border-warning/30 bg-warning/10 text-warning' },
+  paused: { label: 'Paused', className: 'border-warning/30 bg-warning/10 text-warning' },
   disabled: { label: 'Disabled', className: 'border-destructive/30 bg-destructive/10 text-destructive' },
   next: { label: 'Next', className: 'border-border bg-muted text-muted-foreground' },
   retired: { label: 'Retired', className: 'border-border bg-muted text-faint' },

@@ -143,6 +143,17 @@ built. Clerk gap roadmap: https://claude.ai/artifact/DVzV22FxJ787TwARh6cgbN
   they bloat backups and YugabyteDB would copy every image to every region.
   Auth and admin `Check` the store at boot; api and worker never touch it.
 - **The admin API accepts only console tokens** and checks the session live on every call.
+- **Agents are a member kind of their own, never rows in `users`** (`internal/agents`).
+  An agent lives in one tenant, answers to a sponsor on its roster, never signs in,
+  and is kept out of every people table: its tenant roster is implied by its row and
+  its groups are `agent_groups` — `group_members` stays people only, so no member
+  list, count or access list has to skip agents. The engine answers for an agent
+  only inside its tenant, only while it and its sponsor are active, never as an
+  owner, never through a grant to the whole tenant ("everyone" means people), and
+  never Hayat's own or a `people_only` permission; `AddGrant` refuses such roles
+  too. A sponsor leaving pauses their agents (`sponsor_left`). A service gets an
+  agent's token (`sub: agent:<id>`, 1 h) only for an agent that works in it, and
+  sees only those agents. `people_only` on a permission can be turned on, never off.
 
 ## Where things are
 ```
@@ -156,6 +167,7 @@ internal/migrate      append-only runner over migrations/<engine>
 internal/identity     users, emailed links, sessions, factors (TOTP, passkeys, recovery codes),
                       sign-in challenges, lockout, breached-password check, idle timeout
 internal/tenancy      tenants, the tenant node, members
+internal/agents       agents: sponsor, status, the services they work in, agent_groups
 internal/oidc         zitadel/oidc storage: clients, keys, auth requests, tokens
 internal/revision     per-tenant revisions + policy events (Watch)
 internal/catalog      node types, permissions, roles, services, contracts

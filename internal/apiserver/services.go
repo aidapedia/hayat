@@ -77,7 +77,7 @@ func toReason(r authz.Reason) *authzv1.Reason {
 type authzService struct{ s *Server }
 
 func (a *authzService) check(ctx context.Context, req *authzv1.CheckRequest) (*authzv1.CheckResponse, error) {
-	user, err := parseUser(req.UserId)
+	user, err := parseSubject(req.UserId, req.AgentId)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +125,7 @@ func (a *authzService) BatchCheck(ctx context.Context, req *connect.Request[auth
 }
 
 func (a *authzService) PermissionsAt(ctx context.Context, req *connect.Request[authzv1.PermissionsAtRequest]) (*connect.Response[authzv1.PermissionsAtResponse], error) {
-	user, err := parseUser(req.Msg.UserId)
+	user, err := parseSubject(req.Msg.UserId, req.Msg.AgentId)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +146,7 @@ func (a *authzService) PermissionsAt(ctx context.Context, req *connect.Request[a
 
 func (a *authzService) LookupResources(ctx context.Context, req *connect.Request[authzv1.LookupResourcesRequest]) (*connect.Response[authzv1.LookupResourcesResponse], error) {
 	m := req.Msg
-	user, err := parseUser(m.UserId)
+	user, err := parseSubject(m.UserId, m.AgentId)
 	if err != nil {
 		return nil, err
 	}
@@ -192,6 +192,10 @@ func (a *authzService) LookupSubjects(ctx context.Context, req *connect.Request[
 	}
 	resp := &authzv1.LookupSubjectsResponse{}
 	for _, sub := range subjects {
+		if sub.Agent {
+			resp.Subjects = append(resp.Subjects, &authzv1.Subject{AgentId: sub.UserID.String(), Reason: toReason(sub.Reason)})
+			continue
+		}
 		resp.Subjects = append(resp.Subjects, &authzv1.Subject{UserId: sub.UserID.String(), Reason: toReason(sub.Reason)})
 	}
 	return connect.NewResponse(resp), nil

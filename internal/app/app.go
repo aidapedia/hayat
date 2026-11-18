@@ -135,7 +135,7 @@ func (a *App) AdminHandler() http.Handler {
 }
 
 func (a *App) APIHandler() http.Handler {
-	return apiserver.New(a.Cfg, a.Store, a.Catalog, a.Tree, a.Engine, a.IDs, a.Tenants, a.Storage, a.Log).Handler()
+	return apiserver.New(a.Cfg, a.Store, a.Catalog, a.Tree, a.Engine, a.IDs, a.Tenants, a.Storage, a.Keys, a.Log).Handler()
 }
 
 func (a *App) healthHandler() http.Handler {

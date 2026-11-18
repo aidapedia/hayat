@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
-import { ChevronRight, X } from 'lucide-react'
+import { Bot, ChevronRight, X } from 'lucide-react'
 import { TreeAdminService, type Grant, type Node } from '@/shared/api/gen/hayat/admin/v1/policy_pb'
 import { useClient } from '@/shared/api/client'
 import { useQuery } from '@/shared/hooks/use-query'
@@ -34,10 +34,21 @@ function GroupGrantChip({ grant, tenantId, onRemove }: { grant: Grant; tenantId:
   const scope = `${grant.inherit ? 'Here and below' : 'This node only'}${grant.expiresAt ? ` · until ${formatDate(grant.expiresAt)}` : ''}`
   return (
     <span title={scope} className="inline-flex h-6 items-center gap-1.5 rounded-full border bg-background pr-1 pl-1.5 text-[11px]">
-      <NodeIcon type={GROUP} className="size-3.5 text-muted-foreground" />
-      <Link to={nodeHref(tenantId, grant.principalId)} className="font-medium hover:underline">
-        {grant.principalName}
-      </Link>
+      {grant.principalType === 'agent' ? (
+        <>
+          <Bot className="size-3.5 text-muted-foreground" />
+          <Link to={`/tenants/${tenantId}/agents`} className="font-medium hover:underline">
+            {grant.principalName}
+          </Link>
+        </>
+      ) : (
+        <>
+          <NodeIcon type={GROUP} className="size-3.5 text-muted-foreground" />
+          <Link to={nodeHref(tenantId, grant.principalId)} className="font-medium hover:underline">
+            {grant.principalName}
+          </Link>
+        </>
+      )}
       {!grant.inherit && <span className="text-faint">only here</span>}
       {onRemove ? (
         <button

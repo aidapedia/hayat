@@ -1,0 +1,133 @@
+// A tenant's agents: members that aren't people. They hold roles and work in
+// services, never sign in, and always answer to a person on the tenant's
+// roster (their sponsor). Listing is open to the tenant's members; every
+// change needs hayat.agents.manage on the tenant.
+syntax = "proto3";
+
+package hayat.admin.v1;
+
+import "google/protobuf/timestamp.proto";
+import "hayat/admin/v1/admin.proto";
+
+option go_package = "github.com/aidapedia/hayat/gen/go/hayat/admin/v1;adminv1";
+
+service AgentService {
+  rpc ListAgents(ListAgentsRequest) returns (ListAgentsResponse);
+  rpc GetAgent(GetAgentRequest) returns (GetAgentResponse);
+  rpc CreateAgent(CreateAgentRequest) returns (CreateAgentResponse);
+  // Its name and the services it works in.
+  rpc UpdateAgent(UpdateAgentRequest) returns (UpdateAgentResponse);
+  // Pause, resume or disable. Resuming needs a sponsor still on the roster.
+  rpc SetAgentStatus(SetAgentStatusRequest) returns (SetAgentStatusResponse);
+  // Name a new sponsor. An agent paused because its sponsor left resumes.
+  rpc ReassignAgent(ReassignAgentRequest) returns (ReassignAgentResponse);
+  rpc DeleteAgent(DeleteAgentRequest) returns (DeleteAgentResponse);
+  rpc AddAgentToGroup(AddAgentToGroupRequest) returns (AddAgentToGroupResponse);
+  rpc RemoveAgentFromGroup(RemoveAgentFromGroupRequest) returns (RemoveAgentFromGroupResponse);
+}
+
+message AgentGroup {
+  string id = 1;
+  string name = 2;
+}
+
+message Agent {
+  string id = 1;
+  string tenant_id = 2;
+  string handle = 3;
+  string name = 4;
+  User sponsor = 5;
+  // active | paused | disabled
+  string status = 6;
+  // "sponsor_left", or empty when a person paused it.
+  string status_reason = 7;
+  repeated string services = 8;
+  repeated AgentGroup groups = 9;
+  string created_by = 10;
+  google.protobuf.Timestamp created_at = 11;
+  google.protobuf.Timestamp updated_at = 12;
+}
+
+message ListAgentsRequest {
+  string tenant_id = 1;
+}
+
+message ListAgentsResponse {
+  repeated Agent agents = 1;
+  // Whether the caller may add and change them (hayat.agents.manage).
+  bool can_manage = 2;
+}
+
+message GetAgentRequest {
+  string id = 1;
+}
+
+message GetAgentResponse {
+  Agent agent = 1;
+  bool can_manage = 2;
+}
+
+message CreateAgentRequest {
+  string tenant_id = 1;
+  string handle = 2;
+  string name = 3;
+  string sponsor_user_id = 4;
+  repeated string services = 5;
+  repeated string group_ids = 6;
+}
+
+message CreateAgentResponse {
+  Agent agent = 1;
+}
+
+message UpdateAgentRequest {
+  string id = 1;
+  string name = 2;
+  repeated string services = 3;
+}
+
+message UpdateAgentResponse {
+  Agent agent = 1;
+}
+
+message SetAgentStatusRequest {
+  string id = 1;
+  string status = 2;
+}
+
+message SetAgentStatusResponse {
+  Agent agent = 1;
+}
+
+message ReassignAgentRequest {
+  string id = 1;
+  string sponsor_user_id = 2;
+}
+
+message ReassignAgentResponse {
+  Agent agent = 1;
+}
+
+message DeleteAgentRequest {
+  string id = 1;
+}
+
+message DeleteAgentResponse {}
+
+message AddAgentToGroupRequest {
+  string id = 1;
+  string group_id = 2;
+}
+
+message AddAgentToGroupResponse {
+  Agent agent = 1;
+}
+
+message RemoveAgentFromGroupRequest {
+  string id = 1;
+  string group_id = 2;
+}
+
+message RemoveAgentFromGroupResponse {
+  Agent agent = 1;
+}
