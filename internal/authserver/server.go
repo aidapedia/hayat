@@ -26,6 +26,7 @@ import (
 	"github.com/aidapedia/hayat/internal/catalog"
 	"github.com/aidapedia/hayat/internal/config"
 	"github.com/aidapedia/hayat/internal/crypto"
+	"github.com/aidapedia/hayat/internal/federation"
 	"github.com/aidapedia/hayat/internal/identity"
 	"github.com/aidapedia/hayat/internal/loginpage"
 	"github.com/aidapedia/hayat/internal/media"
@@ -54,6 +55,7 @@ type Server struct {
 	pages     *loginpage.Service
 	cat       *catalog.Service
 	media     *media.Service
+	fed       *federation.Service
 	provider  *op.Provider
 	limiter   ratelimit.Limiter
 	log       *slog.Logger
@@ -61,10 +63,10 @@ type Server struct {
 }
 
 func New(cfg config.Config, s *store.Store, ids *identity.Service, storage *hoidc.Storage, clients *hoidc.Clients,
-	pages *loginpage.Service, cat *catalog.Service, med *media.Service, provider *op.Provider, limiter ratelimit.Limiter, log *slog.Logger) (*Server, error) {
-	srv := &Server{cfg: cfg, store: s, ids: ids, storage: storage, clients: clients, pages: pages, cat: cat, media: med, provider: provider,
+	pages *loginpage.Service, cat *catalog.Service, med *media.Service, fed *federation.Service, provider *op.Provider, limiter ratelimit.Limiter, log *slog.Logger) (*Server, error) {
+	srv := &Server{cfg: cfg, store: s, ids: ids, storage: storage, clients: clients, pages: pages, cat: cat, media: med, fed: fed, provider: provider,
 		limiter: limiter, log: log, templates: map[string]*template.Template{}}
-	for _, name := range []string{"login", "signup", "password", "forgot", "setup", "message"} {
+	for _, name := range []string{"login", "signup", "password", "forgot", "setup", "message", "sso"} {
 		t, err := template.ParseFS(templateFS, "templates/layout.html", "templates/"+name+".html")
 		if err != nil {
 			return nil, err
@@ -95,6 +97,11 @@ func (s *Server) Handler() http.Handler {
 	r.Get("/logout", s.logoutPage)
 	r.Post("/logout", s.logoutSubmit)
 	r.Get("/logged-out", s.loggedOutPage)
+	r.Get("/sso", s.companyPage)
+	r.Post("/sso", s.companySubmit)
+	r.Get("/sso/start/{id}", s.ssoStart)
+	r.Get("/sso/link/{id}", s.ssoLink)
+	r.Get("/sso/callback", s.ssoCallback)
 	r.Get("/media/{id}", s.mediaFile)
 	r.Get("/brand/asset/{id}", s.mediaFile) // login page logos published before media existed
 	r.Get("/preview/login", s.previewPage)
@@ -132,6 +139,10 @@ type page struct {
 	Nonce string
 	// A preview of a draft: forms are disabled and the console may frame it.
 	Preview bool
+
+	// The login page's other ways in: Google, GitHub, company SSO.
+	Providers  []providerButton
+	CompanyURL string
 }
 
 func (s *Server) render(w http.ResponseWriter, r *http.Request, name string, p page, status int) {
@@ -139,6 +150,9 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, name string, p p
 		p.CSRF = s.csrfToken(w, r)
 	}
 	p.ConsoleURL = s.cfg.ConsoleURL
+	if name == "login" {
+		s.signInOptions(r.Context(), &p)
+	}
 	styles, frames := "'self'", "'none'"
 	if p.Brand != nil {
 		p.Nonce = crypto.NewToken()
@@ -329,6 +343,11 @@ func (s *Server) loginSubmit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// A company that forces its own sign-in: no password for its people, here or anywhere.
+	if prov, enforced := s.enforcedProvider(r.Context(), email); enforced {
+		s.toProvider(w, r, prov, id, nil, email)
+		return
+	}
 	u, err := s.ids.Authenticate(r.Context(), email, r.PostFormValue("password"))
 	if err != nil {
 		switch {
@@ -375,6 +394,11 @@ func (s *Server) signupSubmit(w http.ResponseWriter, r *http.Request) {
 	if !s.limiter.Allow(r.Context(), "signup:ip:"+clientIP(r), 10, time.Hour) {
 		p.Error = "Too many sign-ups from your network. Try again later."
 		s.render(w, r, "signup", p, http.StatusTooManyRequests)
+		return
+	}
+	if prov, enforced := s.enforcedProvider(r.Context(), email); enforced {
+		p.Error = federation.DomainOf(email) + " signs in with " + prov.Name + ". Use Continue with company SSO on the sign-in page."
+		s.render(w, r, "signup", p, http.StatusBadRequest)
 		return
 	}
 	if err := s.ids.Register(r.Context(), email, name); err != nil {
@@ -425,7 +449,9 @@ func (s *Server) forgotSubmit(w http.ResponseWriter, r *http.Request) {
 			Error: "Too many reset requests. Try again in an hour."}, http.StatusTooManyRequests)
 		return
 	}
-	if err := s.ids.RequestPasswordReset(r.Context(), email); err != nil {
+	if _, enforced := s.enforcedProvider(r.Context(), email); enforced {
+		email = strings.TrimSpace(email) // no password to reset: the company signs them in; answer the same
+	} else if err := s.ids.RequestPasswordReset(r.Context(), email); err != nil {
 		if errors.Is(err, identity.ErrInvalidEmail) {
 			s.render(w, r, "forgot", page{Title: "Reset password", Heading: "Reset your password", Email: email, Error: err.Error()}, http.StatusBadRequest)
 			return

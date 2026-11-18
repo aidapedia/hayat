@@ -21,6 +21,7 @@ import (
 	"github.com/aidapedia/hayat/internal/catalog"
 	"github.com/aidapedia/hayat/internal/config"
 	"github.com/aidapedia/hayat/internal/crypto"
+	"github.com/aidapedia/hayat/internal/federation"
 	"github.com/aidapedia/hayat/internal/identity"
 	"github.com/aidapedia/hayat/internal/loginpage"
 	"github.com/aidapedia/hayat/internal/mail"
@@ -57,6 +58,7 @@ type App struct {
 	Engine  *authz.Engine
 	Pages   *loginpage.Service
 	Media   *media.Service
+	Fed     *federation.Service
 	Log     *slog.Logger
 }
 
@@ -78,11 +80,12 @@ func New(cfg config.Config, s *store.Store, log *slog.Logger) (*App, error) {
 		return nil, err
 	}
 	med := media.New(s, blobs, cfg.Issuer, log)
+	tenants := tenancy.New(s)
 	return &App{
-		Cfg: cfg, Store: s, IDs: ids, Tenants: tenancy.New(s), Clients: clients, Keys: keys, Log: log,
+		Cfg: cfg, Store: s, IDs: ids, Tenants: tenants, Clients: clients, Keys: keys, Log: log,
 		Storage: hoidc.NewStorage(s, ids, clients, keys, cfg.AccessTokenTTL, cfg.RefreshTokenTTL),
 		Revs:    revs, Catalog: cat, Tree: tree.New(s, cat, revs), Engine: authz.New(s, cat, ids, revs),
-		Pages: loginpage.New(s, cfg.MasterKey, med), Media: med,
+		Pages: loginpage.New(s, cfg.MasterKey, med), Media: med, Fed: federation.New(s, box, ids, tenants, cfg.Issuer, cfg.Dev, log),
 	}, nil
 }
 
@@ -108,7 +111,7 @@ func (a *App) AuthHandler(ctx context.Context) (http.Handler, func(), error) {
 		closeLimiter()
 		return nil, nil, err
 	}
-	srv, err := authserver.New(a.Cfg, a.Store, a.IDs, a.Storage, a.Clients, a.Pages, a.Catalog, a.Media, provider, limiter, a.Log)
+	srv, err := authserver.New(a.Cfg, a.Store, a.IDs, a.Storage, a.Clients, a.Pages, a.Catalog, a.Media, a.Fed, provider, limiter, a.Log)
 	if err != nil {
 		closeLimiter()
 		return nil, nil, err
@@ -123,7 +126,7 @@ func (a *App) AuthHandler(ctx context.Context) (http.Handler, func(), error) {
 
 func (a *App) AdminHandler() http.Handler {
 	return adminserver.New(a.Cfg, adminserver.Deps{Store: a.Store, IDs: a.IDs, Tenants: a.Tenants, Clients: a.Clients, Keys: a.Keys,
-		Storage: a.Storage, Catalog: a.Catalog, Tree: a.Tree, Engine: a.Engine, Pages: a.Pages, Media: a.Media}, a.Log).Handler()
+		Storage: a.Storage, Catalog: a.Catalog, Tree: a.Tree, Engine: a.Engine, Pages: a.Pages, Media: a.Media, Fed: a.Fed}, a.Log).Handler()
 }
 
 func (a *App) APIHandler() http.Handler {

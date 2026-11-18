@@ -2,8 +2,8 @@
 
 Identity provider + tree-based RBAC shared by many services. Design and roadmap:
 https://claude.ai/artifact/AceR8JGbXjPdNE2mz8WHck. Phases 1 (identity) and 2
-(resource tree, contracts, service API, SDKs) are built; phase 3 (social and
-enterprise SSO, MFA) is next.
+(resource tree, contracts, service API, SDKs) are built; of phase 3, login
+pages, Google/GitHub and company SSO are built, MFA is next.
 
 ## Standards
 - Simple and readable over clever. Start minimal, verify, then grow.
@@ -96,6 +96,19 @@ enterprise SSO, MFA) is next.
   readable on the server; logos are PNG/JPEG/WebP only (an SVG on the sign-in
   origin could run script); the brand's `<style>` goes through a CSP nonce. A
   failure to read a design falls back to Hayat's page, never blocks sign-in.
+- **Signing in with another account goes through `internal/federation`**, and
+  ends in an ordinary Hayat session (`amr: ["fed"]`); services never talk to
+  Google or a company's IdP. Two levels: the instance's providers (Google,
+  GitHub, one company OIDC — instance admins, trusted for any verified email)
+  and a tenant's own OIDC providers (`hayat.tenant.manage`), which only ever
+  sign in addresses at that tenant's DNS-verified domains. The account is
+  decided in one fixed order (`SignIn`): linked (provider, subject) → linking
+  from Account → a provider-verified email only → never an instance admin by
+  email → new account (company provider only with JIT, which joins the
+  tenant). A domain set to `enforce` refuses the password at login, sign-up
+  and reset, server-side — except for instance admins, so a broken IdP can't
+  lock out who fixes it. Every trip is PKCE + a single-use state bound to the
+  browser by the `hayat_sso` cookie. Removing a person's last way in is refused.
 - **Every uploaded image goes through `internal/media`**: decoded, size-capped,
   resized and re-encoded (so EXIF and anything that isn't pixels is dropped),
   then served by the auth role at `<issuer>/media/<id>` — never a bucket URL, so
@@ -126,6 +139,7 @@ internal/authz        the decision engine: At, Check, LookupResources, LookupSub
 internal/apiserver    the api role: gRPC/Connect for services (proto/hayat/authz/v1)
 internal/authserver   the auth role: provider + hosted pages (+ a service's login page, /preview/login, /brand/asset)
 internal/loginpage    each service's login page: draft, published versions, logos, preview tokens, theme CSS
+internal/federation   sign in with Google, GitHub, company OIDC: providers (sealed secrets), linked accounts, verified domains
 internal/media        uploaded images (avatars, tenant/service/login-page logos): checks + resizes, Store = local | s3 (SigV4)
 internal/adminserver  the admin role: Connect handlers for proto/hayat/admin/v1
 internal/worker       outbox mail, cleanup, key rotation (leased)

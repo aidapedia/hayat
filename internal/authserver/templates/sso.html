@@ -1,0 +1,12 @@
+{{define "content"}}
+<form method="post" action="/sso" class="form" novalidate>
+  <input type="hidden" name="csrf" value="{{.CSRF}}">
+  <input type="hidden" name="authRequestID" value="{{.AuthRequestID}}">
+  <label class="field">
+    <span>Work email</span>
+    <input type="email" name="email" value="{{.Email}}" autocomplete="username" required autofocus>
+  </label>
+  <button type="submit" class="btn">Continue</button>
+</form>
+{{end}}
+{{define "foot"}}<a href="/login{{if .AuthRequestID}}?authRequestID={{.AuthRequestID}}{{end}}">Sign in another way</a>{{end}}

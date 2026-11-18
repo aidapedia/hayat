@@ -24,6 +24,7 @@ const RoleEditorPage = lazy(() => import('@/features/roles/RoleEditorPage'))
 const ServicesPage = lazy(() => import('@/features/services/ServicesPage'))
 const ServiceDetailPage = lazy(() => import('@/features/services/ServiceDetailPage'))
 const ResourceTreePage = lazy(() => import('@/features/resource-tree/ResourceTreePage'))
+const SignInMethodsPage = lazy(() => import('@/features/sign-in/SignInMethodsPage'))
 
 /** The tree used to live on the tenant page; its old addresses still land on the same node. */
 function ToResourceTree() {
@@ -89,6 +90,7 @@ export default function App() {
                     ['/services', <ServicesPage key="s" />],
                     // One page for a service and its tabs: /contract, /contract/publish, /clients, /clients/:clientId, /owners.
                     ['/services/:id/:tab?/:sub?', <ServiceDetailPage key="sd" />],
+                    ['/sign-in-methods', <SignInMethodsPage key="sim" />],
                     ['/keys', <KeysPage key="k" />],
                     ['/audit', <AuditPage key="a" />],
                   ].map(([path, el]) => (
@@ -105,7 +107,7 @@ export default function App() {
                   {/* A tenant's owner and members open these too; the server checks each action. */}
                   {[
                     ['/tenants', <TenantsPage key="t" />],
-                    ['/tenants/:id', <TenantDetailPage key="td" />],
+                    ['/tenants/:id/:tab?', <TenantDetailPage key="td" />],
                     ['/tenants/:id/resources', <ToResourceTree key="tr" />],
                     ['/tenants/:id/resources/:nodeId', <ToResourceTree key="trn" />],
                     // One route, so moving between nodes keeps the page (and the open branches) mounted.

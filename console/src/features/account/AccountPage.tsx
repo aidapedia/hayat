@@ -5,6 +5,7 @@ import { AccountService } from '@/shared/api/gen/hayat/admin/v1/admin_pb'
 import { errorMessage, useClient } from '@/shared/api/client'
 import { useQuery } from '@/shared/hooks/use-query'
 import { useAuth, useMe } from '@/features/auth'
+import { MySignInMethods } from '@/features/sign-in'
 import { ErrorState, Field, LoadingState, PersonAvatar, Pill } from '@/shared/ui/bits'
 import { Button } from '@/shared/ui/button'
 import { ImageUpload } from '@/shared/ui/image-upload'
@@ -122,6 +123,9 @@ export default function AccountPage() {
             }
           >
             {null}
+          </Section>
+          <Section title="Sign-in methods" desc="Your password, and the accounts you can sign in with instead.">
+            <MySignInMethods />
           </Section>
           <Section title="Password">
             <PasswordForm hasPassword={user.hasPassword} />

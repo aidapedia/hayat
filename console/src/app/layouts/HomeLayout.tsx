@@ -15,6 +15,7 @@ import {
   FolderTree,
   UserRound,
   Users,
+  LogIn,
 } from 'lucide-react'
 import { useAuth, useMe } from '@/features/auth'
 import { PersonAvatar } from '@/shared/ui/bits'
@@ -91,6 +92,7 @@ const ADMIN_NAV: NavModel = {
     {
       group: 'Security',
       items: [
+        { label: 'Sign-in methods', Icon: LogIn, path: '/sign-in-methods' },
         { label: 'Signing keys', Icon: KeyRound, path: '/keys' },
         { label: 'Audit log', Icon: ScrollText, path: '/audit' },
       ],

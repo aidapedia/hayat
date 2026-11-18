@@ -95,7 +95,16 @@ Contributing: [CONTRIBUTING.md](CONTRIBUTING.md)
   `picture` claim; a tenant's logo reaches services in `ListUserTenants`.
   Stored on a volume or in an S3-compatible bucket, never in the database.
 
-Not yet: Google/GitHub and enterprise SSO, MFA (rest of phase 3), multi-region on
+- **Google, GitHub and company SSO**: an instance admin sets up Google, GitHub
+  and one company OpenID Connect provider (Okta, Entra ID, Keycloak…) for
+  everyone at Sign-in methods. A tenant can connect its own provider instead,
+  prove its email domains with a DNS TXT record, and make company sign-in the
+  only way in for them (instance admins keep their password). New people from
+  Google or GitHub get an account; a company provider creates them only when
+  it's allowed to, and adds them to the tenant. People link and unlink accounts
+  at Account → Sign-in methods. Each provider redirects to `<issuer>/sso/callback`.
+
+Not yet: MFA (rest of phase 3), multi-region on
 YugabyteDB (phase 4), a shared Redis decision cache (each api pod caches in
 memory today).
 

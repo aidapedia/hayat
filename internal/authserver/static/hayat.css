@@ -139,6 +139,19 @@ a { color: var(--link, var(--accent-bright)); }
 .pw-toggle:hover { color: var(--ink); background: var(--edge); }
 .pw-toggle:focus-visible { outline: 2px solid var(--accent-bright); outline-offset: 1px; }
 
+/* ---------- Other ways in: Google, GitHub, company SSO ---------- */
+.or { display: flex; align-items: center; gap: 10px; margin: 18px 0 14px; font-size: 12px; color: var(--ink-faint); }
+.or::before, .or::after { content: ""; flex: 1; height: 1px; background: var(--edge); }
+.providers { display: flex; flex-direction: column; gap: 8px; }
+.btn-provider {
+  gap: 8px; margin-top: 0; width: 100%;
+  background: transparent; color: var(--ink); border: 1px solid var(--edge-strong);
+  font-weight: 500;
+}
+a.btn.btn-provider { margin-top: 0; }
+.btn-provider:hover { background: var(--elevated); }
+.btn-provider svg { flex: none; }
+
 /* ---------- A service's login page (internal/loginpage) ----------
    Hayat's page above is the centered layout. A brand only sets variables:
    colors, --radius, --font. Nothing here depends on what a service typed. */
