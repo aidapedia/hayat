@@ -1,0 +1,183 @@
+// Signing in with another account. The instance's admins set up Google,
+// GitHub and one company OpenID Connect provider for everyone; a tenant's
+// admins (hayat.tenant.manage) may connect the tenant's own provider, prove
+// its email domains with a DNS record, and choose whether company sign-in is
+// offered beside the password or the only way in. Anyone signed in lists and
+// unlinks their own linked accounts.
+syntax = "proto3";
+
+package hayat.admin.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/aidapedia/hayat/gen/go/hayat/admin/v1;adminv1";
+
+service SignInService {
+  // Instance admins.
+  rpc ListInstanceProviders(ListInstanceProvidersRequest) returns (ListInstanceProvidersResponse);
+  // Instance admins. The first save of a kind needs the client secret; later
+  // saves keep it unless a new one is given.
+  rpc SaveInstanceProvider(SaveInstanceProviderRequest) returns (SaveInstanceProviderResponse);
+
+  // hayat.tenant.manage on the tenant, for the rest.
+  rpc GetTenantSignIn(GetTenantSignInRequest) returns (GetTenantSignInResponse);
+  rpc SaveTenantProvider(SaveTenantProviderRequest) returns (SaveTenantProviderResponse);
+  rpc DeleteTenantProvider(DeleteTenantProviderRequest) returns (DeleteTenantProviderResponse);
+  // Answers the TXT record that proves the tenant owns the domain.
+  rpc AddTenantDomain(AddTenantDomainRequest) returns (AddTenantDomainResponse);
+  // Looks the TXT record up now.
+  rpc VerifyTenantDomain(VerifyTenantDomainRequest) returns (VerifyTenantDomainResponse);
+  rpc SetTenantDomainSignIn(SetTenantDomainSignInRequest) returns (SetTenantDomainSignInResponse);
+  rpc RemoveTenantDomain(RemoveTenantDomainRequest) returns (RemoveTenantDomainResponse);
+
+  // The caller's own ways in.
+  rpc ListMySignInMethods(ListMySignInMethodsRequest) returns (ListMySignInMethodsResponse);
+  // Refused when it is the caller's last way in.
+  rpc UnlinkMyAccount(UnlinkMyAccountRequest) returns (UnlinkMyAccountResponse);
+}
+
+message SignInProvider {
+  string id = 1;
+  // Empty for the instance's own.
+  string tenant_id = 2;
+  // google | github | oidc
+  string kind = 3;
+  string name = 4;
+  string issuer = 5;
+  string client_id = 6;
+  bool has_secret = 7;
+  bool enabled = 8;
+  // A tenant's provider creates accounts for new people at its verified
+  // domains and adds them to the tenant.
+  bool jit = 9;
+  google.protobuf.Timestamp updated_at = 10;
+}
+
+message ListInstanceProvidersRequest {}
+message ListInstanceProvidersResponse {
+  repeated SignInProvider providers = 1;
+  // Register this as the redirect URI at the provider.
+  string callback_url = 2;
+}
+
+message SaveInstanceProviderRequest {
+  // google | github | oidc
+  string kind = 1;
+  string client_id = 2;
+  // Empty keeps the stored one.
+  string client_secret = 3;
+  bool enabled = 4;
+  // oidc only: the button's name ("Company SSO") and the issuer.
+  string name = 5;
+  string issuer = 6;
+}
+message SaveInstanceProviderResponse {
+  SignInProvider provider = 1;
+}
+
+message TenantDomain {
+  string domain = 1;
+  bool verified = 2;
+  google.protobuf.Timestamp verified_at = 3;
+  // The DNS record that proves it: add a TXT record named txt_name with the value txt_value.
+  string txt_name = 4;
+  string txt_value = 5;
+  // The provider people at the domain sign in through; empty for none.
+  string provider_id = 6;
+  // offer | enforce
+  string policy = 7;
+}
+
+message GetTenantSignInRequest {
+  string tenant_id = 1;
+}
+message GetTenantSignInResponse {
+  repeated SignInProvider providers = 1;
+  repeated TenantDomain domains = 2;
+  string callback_url = 3;
+}
+
+message SaveTenantProviderRequest {
+  string tenant_id = 1;
+  // Empty creates one.
+  string provider_id = 2;
+  string name = 3;
+  string issuer = 4;
+  string client_id = 5;
+  // Empty keeps the stored one.
+  string client_secret = 6;
+  bool enabled = 7;
+  bool jit = 8;
+}
+message SaveTenantProviderResponse {
+  SignInProvider provider = 1;
+}
+
+message DeleteTenantProviderRequest {
+  string tenant_id = 1;
+  string provider_id = 2;
+}
+message DeleteTenantProviderResponse {}
+
+message AddTenantDomainRequest {
+  string tenant_id = 1;
+  string domain = 2;
+}
+message AddTenantDomainResponse {
+  TenantDomain domain = 1;
+}
+
+message VerifyTenantDomainRequest {
+  string tenant_id = 1;
+  string domain = 2;
+}
+message VerifyTenantDomainResponse {
+  TenantDomain domain = 1;
+}
+
+message SetTenantDomainSignInRequest {
+  string tenant_id = 1;
+  string domain = 2;
+  // Empty for none.
+  string provider_id = 3;
+  // offer | enforce
+  string policy = 4;
+}
+message SetTenantDomainSignInResponse {
+  TenantDomain domain = 1;
+}
+
+message RemoveTenantDomainRequest {
+  string tenant_id = 1;
+  string domain = 2;
+}
+message RemoveTenantDomainResponse {}
+
+message LinkedAccount {
+  string id = 1;
+  string provider_name = 2;
+  string provider_kind = 3;
+  string email = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp last_used_at = 6;
+}
+
+// A provider the caller can link: open link_url in the browser.
+message LinkableProvider {
+  string id = 1;
+  string name = 2;
+  string kind = 3;
+  string link_url = 4;
+}
+
+message ListMySignInMethodsRequest {}
+message ListMySignInMethodsResponse {
+  bool has_password = 1;
+  repeated LinkedAccount linked = 2;
+  repeated LinkableProvider available = 3;
+}
+
+message UnlinkMyAccountRequest {
+  string id = 1;
+}
+message UnlinkMyAccountResponse {}

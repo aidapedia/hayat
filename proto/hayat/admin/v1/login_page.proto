@@ -1,0 +1,136 @@
+// A service's login page: what people see when one of its clients sends them
+// to sign in. Its owners design it here; Hayat's own sign-in pages draw it.
+// Allowed by hayat.service.manage on the service's node; the built-in `hayat`
+// service's page (the console's sign-in) by instance admins.
+syntax = "proto3";
+
+package hayat.admin.v1;
+
+import "google/protobuf/timestamp.proto";
+import "hayat/admin/v1/admin.proto";
+
+option go_package = "github.com/aidapedia/hayat/gen/go/hayat/admin/v1;adminv1";
+
+service LoginPageService {
+  rpc GetLoginPage(GetLoginPageRequest) returns (GetLoginPageResponse);
+  // Replaces the draft. Nobody sees it until it is published.
+  rpc SaveLoginPageDraft(SaveLoginPageDraftRequest) returns (SaveLoginPageDraftResponse);
+  // Makes the draft live, as a new version.
+  rpc PublishLoginPage(PublishLoginPageRequest) returns (PublishLoginPageResponse);
+  // Puts the draft back to what is published.
+  rpc DiscardLoginPageDraft(DiscardLoginPageDraftRequest) returns (DiscardLoginPageDraftResponse);
+  rpc ListLoginPageVersions(ListLoginPageVersionsRequest) returns (ListLoginPageVersionsResponse);
+  // Copies an old version into the draft.
+  rpc RestoreLoginPageVersion(RestoreLoginPageVersionRequest) returns (RestoreLoginPageVersionResponse);
+  // A logo: PNG, JPEG or WebP, at most 256 KB.
+  rpc UploadLoginPageAsset(UploadLoginPageAssetRequest) returns (UploadLoginPageAssetResponse);
+}
+
+// Every field is optional; empty takes Hayat's default.
+message LoginPageDesign {
+  // centered | split | fullbleed
+  string layout = 1;
+  // system | light | dark
+  string mode = 2;
+  // "#rrggbb"
+  string accent = 3;
+  // The split and full-bleed layouts' brand panel; empty follows the accent.
+  string panel = 4;
+  // system | humanist | geometric | rounded | serif | mono
+  string font = 5;
+  // Corner radius in pixels, 0–20.
+  optional int32 radius = 6;
+  // Asset ids from UploadLoginPageAsset.
+  string logo = 7;
+  string logo_dark = 8;
+  // Empty is the service's name.
+  string name = 9;
+  string heading = 10;
+  string subheading = 11;
+  string tagline = 12;
+  string terms_url = 13;
+  string privacy_url = 14;
+  string support_url = 15;
+  bool hide_signup = 16;
+}
+
+message LoginPage {
+  string service_id = 1;
+  // The service's display name: what an empty `name` shows.
+  string service_name = 2;
+  LoginPageDesign draft = 3;
+  // Unset until the first publish; until then people see Hayat's own page.
+  LoginPageDesign published = 4;
+  int32 version = 5;
+  User published_by = 6;
+  google.protobuf.Timestamp published_at = 7;
+  google.protobuf.Timestamp updated_at = 8;
+  // Publishing would change what people see.
+  bool has_changes = 9;
+  // Opens the draft as Hayat draws it, for 30 minutes. Takes
+  // `screen` (login | signup | error) and `mode` (light | dark).
+  string preview_url = 10;
+  // Where an uploaded asset is served: append its id.
+  string asset_base_url = 11;
+}
+
+message GetLoginPageRequest {
+  string service_id = 1;
+}
+message GetLoginPageResponse {
+  LoginPage page = 1;
+  bool can_manage = 2;
+}
+
+message SaveLoginPageDraftRequest {
+  string service_id = 1;
+  LoginPageDesign design = 2;
+}
+message SaveLoginPageDraftResponse {
+  LoginPage page = 1;
+}
+
+message PublishLoginPageRequest {
+  string service_id = 1;
+}
+message PublishLoginPageResponse {
+  LoginPage page = 1;
+}
+
+message DiscardLoginPageDraftRequest {
+  string service_id = 1;
+}
+message DiscardLoginPageDraftResponse {
+  LoginPage page = 1;
+}
+
+message LoginPageVersion {
+  int32 version = 1;
+  LoginPageDesign design = 2;
+  User published_by = 3;
+  google.protobuf.Timestamp published_at = 4;
+}
+
+message ListLoginPageVersionsRequest {
+  string service_id = 1;
+}
+message ListLoginPageVersionsResponse {
+  repeated LoginPageVersion versions = 1;
+}
+
+message RestoreLoginPageVersionRequest {
+  string service_id = 1;
+  int32 version = 2;
+}
+message RestoreLoginPageVersionResponse {
+  LoginPage page = 1;
+}
+
+message UploadLoginPageAssetRequest {
+  string service_id = 1;
+  bytes data = 2;
+}
+message UploadLoginPageAssetResponse {
+  string asset_id = 1;
+  string url = 2;
+}

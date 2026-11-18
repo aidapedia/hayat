@@ -16,14 +16,16 @@ import { ownPending } from './lib'
 import { ClientDetail } from './tabs/ClientDetail'
 import { ClientsTab } from './tabs/ClientsTab'
 import { ContractTab } from './tabs/ContractTab'
+import { LoginPageTab } from './tabs/LoginPageTab'
 import { OverviewTab } from './tabs/OverviewTab'
 import { OwnersTab } from './tabs/OwnersTab'
 import { PublishContract } from './tabs/PublishContract'
 
 /**
  * One service: its header, then a tab per part (each an address):
- * /services/:id, /contract, /contract/publish, /clients, /clients/:clientId, /owners.
- * Hayat's own service has only an overview and its clients.
+ * /services/:id, /contract, /contract/publish, /clients, /clients/:clientId, /login, /owners.
+ * Hayat's own service has only an overview, its clients and its login page.
+ * The login page tab shows to whoever may manage the service.
  */
 export default function ServiceDetailPage() {
   const { id = '', tab = '', sub = '' } = useParams()
@@ -38,18 +40,17 @@ export default function ServiceDetailPage() {
   const base = `/services/${s.id}`
   const pendingWaits = data.incoming.length + (ownPending(data.contracts) ? 1 : 0)
 
+  const loginTab: PageTab[] = data.canManage ? [{ to: `${base}/login`, label: 'Login page' }] : []
   const tabs: PageTab[] = s.builtin
-    ? [
-        { to: base, label: 'Overview', end: true },
-        { to: `${base}/clients`, label: `Clients · ${s.signInClients}` },
-      ]
+    ? [{ to: base, label: 'Overview', end: true }, { to: `${base}/clients`, label: `Clients · ${s.signInClients}` }, ...loginTab]
     : [
         { to: base, label: 'Overview', end: true },
         { to: `${base}/contract`, label: pendingWaits > 0 ? `Contract · ${pendingWaits} pending` : 'Contract' },
         { to: `${base}/clients`, label: `Clients · ${s.signInClients}` },
+        ...loginTab,
         { to: `${base}/owners`, label: `Owners · ${s.owners.length}` },
       ]
-  const known = s.builtin ? ['', 'clients'] : ['', 'contract', 'clients', 'owners']
+  const known = [...(s.builtin ? ['', 'clients'] : ['', 'contract', 'clients', 'owners']), ...(data.canManage ? ['login'] : [])]
   if (!known.includes(tab)) return <Navigate to={base} replace />
 
   const crumbs: Crumb[] = [{ label: s.displayName, to: tab ? base : undefined }]
@@ -63,6 +64,9 @@ export default function ServiceDetailPage() {
     case 'clients':
       body = sub ? <ClientDetail service={s} clientId={sub} /> : <ClientsTab service={s} canManage={data.canManage} onChanged={reload} />
       break
+    case 'login':
+      body = <LoginPageTab service={s} />
+      break
     case 'owners':
       body = <OwnersTab service={s} canManage={data.canManage} onChanged={reload} />
       break
@@ -75,7 +79,7 @@ export default function ServiceDetailPage() {
       <PageHeader
         title={s.displayName}
         crumbs={crumbs}
-        media={<ServiceTile name={s.displayName} builtin={s.builtin} size={44} />}
+        media={<ServiceTile name={s.displayName} src={s.logoUrl} builtin={s.builtin} size={44} />}
         meta={
           <>
             <Pill className="font-mono normal-case">{s.id}</Pill>

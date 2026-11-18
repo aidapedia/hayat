@@ -21,7 +21,7 @@ function AvatarStack({ people }: { people: Person[] }) {
     <span className="flex items-center">
       <span className="flex -space-x-1.5">
         {people.slice(0, STACK).map((p) => (
-          <PersonAvatar key={p.user.id} name={p.user.name} email={p.user.email} size={22} className="ring-2 ring-card" />
+          <PersonAvatar key={p.user.id} name={p.user.name} email={p.user.email} src={p.user.avatarUrl} size={22} className="ring-2 ring-card" />
         ))}
       </span>
       {people.length > STACK && <span className="ml-1.5 text-[11px] text-faint">+{people.length - STACK}</span>}

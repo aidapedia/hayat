@@ -1646,8 +1646,10 @@ type Tenant struct {
 	Name        string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
 	OwnerUserId string                 `protobuf:"bytes,4,opt,name=owner_user_id,json=ownerUserId,proto3" json:"owner_user_id,omitempty"`
 	// The tenant's node in the tree: a parent for UpsertResource.
-	NodeId        string `protobuf:"bytes,5,opt,name=node_id,json=nodeId,proto3" json:"node_id,omitempty"`
-	MemberCount   int32  `protobuf:"varint,6,opt,name=member_count,json=memberCount,proto3" json:"member_count,omitempty"`
+	NodeId      string `protobuf:"bytes,5,opt,name=node_id,json=nodeId,proto3" json:"node_id,omitempty"`
+	MemberCount int32  `protobuf:"varint,6,opt,name=member_count,json=memberCount,proto3" json:"member_count,omitempty"`
+	// <issuer>/media/<id>, empty for none.
+	LogoUrl       string `protobuf:"bytes,7,opt,name=logo_url,json=logoUrl,proto3" json:"logo_url,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1722,6 +1724,13 @@ func (x *Tenant) GetMemberCount() int32 {
 		return x.MemberCount
 	}
 	return 0
+}
+
+func (x *Tenant) GetLogoUrl() string {
+	if x != nil {
+		return x.LogoUrl
+	}
+	return ""
 }
 
 type ListUserTenantsRequest struct {
@@ -2852,14 +2861,15 @@ const file_hayat_authz_v1_authz_proto_rawDesc = "" +
 	"\x19GetUserAppearanceResponse\x12:\n" +
 	"\n" +
 	"appearance\x18\x01 \x01(\v2\x1a.hayat.authz.v1.AppearanceR\n" +
-	"appearance\"\xa0\x01\n" +
+	"appearance\"\xbb\x01\n" +
 	"\x06Tenant\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04slug\x18\x02 \x01(\tR\x04slug\x12\x12\n" +
 	"\x04name\x18\x03 \x01(\tR\x04name\x12\"\n" +
 	"\rowner_user_id\x18\x04 \x01(\tR\vownerUserId\x12\x17\n" +
 	"\anode_id\x18\x05 \x01(\tR\x06nodeId\x12!\n" +
-	"\fmember_count\x18\x06 \x01(\x05R\vmemberCount\"1\n" +
+	"\fmember_count\x18\x06 \x01(\x05R\vmemberCount\x12\x19\n" +
+	"\blogo_url\x18\a \x01(\tR\alogoUrl\"1\n" +
 	"\x16ListUserTenantsRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\"K\n" +
 	"\x17ListUserTenantsResponse\x120\n" +

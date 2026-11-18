@@ -138,4 +138,8 @@ func (w *Worker) cleanup(ctx context.Context) {
 	if _, err := w.store.Pool.Exec(ctx, `DELETE FROM oidc_code_refs WHERE expires_at < now() - interval '1 hour'`); err != nil {
 		w.log.Error("cleanup codes", "err", err)
 	}
+	// Trips to a sign-in provider nobody finished (internal/federation).
+	if _, err := w.store.Pool.Exec(ctx, `DELETE FROM sso_states WHERE expires_at < now()`); err != nil {
+		w.log.Error("cleanup sign-in trips", "err", err)
+	}
 }

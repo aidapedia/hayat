@@ -10,20 +10,54 @@ import { Label } from '@/shared/ui/label'
 
 const AVATAR_COLORS = ['#1d6a54', '#3fae86', '#8fd3b6', '#d6a73a', '#2b3a35']
 
-/** A person's generated face. Always seeded name || email, so a person looks the same in every list. */
-export function PersonAvatar({ name, email, size = 32, className }: { name?: string; email?: string; size?: number; className?: string }) {
+/**
+ * A person's picture: the one they uploaded (`src`, their avatar_url), else a
+ * generated face seeded name || email, so a person looks the same in every list.
+ */
+export function PersonAvatar({ name, email, src, size = 32, className }: { name?: string; email?: string; src?: string; size?: number; className?: string }) {
+  const [broken, setBroken] = useState('')
   return (
     <span className={cn('inline-flex shrink-0 overflow-hidden rounded-full', className)} style={{ width: size, height: size }}>
-      <Avatar size={size} name={name || email || '?'} variant="beam" colors={AVATAR_COLORS} />
+      {src && broken !== src ? (
+        <img src={src} alt="" width={size} height={size} className="size-full object-cover" onError={() => setBroken(src)} />
+      ) : (
+        <Avatar size={size} name={name || email || '?'} variant="beam" colors={AVATAR_COLORS} />
+      )}
+    </span>
+  )
+}
+
+/**
+ * A tenant's or a service's mark: its uploaded logo (`src`) on a neutral tile,
+ * else its initial. `inverted` draws the initial dark-on-light (Hayat's own).
+ */
+export function LogoTile({ name, src, size = 34, inverted, className }: { name: string; src?: string; size?: number; inverted?: boolean; className?: string }) {
+  const [broken, setBroken] = useState('')
+  const showImage = !!src && broken !== src
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        'inline-flex shrink-0 items-center justify-center overflow-hidden rounded-[10px] font-bold',
+        showImage ? 'border border-border bg-card' : inverted ? 'bg-foreground text-background' : 'bg-primary/10 text-primary',
+        className,
+      )}
+      style={{ width: size, height: size, fontSize: Math.round(size * 0.42) }}
+    >
+      {showImage ? (
+        <img src={src} alt="" className="size-[78%] object-contain" onError={() => setBroken(src)} />
+      ) : (
+        (name.trim()[0] ?? '?').toUpperCase()
+      )}
     </span>
   )
 }
 
 /** Avatar + name + email, the way a person appears in every list. */
-export function PersonRow({ name, email, trailing }: { name?: string; email: string; trailing?: ReactNode }) {
+export function PersonRow({ name, email, src, trailing }: { name?: string; email: string; src?: string; trailing?: ReactNode }) {
   return (
     <div className="flex min-w-0 items-center gap-2.5">
-      <PersonAvatar name={name} email={email} size={30} />
+      <PersonAvatar name={name} email={email} src={src} size={30} />
       <div className="min-w-0">
         <div className="flex items-center gap-2">
           <span className="truncate text-[13px] font-semibold">{name || email}</span>

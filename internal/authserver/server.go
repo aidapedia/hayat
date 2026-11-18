@@ -23,9 +23,13 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/zitadel/oidc/v3/pkg/op"
 
+	"github.com/aidapedia/hayat/internal/catalog"
 	"github.com/aidapedia/hayat/internal/config"
 	"github.com/aidapedia/hayat/internal/crypto"
+	"github.com/aidapedia/hayat/internal/federation"
 	"github.com/aidapedia/hayat/internal/identity"
+	"github.com/aidapedia/hayat/internal/loginpage"
+	"github.com/aidapedia/hayat/internal/media"
 	hoidc "github.com/aidapedia/hayat/internal/oidc"
 	"github.com/aidapedia/hayat/internal/ratelimit"
 	"github.com/aidapedia/hayat/internal/store"
@@ -43,27 +47,31 @@ var templateFS embed.FS
 var staticFS embed.FS
 
 type Server struct {
-	cfg      config.Config
-	store    *store.Store
-	ids      *identity.Service
-	storage  *hoidc.Storage
-	clients  *hoidc.Clients
-	provider *op.Provider
-	limiter  ratelimit.Limiter
-	log      *slog.Logger
-	pages    map[string]*template.Template
+	cfg       config.Config
+	store     *store.Store
+	ids       *identity.Service
+	storage   *hoidc.Storage
+	clients   *hoidc.Clients
+	pages     *loginpage.Service
+	cat       *catalog.Service
+	media     *media.Service
+	fed       *federation.Service
+	provider  *op.Provider
+	limiter   ratelimit.Limiter
+	log       *slog.Logger
+	templates map[string]*template.Template
 }
 
 func New(cfg config.Config, s *store.Store, ids *identity.Service, storage *hoidc.Storage, clients *hoidc.Clients,
-	provider *op.Provider, limiter ratelimit.Limiter, log *slog.Logger) (*Server, error) {
-	srv := &Server{cfg: cfg, store: s, ids: ids, storage: storage, clients: clients, provider: provider, limiter: limiter, log: log,
-		pages: map[string]*template.Template{}}
-	for _, name := range []string{"login", "signup", "password", "forgot", "setup", "message"} {
+	pages *loginpage.Service, cat *catalog.Service, med *media.Service, fed *federation.Service, provider *op.Provider, limiter ratelimit.Limiter, log *slog.Logger) (*Server, error) {
+	srv := &Server{cfg: cfg, store: s, ids: ids, storage: storage, clients: clients, pages: pages, cat: cat, media: med, fed: fed, provider: provider,
+		limiter: limiter, log: log, templates: map[string]*template.Template{}}
+	for _, name := range []string{"login", "signup", "password", "forgot", "setup", "message", "sso"} {
 		t, err := template.ParseFS(templateFS, "templates/layout.html", "templates/"+name+".html")
 		if err != nil {
 			return nil, err
 		}
-		srv.pages[name] = t
+		srv.templates[name] = t
 	}
 	return srv, nil
 }
@@ -89,6 +97,14 @@ func (s *Server) Handler() http.Handler {
 	r.Get("/logout", s.logoutPage)
 	r.Post("/logout", s.logoutSubmit)
 	r.Get("/logged-out", s.loggedOutPage)
+	r.Get("/sso", s.companyPage)
+	r.Post("/sso", s.companySubmit)
+	r.Get("/sso/start/{id}", s.ssoStart)
+	r.Get("/sso/link/{id}", s.ssoLink)
+	r.Get("/sso/callback", s.ssoCallback)
+	r.Get("/media/{id}", s.mediaFile)
+	r.Get("/brand/asset/{id}", s.mediaFile) // login page logos published before media existed
+	r.Get("/preview/login", s.previewPage)
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, s.cfg.ConsoleURL, http.StatusFound) })
 
 	// Everything else is the OpenID provider. It gets the session cookie in its
@@ -113,18 +129,48 @@ type page struct {
 	Action, Region, Token, Button      string
 	MinLength                          int
 	Body, Continue, Confirm            string
+
+	// A service's login page, when the request came from one that published
+	// a design. nil draws Hayat's own page.
+	Brand *brandView
+	// mode-light | mode-dark: forces a palette (the design's, or a preview's).
+	ModeClass string
+	// Nonce lets the brand's <style> through the Content-Security-Policy.
+	Nonce string
+	// A preview of a draft: forms are disabled and the console may frame it.
+	Preview bool
+
+	// The login page's other ways in: Google, GitHub, company SSO.
+	Providers  []providerButton
+	CompanyURL string
 }
 
 func (s *Server) render(w http.ResponseWriter, r *http.Request, name string, p page, status int) {
-	p.CSRF = s.csrfToken(w, r)
+	if !p.Preview {
+		p.CSRF = s.csrfToken(w, r)
+	}
 	p.ConsoleURL = s.cfg.ConsoleURL
+	if name == "login" {
+		s.signInOptions(r.Context(), &p)
+	}
+	styles, frames := "'self'", "'none'"
+	if p.Brand != nil {
+		p.Nonce = crypto.NewToken()
+		styles += " 'nonce-" + p.Nonce + "'"
+	}
+	if p.Preview {
+		frames = s.cfg.ConsoleURL
+		w.Header().Del("X-Frame-Options")
+	}
+	w.Header().Set("Content-Security-Policy", "default-src 'self'; img-src 'self' data:; style-src "+styles+
+		"; script-src 'self'; frame-ancestors "+frames+"; base-uri 'none'")
 	if p.MinLength == 0 {
 		p.MinLength = identity.MinPasswordLength
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-store")
 	w.WriteHeader(status)
-	if err := s.pages[name].ExecuteTemplate(w, "layout", p); err != nil {
+	if err := s.templates[name].ExecuteTemplate(w, "layout", p); err != nil {
 		s.log.Error("render page", "page", name, "err", err)
 	}
 }
@@ -240,8 +286,9 @@ func (s *Server) loginPage(w http.ResponseWriter, r *http.Request) {
 		s.redirectError(w, r, a, "login_required")
 		return
 	}
-	s.render(w, r, "login", page{Title: "Sign in", Heading: "Sign in", Sub: s.continueTo(r.Context(), a),
-		AuthRequestID: id, Email: a.LoginHint}, http.StatusOK)
+	p := page{Title: "Sign in", Heading: "Sign in", Sub: s.continueTo(r.Context(), a), AuthRequestID: id, Email: a.LoginHint}
+	s.brandFor(r.Context(), &p, a)
+	s.render(w, r, "login", p, http.StatusOK)
 }
 
 func (s *Server) continueTo(ctx context.Context, a *hoidc.AuthRequest) string {
@@ -286,6 +333,7 @@ func (s *Server) loginSubmit(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		p.Heading, p.Sub = "Sign in", s.continueTo(r.Context(), a)
+		s.brandFor(r.Context(), &p, a)
 	}
 
 	if !s.limiter.Allow(r.Context(), "login:ip:"+clientIP(r), 60, time.Minute) ||
@@ -295,6 +343,11 @@ func (s *Server) loginSubmit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// A company that forces its own sign-in: no password for its people, here or anywhere.
+	if prov, enforced := s.enforcedProvider(r.Context(), email); enforced {
+		s.toProvider(w, r, prov, id, nil, email)
+		return
+	}
 	u, err := s.ids.Authenticate(r.Context(), email, r.PostFormValue("password"))
 	if err != nil {
 		switch {
@@ -321,8 +374,14 @@ func (s *Server) loginSubmit(w http.ResponseWriter, r *http.Request) {
 // ---------- Sign up and verification ----------
 
 func (s *Server) signupPage(w http.ResponseWriter, r *http.Request) {
-	s.render(w, r, "signup", page{Title: "Create account", Heading: "Create your account",
-		AuthRequestID: r.URL.Query().Get("authRequestID")}, http.StatusOK)
+	p := page{Title: "Create account", Heading: "Create your account", AuthRequestID: r.URL.Query().Get("authRequestID")}
+	if p.AuthRequestID != "" {
+		if a, err := s.storage.LoadAuthRequest(r.Context(), p.AuthRequestID); err == nil {
+			s.brandFor(r.Context(), &p, a)
+			p.Heading = "Create your account"
+		}
+	}
+	s.render(w, r, "signup", p, http.StatusOK)
 }
 
 func (s *Server) signupSubmit(w http.ResponseWriter, r *http.Request) {
@@ -335,6 +394,11 @@ func (s *Server) signupSubmit(w http.ResponseWriter, r *http.Request) {
 	if !s.limiter.Allow(r.Context(), "signup:ip:"+clientIP(r), 10, time.Hour) {
 		p.Error = "Too many sign-ups from your network. Try again later."
 		s.render(w, r, "signup", p, http.StatusTooManyRequests)
+		return
+	}
+	if prov, enforced := s.enforcedProvider(r.Context(), email); enforced {
+		p.Error = federation.DomainOf(email) + " signs in with " + prov.Name + ". Use Continue with company SSO on the sign-in page."
+		s.render(w, r, "signup", p, http.StatusBadRequest)
 		return
 	}
 	if err := s.ids.Register(r.Context(), email, name); err != nil {
@@ -385,7 +449,9 @@ func (s *Server) forgotSubmit(w http.ResponseWriter, r *http.Request) {
 			Error: "Too many reset requests. Try again in an hour."}, http.StatusTooManyRequests)
 		return
 	}
-	if err := s.ids.RequestPasswordReset(r.Context(), email); err != nil {
+	if _, enforced := s.enforcedProvider(r.Context(), email); enforced {
+		email = strings.TrimSpace(email) // no password to reset: the company signs them in; answer the same
+	} else if err := s.ids.RequestPasswordReset(r.Context(), email); err != nil {
 		if errors.Is(err, identity.ErrInvalidEmail) {
 			s.render(w, r, "forgot", page{Title: "Reset password", Heading: "Reset your password", Email: email, Error: err.Error()}, http.StatusBadRequest)
 			return

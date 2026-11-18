@@ -101,6 +101,8 @@ message ServiceInfo {
   bool builtin = 9;
   // Its OAuth clients people sign in through; the API credential isn't one.
   int32 sign_in_clients = 10;
+  // <issuer>/media/<id>, empty for none.
+  string logo_url = 11;
 }
 
 message Contract {
@@ -202,6 +204,9 @@ service RegistryService {
   rpc AddServiceOwner(AddServiceOwnerRequest) returns (AddServiceOwnerResponse);
   rpc RemoveServiceOwner(RemoveServiceOwnerRequest) returns (RemoveServiceOwnerResponse);
   rpc RotateServiceSecret(RotateServiceSecretRequest) returns (RotateServiceSecretResponse);
+  // The service's owners. PNG, JPEG or WebP up to 5 MB; empty data removes it.
+  // A login page without a logo of its own shows this one.
+  rpc SetServiceLogo(SetServiceLogoRequest) returns (SetServiceLogoResponse);
   rpc PublishContract(RegistryServicePublishContractRequest) returns (RegistryServicePublishContractResponse);
   // Approves every namespace of the version the caller may approve.
   rpc ApproveContract(ApproveContractRequest) returns (ApproveContractResponse);
@@ -269,6 +274,14 @@ message RemoveServiceOwnerRequest {
   string user_id = 2;
 }
 message RemoveServiceOwnerResponse {
+  ServiceInfo service = 1;
+}
+
+message SetServiceLogoRequest {
+  string service_id = 1;
+  bytes data = 2;
+}
+message SetServiceLogoResponse {
   ServiceInfo service = 1;
 }
 

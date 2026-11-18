@@ -131,7 +131,7 @@ export default function ServicesPage() {
                   <TableRow key={s.id} className="cursor-pointer" onClick={() => navigate(`/services/${s.id}`)}>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <ServiceTile name={s.displayName} builtin={s.builtin} />
+                        <ServiceTile name={s.displayName} src={s.logoUrl} builtin={s.builtin} />
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2 text-[13px] font-semibold">
                             {s.displayName}
@@ -152,7 +152,7 @@ export default function ServicesPage() {
                       ) : (
                         <div className="flex items-center" title={s.owners.map((o) => o.name || o.email).join(', ')}>
                           {s.owners.slice(0, 4).map((o, i) => (
-                            <PersonAvatar key={o.id} name={o.name} email={o.email} size={24} className={i > 0 ? '-ml-1.5 ring-2 ring-background' : 'ring-2 ring-background'} />
+                            <PersonAvatar key={o.id} name={o.name} email={o.email} src={o.avatarUrl} size={24} className={i > 0 ? '-ml-1.5 ring-2 ring-background' : 'ring-2 ring-background'} />
                           ))}
                           {s.owners.length > 4 && <span className="ml-1.5 text-[12px] text-muted-foreground">+{s.owners.length - 4}</span>}
                         </div>

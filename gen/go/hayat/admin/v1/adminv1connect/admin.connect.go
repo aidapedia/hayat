@@ -67,6 +67,9 @@ const (
 	// AccountServiceSetMyAppearanceProcedure is the fully-qualified name of the AccountService's
 	// SetMyAppearance RPC.
 	AccountServiceSetMyAppearanceProcedure = "/hayat.admin.v1.AccountService/SetMyAppearance"
+	// AccountServiceSetMyAvatarProcedure is the fully-qualified name of the AccountService's
+	// SetMyAvatar RPC.
+	AccountServiceSetMyAvatarProcedure = "/hayat.admin.v1.AccountService/SetMyAvatar"
 	// OverviewServiceGetOverviewProcedure is the fully-qualified name of the OverviewService's
 	// GetOverview RPC.
 	OverviewServiceGetOverviewProcedure = "/hayat.admin.v1.OverviewService/GetOverview"
@@ -104,6 +107,9 @@ const (
 	// TenantServiceRenameTenantProcedure is the fully-qualified name of the TenantService's
 	// RenameTenant RPC.
 	TenantServiceRenameTenantProcedure = "/hayat.admin.v1.TenantService/RenameTenant"
+	// TenantServiceSetTenantLogoProcedure is the fully-qualified name of the TenantService's
+	// SetTenantLogo RPC.
+	TenantServiceSetTenantLogoProcedure = "/hayat.admin.v1.TenantService/SetTenantLogo"
 	// TenantServiceDeleteTenantProcedure is the fully-qualified name of the TenantService's
 	// DeleteTenant RPC.
 	TenantServiceDeleteTenantProcedure = "/hayat.admin.v1.TenantService/DeleteTenant"
@@ -137,6 +143,9 @@ type AccountServiceClient interface {
 	// service reads through DirectoryService.GetUserAppearance.
 	GetMyAppearance(context.Context, *connect.Request[v1.GetMyAppearanceRequest]) (*connect.Response[v1.GetMyAppearanceResponse], error)
 	SetMyAppearance(context.Context, *connect.Request[v1.SetMyAppearanceRequest]) (*connect.Response[v1.SetMyAppearanceResponse], error)
+	// The caller's picture: PNG, JPEG or WebP up to 5 MB, cropped square and
+	// resized. Empty data removes it. It becomes the OIDC `picture` claim.
+	SetMyAvatar(context.Context, *connect.Request[v1.SetMyAvatarRequest]) (*connect.Response[v1.SetMyAvatarResponse], error)
 }
 
 // NewAccountServiceClient constructs a client for the hayat.admin.v1.AccountService service. By
@@ -192,6 +201,12 @@ func NewAccountServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(accountServiceMethods.ByName("SetMyAppearance")),
 			connect.WithClientOptions(opts...),
 		),
+		setMyAvatar: connect.NewClient[v1.SetMyAvatarRequest, v1.SetMyAvatarResponse](
+			httpClient,
+			baseURL+AccountServiceSetMyAvatarProcedure,
+			connect.WithSchema(accountServiceMethods.ByName("SetMyAvatar")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -204,6 +219,7 @@ type accountServiceClient struct {
 	revokeMySession *connect.Client[v1.RevokeMySessionRequest, v1.RevokeMySessionResponse]
 	getMyAppearance *connect.Client[v1.GetMyAppearanceRequest, v1.GetMyAppearanceResponse]
 	setMyAppearance *connect.Client[v1.SetMyAppearanceRequest, v1.SetMyAppearanceResponse]
+	setMyAvatar     *connect.Client[v1.SetMyAvatarRequest, v1.SetMyAvatarResponse]
 }
 
 // GetMe calls hayat.admin.v1.AccountService.GetMe.
@@ -241,6 +257,11 @@ func (c *accountServiceClient) SetMyAppearance(ctx context.Context, req *connect
 	return c.setMyAppearance.CallUnary(ctx, req)
 }
 
+// SetMyAvatar calls hayat.admin.v1.AccountService.SetMyAvatar.
+func (c *accountServiceClient) SetMyAvatar(ctx context.Context, req *connect.Request[v1.SetMyAvatarRequest]) (*connect.Response[v1.SetMyAvatarResponse], error) {
+	return c.setMyAvatar.CallUnary(ctx, req)
+}
+
 // AccountServiceHandler is an implementation of the hayat.admin.v1.AccountService service.
 type AccountServiceHandler interface {
 	GetMe(context.Context, *connect.Request[v1.GetMeRequest]) (*connect.Response[v1.GetMeResponse], error)
@@ -252,6 +273,9 @@ type AccountServiceHandler interface {
 	// service reads through DirectoryService.GetUserAppearance.
 	GetMyAppearance(context.Context, *connect.Request[v1.GetMyAppearanceRequest]) (*connect.Response[v1.GetMyAppearanceResponse], error)
 	SetMyAppearance(context.Context, *connect.Request[v1.SetMyAppearanceRequest]) (*connect.Response[v1.SetMyAppearanceResponse], error)
+	// The caller's picture: PNG, JPEG or WebP up to 5 MB, cropped square and
+	// resized. Empty data removes it. It becomes the OIDC `picture` claim.
+	SetMyAvatar(context.Context, *connect.Request[v1.SetMyAvatarRequest]) (*connect.Response[v1.SetMyAvatarResponse], error)
 }
 
 // NewAccountServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -303,6 +327,12 @@ func NewAccountServiceHandler(svc AccountServiceHandler, opts ...connect.Handler
 		connect.WithSchema(accountServiceMethods.ByName("SetMyAppearance")),
 		connect.WithHandlerOptions(opts...),
 	)
+	accountServiceSetMyAvatarHandler := connect.NewUnaryHandler(
+		AccountServiceSetMyAvatarProcedure,
+		svc.SetMyAvatar,
+		connect.WithSchema(accountServiceMethods.ByName("SetMyAvatar")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/hayat.admin.v1.AccountService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case AccountServiceGetMeProcedure:
@@ -319,6 +349,8 @@ func NewAccountServiceHandler(svc AccountServiceHandler, opts ...connect.Handler
 			accountServiceGetMyAppearanceHandler.ServeHTTP(w, r)
 		case AccountServiceSetMyAppearanceProcedure:
 			accountServiceSetMyAppearanceHandler.ServeHTTP(w, r)
+		case AccountServiceSetMyAvatarProcedure:
+			accountServiceSetMyAvatarHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -354,6 +386,10 @@ func (UnimplementedAccountServiceHandler) GetMyAppearance(context.Context, *conn
 
 func (UnimplementedAccountServiceHandler) SetMyAppearance(context.Context, *connect.Request[v1.SetMyAppearanceRequest]) (*connect.Response[v1.SetMyAppearanceResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.AccountService.SetMyAppearance is not implemented"))
+}
+
+func (UnimplementedAccountServiceHandler) SetMyAvatar(context.Context, *connect.Request[v1.SetMyAvatarRequest]) (*connect.Response[v1.SetMyAvatarResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.AccountService.SetMyAvatar is not implemented"))
 }
 
 // OverviewServiceClient is a client for the hayat.admin.v1.OverviewService service.
@@ -696,6 +732,8 @@ type TenantServiceClient interface {
 	CreateTenant(context.Context, *connect.Request[v1.CreateTenantRequest]) (*connect.Response[v1.CreateTenantResponse], error)
 	// hayat.tenant.manage.
 	RenameTenant(context.Context, *connect.Request[v1.RenameTenantRequest]) (*connect.Response[v1.RenameTenantResponse], error)
+	// hayat.tenant.manage. PNG, JPEG or WebP up to 5 MB; empty data removes it.
+	SetTenantLogo(context.Context, *connect.Request[v1.SetTenantLogoRequest]) (*connect.Response[v1.SetTenantLogoResponse], error)
 	// Instance admin only. Refused while anything is filed under the tenant.
 	DeleteTenant(context.Context, *connect.Request[v1.DeleteTenantRequest]) (*connect.Response[v1.DeleteTenantResponse], error)
 	// hayat.members.manage. Adds an existing user by id, or invites an email address.
@@ -747,6 +785,12 @@ func NewTenantServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			connect.WithSchema(tenantServiceMethods.ByName("RenameTenant")),
 			connect.WithClientOptions(opts...),
 		),
+		setTenantLogo: connect.NewClient[v1.SetTenantLogoRequest, v1.SetTenantLogoResponse](
+			httpClient,
+			baseURL+TenantServiceSetTenantLogoProcedure,
+			connect.WithSchema(tenantServiceMethods.ByName("SetTenantLogo")),
+			connect.WithClientOptions(opts...),
+		),
 		deleteTenant: connect.NewClient[v1.DeleteTenantRequest, v1.DeleteTenantResponse](
 			httpClient,
 			baseURL+TenantServiceDeleteTenantProcedure,
@@ -781,6 +825,7 @@ type tenantServiceClient struct {
 	listMembers       *connect.Client[v1.ListMembersRequest, v1.ListMembersResponse]
 	createTenant      *connect.Client[v1.CreateTenantRequest, v1.CreateTenantResponse]
 	renameTenant      *connect.Client[v1.RenameTenantRequest, v1.RenameTenantResponse]
+	setTenantLogo     *connect.Client[v1.SetTenantLogoRequest, v1.SetTenantLogoResponse]
 	deleteTenant      *connect.Client[v1.DeleteTenantRequest, v1.DeleteTenantResponse]
 	addMember         *connect.Client[v1.AddMemberRequest, v1.AddMemberResponse]
 	removeMember      *connect.Client[v1.RemoveMemberRequest, v1.RemoveMemberResponse]
@@ -810,6 +855,11 @@ func (c *tenantServiceClient) CreateTenant(ctx context.Context, req *connect.Req
 // RenameTenant calls hayat.admin.v1.TenantService.RenameTenant.
 func (c *tenantServiceClient) RenameTenant(ctx context.Context, req *connect.Request[v1.RenameTenantRequest]) (*connect.Response[v1.RenameTenantResponse], error) {
 	return c.renameTenant.CallUnary(ctx, req)
+}
+
+// SetTenantLogo calls hayat.admin.v1.TenantService.SetTenantLogo.
+func (c *tenantServiceClient) SetTenantLogo(ctx context.Context, req *connect.Request[v1.SetTenantLogoRequest]) (*connect.Response[v1.SetTenantLogoResponse], error) {
+	return c.setTenantLogo.CallUnary(ctx, req)
 }
 
 // DeleteTenant calls hayat.admin.v1.TenantService.DeleteTenant.
@@ -844,6 +894,8 @@ type TenantServiceHandler interface {
 	CreateTenant(context.Context, *connect.Request[v1.CreateTenantRequest]) (*connect.Response[v1.CreateTenantResponse], error)
 	// hayat.tenant.manage.
 	RenameTenant(context.Context, *connect.Request[v1.RenameTenantRequest]) (*connect.Response[v1.RenameTenantResponse], error)
+	// hayat.tenant.manage. PNG, JPEG or WebP up to 5 MB; empty data removes it.
+	SetTenantLogo(context.Context, *connect.Request[v1.SetTenantLogoRequest]) (*connect.Response[v1.SetTenantLogoResponse], error)
 	// Instance admin only. Refused while anything is filed under the tenant.
 	DeleteTenant(context.Context, *connect.Request[v1.DeleteTenantRequest]) (*connect.Response[v1.DeleteTenantResponse], error)
 	// hayat.members.manage. Adds an existing user by id, or invites an email address.
@@ -891,6 +943,12 @@ func NewTenantServiceHandler(svc TenantServiceHandler, opts ...connect.HandlerOp
 		connect.WithSchema(tenantServiceMethods.ByName("RenameTenant")),
 		connect.WithHandlerOptions(opts...),
 	)
+	tenantServiceSetTenantLogoHandler := connect.NewUnaryHandler(
+		TenantServiceSetTenantLogoProcedure,
+		svc.SetTenantLogo,
+		connect.WithSchema(tenantServiceMethods.ByName("SetTenantLogo")),
+		connect.WithHandlerOptions(opts...),
+	)
 	tenantServiceDeleteTenantHandler := connect.NewUnaryHandler(
 		TenantServiceDeleteTenantProcedure,
 		svc.DeleteTenant,
@@ -927,6 +985,8 @@ func NewTenantServiceHandler(svc TenantServiceHandler, opts ...connect.HandlerOp
 			tenantServiceCreateTenantHandler.ServeHTTP(w, r)
 		case TenantServiceRenameTenantProcedure:
 			tenantServiceRenameTenantHandler.ServeHTTP(w, r)
+		case TenantServiceSetTenantLogoProcedure:
+			tenantServiceSetTenantLogoHandler.ServeHTTP(w, r)
 		case TenantServiceDeleteTenantProcedure:
 			tenantServiceDeleteTenantHandler.ServeHTTP(w, r)
 		case TenantServiceAddMemberProcedure:
@@ -962,6 +1022,10 @@ func (UnimplementedTenantServiceHandler) CreateTenant(context.Context, *connect.
 
 func (UnimplementedTenantServiceHandler) RenameTenant(context.Context, *connect.Request[v1.RenameTenantRequest]) (*connect.Response[v1.RenameTenantResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.TenantService.RenameTenant is not implemented"))
+}
+
+func (UnimplementedTenantServiceHandler) SetTenantLogo(context.Context, *connect.Request[v1.SetTenantLogoRequest]) (*connect.Response[v1.SetTenantLogoResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.TenantService.SetTenantLogo is not implemented"))
 }
 
 func (UnimplementedTenantServiceHandler) DeleteTenant(context.Context, *connect.Request[v1.DeleteTenantRequest]) (*connect.Response[v1.DeleteTenantResponse], error) {

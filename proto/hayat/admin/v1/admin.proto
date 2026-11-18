@@ -51,6 +51,8 @@ message Tenant {
   string region = 6;
   google.protobuf.Timestamp created_at = 7;
   google.protobuf.Timestamp updated_at = 8;
+  // <issuer>/media/<id>, empty for none.
+  string logo_url = 9;
 }
 
 message Member {
@@ -107,6 +109,16 @@ service AccountService {
   // service reads through DirectoryService.GetUserAppearance.
   rpc GetMyAppearance(GetMyAppearanceRequest) returns (GetMyAppearanceResponse);
   rpc SetMyAppearance(SetMyAppearanceRequest) returns (SetMyAppearanceResponse);
+  // The caller's picture: PNG, JPEG or WebP up to 5 MB, cropped square and
+  // resized. Empty data removes it. It becomes the OIDC `picture` claim.
+  rpc SetMyAvatar(SetMyAvatarRequest) returns (SetMyAvatarResponse);
+}
+
+message SetMyAvatarRequest {
+  bytes data = 1;
+}
+message SetMyAvatarResponse {
+  User user = 1;
 }
 
 // A person's theme. Every field is optional: an empty one means "the app's own
@@ -307,6 +319,8 @@ service TenantService {
   rpc CreateTenant(CreateTenantRequest) returns (CreateTenantResponse);
   // hayat.tenant.manage.
   rpc RenameTenant(RenameTenantRequest) returns (RenameTenantResponse);
+  // hayat.tenant.manage. PNG, JPEG or WebP up to 5 MB; empty data removes it.
+  rpc SetTenantLogo(SetTenantLogoRequest) returns (SetTenantLogoResponse);
   // Instance admin only. Refused while anything is filed under the tenant.
   rpc DeleteTenant(DeleteTenantRequest) returns (DeleteTenantResponse);
   // hayat.members.manage. Adds an existing user by id, or invites an email address.
@@ -367,6 +381,14 @@ message RenameTenantRequest {
   string name = 2;
 }
 message RenameTenantResponse {
+  Tenant tenant = 1;
+}
+
+message SetTenantLogoRequest {
+  string id = 1;
+  bytes data = 2;
+}
+message SetTenantLogoResponse {
   Tenant tenant = 1;
 }
 

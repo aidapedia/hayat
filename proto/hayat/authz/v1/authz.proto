@@ -253,6 +253,8 @@ message Tenant {
   // The tenant's node in the tree: a parent for UpsertResource.
   string node_id = 5;
   int32 member_count = 6;
+  // <issuer>/media/<id>, empty for none.
+  string logo_url = 7;
 }
 
 message ListUserTenantsRequest {

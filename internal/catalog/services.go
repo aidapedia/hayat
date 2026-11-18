@@ -28,15 +28,17 @@ type ServiceInfo struct {
 	NodeID        uuid.UUID
 	ClientID      string
 	ActiveVersion int
-	CreatedAt     time.Time
-	UpdatedAt     time.Time
+	// Logo is a media id, empty for none.
+	Logo      string
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
-const serviceColumns = `id, display_name, description, node_id, client_id, active_version, created_at, updated_at`
+const serviceColumns = `id, display_name, description, node_id, client_id, active_version, logo, created_at, updated_at`
 
 func scanService(row pgx.Row) (ServiceInfo, error) {
 	var s ServiceInfo
-	err := row.Scan(&s.ID, &s.DisplayName, &s.Description, &s.NodeID, &s.ClientID, &s.ActiveVersion, &s.CreatedAt, &s.UpdatedAt)
+	err := row.Scan(&s.ID, &s.DisplayName, &s.Description, &s.NodeID, &s.ClientID, &s.ActiveVersion, &s.Logo, &s.CreatedAt, &s.UpdatedAt)
 	return s, store.NotFound(err)
 }
 
@@ -172,4 +174,22 @@ func (c *Service) ServiceOwners(ctx context.Context, id string) ([]uuid.UUID, er
 		out = append(out, u)
 	}
 	return out, rows.Err()
+}
+
+// SetServiceLogo points the service at a logo kept by internal/media; "" removes it.
+func (c *Service) SetServiceLogo(ctx context.Context, id, logo, actor string) (ServiceInfo, error) {
+	err := c.store.Tx(ctx, func(tx pgx.Tx) error {
+		tag, err := tx.Exec(ctx, `UPDATE services SET logo = $2, updated_at = now() WHERE id = $1`, id, logo)
+		if err != nil {
+			return err
+		}
+		if tag.RowsAffected() == 0 {
+			return store.ErrNotFound
+		}
+		return audit.Write(ctx, tx, c.store.Region, actor, "service.logo_changed", "service:"+id, map[string]any{"logo": logo})
+	})
+	if err != nil {
+		return ServiceInfo{}, err
+	}
+	return c.GetService(ctx, id)
 }

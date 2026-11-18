@@ -1,32 +1,57 @@
 {{define "layout"}}<!doctype html>
-<html lang="en">
+<html lang="en"{{if .ModeClass}} class="{{.ModeClass}}"{{end}}>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
-<title>{{.Title}} · Hayat</title>
+<title>{{.Title}} · {{if .Brand}}{{.Brand.Name}}{{else}}Hayat{{end}}</title>
 <link rel="stylesheet" href="/assets/hayat.css">
+{{if .Brand}}<style nonce="{{.Nonce}}">{{.Brand.CSS}}</style>{{end}}
 <link rel="icon" href="/assets/hayat.png" type="image/png">
 <script src="/assets/hayat.js" defer></script>
 </head>
-<body>
+<body{{if .Brand}} class="branded layout-{{.Brand.Layout}}{{if .Preview}} preview{{end}}"{{else if .Preview}} class="preview"{{end}}>
+{{if .Preview}}<div class="preview-bar" role="note">Preview of a draft login page. Signing in is turned off here.</div>{{end}}
 <main class="shell">
-  <a class="brand" href="{{.ConsoleURL}}" aria-label="Hayat">
-    <img src="/assets/hayat.png" alt="" width="32" height="32">
-    <span>
-      <span class="brand-name">Hayat</span>
-      <span class="brand-sub">Identity</span>
-    </span>
-  </a>
-  <section class="card">
-    <h1>{{.Heading}}</h1>
-    {{if .Sub}}<p class="sub">{{.Sub}}</p>{{end}}
-    {{if .Error}}<div class="alert alert-error" role="alert">{{.Error}}</div>{{end}}
-    {{if .Notice}}<div class="alert alert-notice" role="status">{{.Notice}}</div>{{end}}
-    {{template "content" .}}
-  </section>
-  <p class="foot">{{template "foot" .}}</p>
+  {{if .Brand}}{{if ne .Brand.Layout "centered"}}
+  <aside class="panel">
+    <div class="brand panel-brand">{{template "logo" .Brand}}<span class="brand-name">{{.Brand.Name}}</span></div>
+    {{if .Brand.Tagline}}<p class="tagline">{{.Brand.Tagline}}</p>{{end}}
+    {{if .Brand.Support}}<a class="panel-link" href="{{.Brand.Support}}" rel="noopener noreferrer">Get help</a>{{end}}
+  </aside>
+  {{end}}{{end}}
+  <div class="stage">
+    {{if .Brand}}
+    <div class="brand brand-top">{{template "logo" .Brand}}<span class="brand-name">{{.Brand.Name}}</span></div>
+    {{else}}
+    <a class="brand" href="{{.ConsoleURL}}" aria-label="Hayat">
+      <img src="/assets/hayat.png" alt="" width="32" height="32">
+      <span>
+        <span class="brand-name">Hayat</span>
+        <span class="brand-sub">Identity</span>
+      </span>
+    </a>
+    {{end}}
+    <section class="card">
+      <h1>{{.Heading}}</h1>
+      {{if .Sub}}<p class="sub">{{.Sub}}</p>{{end}}
+      {{if .Error}}<div class="alert alert-error" role="alert">{{.Error}}</div>{{end}}
+      {{if .Notice}}<div class="alert alert-notice" role="status">{{.Notice}}</div>{{end}}
+      <fieldset class="lock"{{if .Preview}} disabled{{end}}>{{template "content" .}}</fieldset>
+    </section>
+    <p class="foot">{{template "foot" .}}</p>
+    {{if .Brand}}
+    <p class="legal">
+      <span class="secured"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Secured by Hayat</span>
+      {{if .Brand.Terms}}<a href="{{.Brand.Terms}}" rel="noopener noreferrer">Terms</a>{{end}}
+      {{if .Brand.Privacy}}<a href="{{.Brand.Privacy}}" rel="noopener noreferrer">Privacy</a>{{end}}
+      {{if .Brand.Support}}<a class="legal-support" href="{{.Brand.Support}}" rel="noopener noreferrer">Help</a>{{end}}
+    </p>
+    {{end}}
+  </div>
 </main>
 </body>
 </html>{{end}}
+{{define "logo"}}{{if .Logo}}<img class="logo{{if .LogoDark}} logo-light{{end}}" src="{{.Logo}}" alt="">{{if .LogoDark}}<img class="logo logo-dark" src="{{.LogoDark}}" alt="">{{end}}{{else}}<span class="logo-initial" aria-hidden="true">{{.Initial}}</span>{{end}}{{end}}
 {{define "foot"}}{{end}}
+{{define "provider-icon"}}{{if eq . "google"}}<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21.6 12.2c0-.7-.1-1.3-.2-1.9H12v3.6h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.2z" fill="#4285F4"/><path d="M12 22c2.7 0 5-.9 6.6-2.5l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22z" fill="#34A853"/><path d="M6.4 13.9a6 6 0 0 1 0-3.8V7.5H3.1a10 10 0 0 0 0 9z" fill="#FBBC05"/><path d="M12 6c1.5 0 2.8.5 3.8 1.5l2.9-2.9A10 10 0 0 0 3.1 7.5l3.3 2.6C7.2 7.8 9.4 6 12 6z" fill="#EA4335"/></svg>{{else if eq . "github"}}<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-3.2 19.5c.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.3-3.4-1.3-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.6 2.4 1.1 3 .8.1-.6.3-1.1.6-1.3-2.2-.3-4.6-1.1-4.6-5a3.9 3.9 0 0 1 1-2.7c-.1-.3-.5-1.3.1-2.7 0 0 .8-.3 2.8 1a9.6 9.6 0 0 1 5 0c1.9-1.3 2.8-1 2.8-1 .5 1.4.2 2.4.1 2.7a3.9 3.9 0 0 1 1 2.7c0 3.9-2.4 4.7-4.6 5 .4.3.7.9.7 1.8V21c0 .3.2.6.7.5A10 10 0 0 0 12 2z"/></svg>{{else}}<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-5h6v5"/></svg>{{end}}{{end}}

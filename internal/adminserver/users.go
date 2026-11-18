@@ -48,7 +48,7 @@ func (u *userService) GetUser(ctx context.Context, req *connect.Request[adminv1.
 	if err != nil {
 		return nil, u.s.fail(err)
 	}
-	return connect.NewResponse(&adminv1.GetUserResponse{User: toUser(user), Tenants: toTenants(tenants),
+	return connect.NewResponse(&adminv1.GetUserResponse{User: toUser(user), Tenants: u.s.toTenants(tenants),
 		Sessions: toSessions(sessions, caller(ctx).SessionID.String())}), nil
 }
 

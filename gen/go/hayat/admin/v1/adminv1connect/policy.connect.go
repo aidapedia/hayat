@@ -82,6 +82,9 @@ const (
 	// RegistryServiceRotateServiceSecretProcedure is the fully-qualified name of the RegistryService's
 	// RotateServiceSecret RPC.
 	RegistryServiceRotateServiceSecretProcedure = "/hayat.admin.v1.RegistryService/RotateServiceSecret"
+	// RegistryServiceSetServiceLogoProcedure is the fully-qualified name of the RegistryService's
+	// SetServiceLogo RPC.
+	RegistryServiceSetServiceLogoProcedure = "/hayat.admin.v1.RegistryService/SetServiceLogo"
 	// RegistryServicePublishContractProcedure is the fully-qualified name of the RegistryService's
 	// PublishContract RPC.
 	RegistryServicePublishContractProcedure = "/hayat.admin.v1.RegistryService/PublishContract"
@@ -363,6 +366,9 @@ type RegistryServiceClient interface {
 	AddServiceOwner(context.Context, *connect.Request[v1.AddServiceOwnerRequest]) (*connect.Response[v1.AddServiceOwnerResponse], error)
 	RemoveServiceOwner(context.Context, *connect.Request[v1.RemoveServiceOwnerRequest]) (*connect.Response[v1.RemoveServiceOwnerResponse], error)
 	RotateServiceSecret(context.Context, *connect.Request[v1.RotateServiceSecretRequest]) (*connect.Response[v1.RotateServiceSecretResponse], error)
+	// The service's owners. PNG, JPEG or WebP up to 5 MB; empty data removes it.
+	// A login page without a logo of its own shows this one.
+	SetServiceLogo(context.Context, *connect.Request[v1.SetServiceLogoRequest]) (*connect.Response[v1.SetServiceLogoResponse], error)
 	PublishContract(context.Context, *connect.Request[v1.RegistryServicePublishContractRequest]) (*connect.Response[v1.RegistryServicePublishContractResponse], error)
 	// Approves every namespace of the version the caller may approve.
 	ApproveContract(context.Context, *connect.Request[v1.ApproveContractRequest]) (*connect.Response[v1.ApproveContractResponse], error)
@@ -431,6 +437,12 @@ func NewRegistryServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			connect.WithSchema(registryServiceMethods.ByName("RotateServiceSecret")),
 			connect.WithClientOptions(opts...),
 		),
+		setServiceLogo: connect.NewClient[v1.SetServiceLogoRequest, v1.SetServiceLogoResponse](
+			httpClient,
+			baseURL+RegistryServiceSetServiceLogoProcedure,
+			connect.WithSchema(registryServiceMethods.ByName("SetServiceLogo")),
+			connect.WithClientOptions(opts...),
+		),
 		publishContract: connect.NewClient[v1.RegistryServicePublishContractRequest, v1.RegistryServicePublishContractResponse](
 			httpClient,
 			baseURL+RegistryServicePublishContractProcedure,
@@ -497,6 +509,7 @@ type registryServiceClient struct {
 	addServiceOwner           *connect.Client[v1.AddServiceOwnerRequest, v1.AddServiceOwnerResponse]
 	removeServiceOwner        *connect.Client[v1.RemoveServiceOwnerRequest, v1.RemoveServiceOwnerResponse]
 	rotateServiceSecret       *connect.Client[v1.RotateServiceSecretRequest, v1.RotateServiceSecretResponse]
+	setServiceLogo            *connect.Client[v1.SetServiceLogoRequest, v1.SetServiceLogoResponse]
 	publishContract           *connect.Client[v1.RegistryServicePublishContractRequest, v1.RegistryServicePublishContractResponse]
 	approveContract           *connect.Client[v1.ApproveContractRequest, v1.ApproveContractResponse]
 	rejectContract            *connect.Client[v1.RejectContractRequest, v1.RejectContractResponse]
@@ -541,6 +554,11 @@ func (c *registryServiceClient) RemoveServiceOwner(ctx context.Context, req *con
 // RotateServiceSecret calls hayat.admin.v1.RegistryService.RotateServiceSecret.
 func (c *registryServiceClient) RotateServiceSecret(ctx context.Context, req *connect.Request[v1.RotateServiceSecretRequest]) (*connect.Response[v1.RotateServiceSecretResponse], error) {
 	return c.rotateServiceSecret.CallUnary(ctx, req)
+}
+
+// SetServiceLogo calls hayat.admin.v1.RegistryService.SetServiceLogo.
+func (c *registryServiceClient) SetServiceLogo(ctx context.Context, req *connect.Request[v1.SetServiceLogoRequest]) (*connect.Response[v1.SetServiceLogoResponse], error) {
+	return c.setServiceLogo.CallUnary(ctx, req)
 }
 
 // PublishContract calls hayat.admin.v1.RegistryService.PublishContract.
@@ -599,6 +617,9 @@ type RegistryServiceHandler interface {
 	AddServiceOwner(context.Context, *connect.Request[v1.AddServiceOwnerRequest]) (*connect.Response[v1.AddServiceOwnerResponse], error)
 	RemoveServiceOwner(context.Context, *connect.Request[v1.RemoveServiceOwnerRequest]) (*connect.Response[v1.RemoveServiceOwnerResponse], error)
 	RotateServiceSecret(context.Context, *connect.Request[v1.RotateServiceSecretRequest]) (*connect.Response[v1.RotateServiceSecretResponse], error)
+	// The service's owners. PNG, JPEG or WebP up to 5 MB; empty data removes it.
+	// A login page without a logo of its own shows this one.
+	SetServiceLogo(context.Context, *connect.Request[v1.SetServiceLogoRequest]) (*connect.Response[v1.SetServiceLogoResponse], error)
 	PublishContract(context.Context, *connect.Request[v1.RegistryServicePublishContractRequest]) (*connect.Response[v1.RegistryServicePublishContractResponse], error)
 	// Approves every namespace of the version the caller may approve.
 	ApproveContract(context.Context, *connect.Request[v1.ApproveContractRequest]) (*connect.Response[v1.ApproveContractResponse], error)
@@ -661,6 +682,12 @@ func NewRegistryServiceHandler(svc RegistryServiceHandler, opts ...connect.Handl
 		RegistryServiceRotateServiceSecretProcedure,
 		svc.RotateServiceSecret,
 		connect.WithSchema(registryServiceMethods.ByName("RotateServiceSecret")),
+		connect.WithHandlerOptions(opts...),
+	)
+	registryServiceSetServiceLogoHandler := connect.NewUnaryHandler(
+		RegistryServiceSetServiceLogoProcedure,
+		svc.SetServiceLogo,
+		connect.WithSchema(registryServiceMethods.ByName("SetServiceLogo")),
 		connect.WithHandlerOptions(opts...),
 	)
 	registryServicePublishContractHandler := connect.NewUnaryHandler(
@@ -733,6 +760,8 @@ func NewRegistryServiceHandler(svc RegistryServiceHandler, opts ...connect.Handl
 			registryServiceRemoveServiceOwnerHandler.ServeHTTP(w, r)
 		case RegistryServiceRotateServiceSecretProcedure:
 			registryServiceRotateServiceSecretHandler.ServeHTTP(w, r)
+		case RegistryServiceSetServiceLogoProcedure:
+			registryServiceSetServiceLogoHandler.ServeHTTP(w, r)
 		case RegistryServicePublishContractProcedure:
 			registryServicePublishContractHandler.ServeHTTP(w, r)
 		case RegistryServiceApproveContractProcedure:
@@ -786,6 +815,10 @@ func (UnimplementedRegistryServiceHandler) RemoveServiceOwner(context.Context, *
 
 func (UnimplementedRegistryServiceHandler) RotateServiceSecret(context.Context, *connect.Request[v1.RotateServiceSecretRequest]) (*connect.Response[v1.RotateServiceSecretResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.RegistryService.RotateServiceSecret is not implemented"))
+}
+
+func (UnimplementedRegistryServiceHandler) SetServiceLogo(context.Context, *connect.Request[v1.SetServiceLogoRequest]) (*connect.Response[v1.SetServiceLogoResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.RegistryService.SetServiceLogo is not implemented"))
 }
 
 func (UnimplementedRegistryServiceHandler) PublishContract(context.Context, *connect.Request[v1.RegistryServicePublishContractRequest]) (*connect.Response[v1.RegistryServicePublishContractResponse], error) {

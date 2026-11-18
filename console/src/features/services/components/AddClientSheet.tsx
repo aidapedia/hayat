@@ -82,7 +82,7 @@ export function AddClientSheet({ service, open, onOpenChange, onAdded }: { servi
         <SheetContent className="gap-0 data-[side=right]:w-full data-[side=right]:sm:max-w-[720px]">
           <form onSubmit={submit} className="flex h-full flex-col">
             <SheetHeader className="flex-row items-start gap-3 border-b">
-              <ServiceTile name={service.displayName} builtin={service.builtin} size={36} />
+              <ServiceTile name={service.displayName} src={service.logoUrl} builtin={service.builtin} size={36} />
               <div className="flex flex-col gap-1">
                 <SheetTitle className="text-[15px]">Add a sign-in client to {service.displayName}</SheetTitle>
                 <SheetDescription className="text-[12px]">An app people sign in through. It belongs to this service, and its owners manage it.</SheetDescription>

@@ -19,20 +19,33 @@ import (
 	jose "github.com/go-jose/go-jose/v4"
 
 	"github.com/aidapedia/hayat/internal/authserver"
+	"github.com/aidapedia/hayat/internal/catalog"
 	"github.com/aidapedia/hayat/internal/config"
 	"github.com/aidapedia/hayat/internal/crypto"
+	"github.com/aidapedia/hayat/internal/federation"
 	"github.com/aidapedia/hayat/internal/identity"
+	"github.com/aidapedia/hayat/internal/loginpage"
+	"github.com/aidapedia/hayat/internal/media"
 	hoidc "github.com/aidapedia/hayat/internal/oidc"
 	"github.com/aidapedia/hayat/internal/ratelimit"
+	"github.com/aidapedia/hayat/internal/revision"
+	"github.com/aidapedia/hayat/internal/tenancy"
 	"github.com/aidapedia/hayat/internal/testdb"
 )
 
 const redirectURI = "http://console.test/callback"
 
 type harness struct {
-	t   *testing.T
-	url string
+	t     *testing.T
+	url   string
+	pages *loginpage.Service
+	fed   *federation.Service
+	idsvc *identity.Service
+	tsvc  *tenancy.Service
 }
+
+func (h *harness) ids() *identity.Service    { return h.idsvc }
+func (h *harness) tenants() *tenancy.Service { return h.tsvc }
 
 func newHarness(t *testing.T) *harness {
 	t.Helper()
@@ -62,7 +75,13 @@ func newHarness(t *testing.T) *harness {
 	if err != nil {
 		t.Fatal(err)
 	}
-	as, err := authserver.New(cfg, s, ids, storage, clients, provider, ratelimit.NewMemory(), log)
+	blobs, _ := media.NewStore(config.Storage{Backend: "local", Dir: t.TempDir()})
+	med := media.New(s, blobs, cfg.Issuer, log)
+	pages := loginpage.New(s, key, med)
+	cat := catalog.New(s, revision.NewReader(s, time.Second))
+	tenants := tenancy.New(s)
+	fed := federation.New(s, box, ids, tenants, cfg.Issuer, true, log)
+	as, err := authserver.New(cfg, s, ids, storage, clients, pages, cat, med, fed, provider, ratelimit.NewMemory(), log)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -71,7 +90,7 @@ func newHarness(t *testing.T) *harness {
 	if _, err := ids.CreateAdmin(ctx, "ana@example.com", "Ana", "correct horse battery"); err != nil {
 		t.Fatal(err)
 	}
-	return &harness{t: t, url: srv.URL}
+	return &harness{t: t, url: srv.URL, pages: pages, fed: fed, idsvc: ids, tsvc: tenants}
 }
 
 func browser() *http.Client {

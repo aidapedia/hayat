@@ -31,7 +31,10 @@ import (
 	"github.com/aidapedia/hayat/internal/catalog"
 	"github.com/aidapedia/hayat/internal/config"
 	"github.com/aidapedia/hayat/internal/errs"
+	"github.com/aidapedia/hayat/internal/federation"
 	"github.com/aidapedia/hayat/internal/identity"
+	"github.com/aidapedia/hayat/internal/loginpage"
+	"github.com/aidapedia/hayat/internal/media"
 	hoidc "github.com/aidapedia/hayat/internal/oidc"
 	"github.com/aidapedia/hayat/internal/store"
 	"github.com/aidapedia/hayat/internal/tenancy"
@@ -51,6 +54,9 @@ type Server struct {
 	cat      *catalog.Service
 	tree     *tree.Service
 	engine   *authz.Engine
+	pages    *loginpage.Service
+	media    *media.Service
+	fed      *federation.Service
 	verifier *op.AccessTokenVerifier
 	log      *slog.Logger
 }
@@ -66,12 +72,15 @@ type Deps struct {
 	Catalog *catalog.Service
 	Tree    *tree.Service
 	Engine  *authz.Engine
+	Pages   *loginpage.Service
+	Media   *media.Service
+	Fed     *federation.Service
 }
 
 func New(cfg config.Config, d Deps, log *slog.Logger) *Server {
 	return &Server{
 		cfg: cfg, store: d.Store, ids: d.IDs, tenants: d.Tenants, clients: d.Clients, keys: d.Keys,
-		cat: d.Catalog, tree: d.Tree, engine: d.Engine, log: log,
+		cat: d.Catalog, tree: d.Tree, engine: d.Engine, pages: d.Pages, media: d.Media, fed: d.Fed, log: log,
 		verifier: op.NewAccessTokenVerifier(cfg.Issuer, &op.OpenIDKeySet{Storage: d.Storage}),
 	}
 }
@@ -91,6 +100,8 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle(adminv1connect.NewCatalogServiceHandler(&catalogService{s}, user))
 	mux.Handle(adminv1connect.NewRegistryServiceHandler(&registryService{s}, user))
 	mux.Handle(adminv1connect.NewTreeAdminServiceHandler(&treeAdminService{s}, user))
+	mux.Handle(adminv1connect.NewLoginPageServiceHandler(&loginPageService{s}, user))
+	mux.Handle(adminv1connect.NewSignInServiceHandler(&signInService{s}, user))
 
 	// What the console needs to start its sign-in: where Hayat is and which
 	// client it is. Public on purpose; nothing here is secret.

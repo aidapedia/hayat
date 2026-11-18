@@ -20,6 +20,7 @@ import (
 func newSeedApp(t *testing.T, dev bool) *app.App {
 	t.Helper()
 	cfg := config.Config{Region: "default", Issuer: "http://localhost:8443", ConsoleURL: consoleURL, MasterKey: make([]byte, 32),
+		Storage:    config.Storage{Backend: "local", Dir: t.TempDir()},
 		SessionTTL: time.Hour, AccessTokenTTL: 10 * time.Minute, RefreshTokenTTL: time.Hour, Dev: dev}
 	a, err := app.New(cfg, testdb.New(t), slog.New(slog.NewTextHandler(io.Discard, nil)))
 	if err != nil {

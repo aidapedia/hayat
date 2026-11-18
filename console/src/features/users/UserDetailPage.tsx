@@ -52,7 +52,7 @@ export default function UserDetailPage() {
         title={u.name || u.email}
         desc={u.name ? u.email : undefined}
         crumbs={[{ label: u.name || u.email }]}
-        media={<PersonAvatar name={u.name} email={u.email} size={44} />}
+        media={<PersonAvatar name={u.name} email={u.email} src={u.avatarUrl} size={44} />}
         meta={
           <>
             <StatusBadge status={u.status} />

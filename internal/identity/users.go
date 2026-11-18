@@ -797,3 +797,79 @@ func (s *Service) ensureAnotherAdmin(ctx context.Context, tx pgx.Tx, except uuid
 	}
 	return nil
 }
+
+// SetAvatar sets the person's picture, the OIDC picture claim: a URL of an
+// image Hayat keeps (internal/media), or "" for none.
+func (s *Service) SetAvatar(ctx context.Context, id uuid.UUID, url, actor string) (User, error) {
+	if len(url) > 500 {
+		return User{}, errs.New("that picture address is too long")
+	}
+	var u User
+	err := s.store.Tx(ctx, func(tx pgx.Tx) error {
+		region, err := s.regionOf(ctx, tx, id)
+		if err != nil {
+			return err
+		}
+		if _, err := tx.Exec(ctx, `UPDATE users SET avatar_url = $3, updated_at = now() WHERE region = $1 AND id = $2`, region, id, url); err != nil {
+			return err
+		}
+		if err := audit.Write(ctx, tx, region, actor, "user.avatar_changed", "user:"+id.String(), nil); err != nil {
+			return err
+		}
+		u, err = s.getUser(ctx, tx, id)
+		return err
+	})
+	return u, err
+}
+
+// CreateFederated makes an account for someone a sign-in provider vouched
+// for: active, its email verified by the provider, no password (they can
+// choose one later through "Forgot password"). picture becomes the avatar
+// when it is an https address.
+func (s *Service) CreateFederated(ctx context.Context, rawEmail, name, picture, actor string) (User, error) {
+	email, err := NormalizeEmail(rawEmail)
+	if err != nil {
+		return User{}, err
+	}
+	if !strings.HasPrefix(picture, "https://") || len(picture) > 500 {
+		picture = ""
+	}
+	var u User
+	err = s.store.Tx(ctx, func(tx pgx.Tx) error {
+		if u, err = s.insertUser(ctx, tx, email, name, StatusActive, "", "", true); err != nil {
+			return err
+		}
+		if picture != "" {
+			if _, err := tx.Exec(ctx, `UPDATE users SET avatar_url = $3 WHERE region = $1 AND id = $2`, u.Region, u.ID, picture); err != nil {
+				return err
+			}
+			u.AvatarURL = picture
+		}
+		return audit.Write(ctx, tx, u.Region, actor, "user.created_by_provider", "user:"+u.ID.String(), map[string]any{"email": email})
+	})
+	return u, err
+}
+
+// ConfirmEmail marks the address verified, and activates a pending account:
+// a provider has just proved the mailbox, which is what the emailed link was
+// for. A disabled account stays disabled.
+func (s *Service) ConfirmEmail(ctx context.Context, id uuid.UUID, actor string) (User, error) {
+	var u User
+	err := s.store.Tx(ctx, func(tx pgx.Tx) error {
+		region, err := s.regionOf(ctx, tx, id)
+		if err != nil {
+			return err
+		}
+		if _, err := tx.Exec(ctx, `UPDATE users SET email_verified_at = COALESCE(email_verified_at, now()),
+			status = CASE WHEN status = 'pending' THEN 'active' ELSE status END, updated_at = now()
+			WHERE region = $1 AND id = $2`, region, id); err != nil {
+			return err
+		}
+		if err := audit.Write(ctx, tx, region, actor, "user.email_confirmed_by_provider", "user:"+id.String(), nil); err != nil {
+			return err
+		}
+		u, err = s.getUser(ctx, tx, id)
+		return err
+	})
+	return u, err
+}

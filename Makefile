@@ -3,7 +3,8 @@
 COMPOSE = docker compose -f deploy/compose/docker-compose.yml
 # Local runs use the production binary and commands; only these env vars differ.
 LOCAL   = HAYAT_DATABASE_URL='postgres://hayat:hayat@127.0.0.1:55432/hayat?sslmode=disable' \
-          HAYAT_MASTER_KEY="$$(cat .dev/master.key)" HAYAT_DEV=true
+          HAYAT_MASTER_KEY="$$(cat .dev/master.key)" HAYAT_DEV=true \
+          HAYAT_STORAGE=local HAYAT_STORAGE_DIR="$(CURDIR)/.dev/media"
 
 # Built rather than `go run`, and vite started directly rather than through
 # pnpm, so the signals below reach the real processes.

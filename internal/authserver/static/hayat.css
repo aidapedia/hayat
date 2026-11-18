@@ -42,7 +42,7 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--ink);
-  font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font: 14px/1.5 var(--font, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif);
   -webkit-font-smoothing: antialiased;
 }
 .shell {
@@ -63,7 +63,7 @@ body {
   max-width: 380px;
   background: var(--card);
   border: 1px solid var(--edge);
-  border-radius: 14px;
+  border-radius: var(--card-radius, 14px);
   padding: 28px;
 }
 h1 { margin: 0; font-size: 19px; font-weight: 700; letter-spacing: -0.3px; }
@@ -77,7 +77,7 @@ input[type=email], input[type=text], input[type=password] {
   width: 100%;
   height: 38px;
   padding: 0 12px;
-  border-radius: 10px;
+  border-radius: var(--radius, 10px);
   border: 1px solid var(--edge);
   background: var(--elevated);
   color: var(--ink);
@@ -95,9 +95,9 @@ input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--notice-so
   height: 38px;
   margin-top: 4px;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--radius, 10px);
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent, #fff);
   font: inherit;
   font-size: 13px;
   font-weight: 600;
@@ -108,10 +108,10 @@ input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--notice-so
 .btn:hover { background: var(--accent-bright); }
 .btn:focus-visible { outline: 2px solid var(--accent-bright); outline-offset: 2px; }
 a.btn { width: 100%; margin-top: 20px; }
-.alert { margin-top: 16px; padding: 10px 12px; border-radius: 10px; font-size: 13px; }
+.alert { margin-top: 16px; padding: 10px 12px; border-radius: var(--radius, 10px); font-size: 13px; }
 .alert-error { background: var(--red-soft); color: var(--red); border: 1px solid color-mix(in oklab, var(--red) 30%, transparent); }
 .alert-notice { background: var(--notice-soft); color: var(--ink); border: 1px solid color-mix(in oklab, var(--accent) 30%, transparent); }
-a { color: var(--accent-bright); }
+a { color: var(--link, var(--accent-bright)); }
 .link-sm { font-size: 12px; font-weight: 500; text-decoration: none; }
 .link-sm:hover { text-decoration: underline; }
 .foot { margin: 0; font-size: 13px; color: var(--ink-faint); }
@@ -138,3 +138,99 @@ a { color: var(--accent-bright); }
 }
 .pw-toggle:hover { color: var(--ink); background: var(--edge); }
 .pw-toggle:focus-visible { outline: 2px solid var(--accent-bright); outline-offset: 1px; }
+
+/* ---------- Other ways in: Google, GitHub, company SSO ---------- */
+.or { display: flex; align-items: center; gap: 10px; margin: 18px 0 14px; font-size: 12px; color: var(--ink-faint); }
+.or::before, .or::after { content: ""; flex: 1; height: 1px; background: var(--edge); }
+.providers { display: flex; flex-direction: column; gap: 8px; }
+.btn-provider {
+  gap: 8px; margin-top: 0; width: 100%;
+  background: transparent; color: var(--ink); border: 1px solid var(--edge-strong);
+  font-weight: 500;
+}
+a.btn.btn-provider { margin-top: 0; }
+.btn-provider:hover { background: var(--elevated); }
+.btn-provider svg { flex: none; }
+
+/* ---------- A service's login page (internal/loginpage) ----------
+   Hayat's page above is the centered layout. A brand only sets variables:
+   colors, --radius, --font. Nothing here depends on what a service typed. */
+.stage { display: flex; flex-direction: column; align-items: center; gap: 20px; width: 100%; }
+fieldset.lock { margin: 0; padding: 0; border: 0; min-width: 0; }
+
+.logo { height: 32px; width: auto; max-width: 180px; object-fit: contain; display: block; }
+.logo-dark { display: none; }
+@media (prefers-color-scheme: dark) {
+  :root:not(.mode-light) .logo-dark { display: block; }
+  :root:not(.mode-light) .logo-light { display: none; }
+}
+:root.mode-dark .logo-dark { display: block; }
+:root.mode-dark .logo-light { display: none; }
+.logo-initial {
+  width: 32px; height: 32px; border-radius: min(var(--radius, 10px), 10px);
+  display: grid; place-items: center;
+  background: var(--accent); color: var(--on-accent, #fff);
+  font-weight: 800; font-size: 16px;
+}
+.branded .brand-name { font-size: 17px; }
+.branded h1 { font-size: 22px; letter-spacing: -0.4px; }
+
+.legal { margin: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 16px; font-size: 12px; color: var(--ink-faint); }
+.legal a { color: var(--ink-dim); text-decoration: none; }
+.legal a:hover { text-decoration: underline; }
+.secured { display: inline-flex; align-items: center; gap: 5px; }
+
+.panel-link { color: var(--on-panel-dim); font-size: 13px; font-weight: 600; text-decoration: none; }
+.panel-link:hover { color: var(--on-panel); }
+.tagline { margin: 0; max-width: 18ch; font-size: clamp(26px, 3.2vw, 40px); line-height: 1.12; font-weight: 800; letter-spacing: -0.03em; text-wrap: balance; }
+
+/* Split: a brand panel beside the form. */
+.layout-split .shell { flex-direction: row; align-items: stretch; justify-content: stretch; gap: 0; padding: 0; }
+.layout-split .panel {
+  flex: 0 0 42%; max-width: 620px;
+  display: flex; flex-direction: column; justify-content: space-between; gap: 32px;
+  padding: 48px clamp(24px, 4vw, 56px);
+  background: var(--brand-panel); color: var(--on-panel);
+}
+.layout-split .panel .logo-initial { background: var(--on-panel); color: var(--brand-panel); }
+.layout-split .stage { flex: 1; justify-content: center; padding: 40px 24px; }
+.layout-split .brand-top { display: none; }
+.layout-split .card { background: transparent; border: 0; padding: 0; }
+.layout-split .legal { justify-content: flex-start; width: 100%; max-width: 380px; }
+.layout-split .foot { width: 100%; max-width: 380px; }
+
+/* Full-bleed: the whole page is the brand, the form floats on it. */
+body.layout-fullbleed {
+  background-color: var(--brand-panel);
+  background-image: radial-gradient(color-mix(in srgb, var(--on-panel) 16%, transparent) 1.2px, transparent 1.4px);
+  background-size: 22px 22px;
+}
+.layout-fullbleed .shell { flex-direction: row-reverse; align-items: center; justify-content: space-between; gap: 40px; padding: 48px clamp(16px, 7vw, 96px); }
+.layout-fullbleed .stage { width: auto; flex: 0 1 420px; align-items: stretch; }
+.layout-fullbleed .card { box-shadow: 0 30px 70px rgba(0, 0, 0, 0.28); }
+.layout-fullbleed .brand-top { color: var(--on-panel); }
+.layout-fullbleed .brand-top .logo-initial { background: var(--on-panel); color: var(--brand-panel); }
+.layout-fullbleed .panel { align-self: flex-end; max-width: 380px; color: var(--on-panel); display: flex; flex-direction: column; gap: 12px; }
+.layout-fullbleed .panel-brand { display: none; }
+.layout-fullbleed .foot, .layout-fullbleed .legal, .layout-fullbleed .legal a { color: var(--on-panel-dim); }
+.layout-fullbleed .foot a { color: var(--on-panel); }
+
+@media (max-width: 820px) {
+  .layout-split .shell { flex-direction: column; }
+  .layout-split .panel { flex: none; max-width: none; padding: 28px 24px; gap: 18px; }
+  .layout-split .tagline { font-size: 22px; }
+  .layout-split .stage { justify-content: flex-start; padding-top: 32px; }
+  .layout-fullbleed .shell { flex-direction: column; justify-content: center; padding: 32px 16px; }
+  .layout-fullbleed .stage { flex: none; width: 100%; max-width: 420px; }
+  .layout-fullbleed .panel { align-self: center; text-align: center; }
+  .layout-fullbleed .tagline { font-size: 22px; max-width: none; }
+}
+
+/* A preview of a draft: everything is drawn, nothing works. */
+.preview a { pointer-events: none; }
+.preview-bar {
+  position: sticky; top: 0; z-index: 10;
+  padding: 6px 12px; text-align: center; font-size: 12px; font-weight: 600;
+  background: #e3a35c; color: #1d1206;
+}
+.preview fieldset.lock input:disabled, .preview fieldset.lock button:disabled { opacity: 1; cursor: default; }

@@ -20,6 +20,12 @@ x-hayat: &hayat
     HAYAT_DATABASE_URL: postgres://hayat:${POSTGRES_PASSWORD:-hayat}@postgres:5432/hayat?sslmode=disable
     HAYAT_REDIS_URL: redis://redis:6379/0
     HAYAT_SMTP_URL: ${HAYAT_SMTP_URL:-smtp://mailpit:1025}
+    # Uploaded avatars and logos, on one volume every role mounts. Set
+    # HAYAT_STORAGE=s3 (and HAYAT_S3_*) in .env to keep them in a bucket instead.
+    HAYAT_STORAGE: ${HAYAT_STORAGE:-local} # back the media volume up with postgres
+    HAYAT_STORAGE_DIR: /var/lib/hayat/media
+  volumes:
+    - media:/var/lib/hayat/media
   depends_on:
     hayat-migrate:
       condition: service_completed_successfully
@@ -97,3 +103,4 @@ services:
 
 volumes:
   postgres:
+  media:

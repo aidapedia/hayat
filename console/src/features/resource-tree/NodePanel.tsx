@@ -50,7 +50,7 @@ function SubgroupMemberRow({ member, tenantId }: { member: SubgroupMember; tenan
   const via = member.groups[0]
   return (
     <li className="flex items-center justify-between gap-3 px-3 py-2.5">
-      <PersonRow name={member.user!.name} email={member.user!.email} />
+      <PersonRow name={member.user!.name} email={member.user!.email} src={member.user!.avatarUrl} />
       {via && (
         <Link
           to={nodeHref(tenantId, via.id)}
@@ -304,7 +304,7 @@ export function NodePanel({
               <ul className="divide-y rounded-[10px] border">
                 {data.members.map((m) => (
                   <li key={m.user!.id} className="flex items-center justify-between gap-3 px-3 py-2.5">
-                    <PersonRow name={m.user!.name} email={m.user!.email} />
+                    <PersonRow name={m.user!.name} email={m.user!.email} src={m.user!.avatarUrl} />
                     {can(P.groups) && (
                       <Button
                         variant="ghost"

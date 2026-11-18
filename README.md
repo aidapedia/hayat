@@ -80,7 +80,31 @@ Contributing: [CONTRIBUTING.md](CONTRIBUTING.md)
   rename, its Resource Tree) without being an instance admin; members see their
   tenants read-only unless granted more.
 
-Not yet: Google/GitHub and enterprise SSO, MFA (phase 3), multi-region on
+**Phase 3, sign-in**
+- **Login pages per service**: a service's owners design what people see when
+  one of its apps sends them to sign in (Services → a service → Login page):
+  centered, split or full-bleed layout, logo (and one for dark), accent and
+  brand-panel colors, light/dark/follow-device, font, corners, heading,
+  tagline, terms/privacy/help links, and whether "Create an account" shows.
+  Every change saves a draft, shown live as Hayat will draw it; Publish makes
+  it a new version and History brings any old one back. Hayat draws the page
+  on its own sign-in domain from data, never markup, so single sign-on and
+  password managers keep working and "Secured by Hayat" always shows.
+- **Pictures and logos**: people upload their own picture (Account), a tenant's
+  admins its logo, a service's owners theirs. A picture becomes the OIDC
+  `picture` claim; a tenant's logo reaches services in `ListUserTenants`.
+  Stored on a volume or in an S3-compatible bucket, never in the database.
+
+- **Google, GitHub and company SSO**: an instance admin sets up Google, GitHub
+  and one company OpenID Connect provider (Okta, Entra ID, Keycloak…) for
+  everyone at Sign-in methods. A tenant can connect its own provider instead,
+  prove its email domains with a DNS TXT record, and make company sign-in the
+  only way in for them (instance admins keep their password). New people from
+  Google or GitHub get an account; a company provider creates them only when
+  it's allowed to, and adds them to the tenant. People link and unlink accounts
+  at Account → Sign-in methods. Each provider redirects to `<issuer>/sso/callback`.
+
+Not yet: MFA (rest of phase 3), multi-region on
 YugabyteDB (phase 4), a shared Redis decision cache (each api pod caches in
 memory today).
 
@@ -244,6 +268,21 @@ All settings are environment variables, read in `internal/config/config.go`.
 The full list with defaults is in `deploy/compose/.env.example`. Required:
 `HAYAT_DATABASE_URL`, `HAYAT_MASTER_KEY`, and an `https://` `HAYAT_ISSUER`
 outside development.
+
+**Uploaded images** — people's pictures and the logos of tenants, services and
+login pages — are checked, resized and re-encoded, then served by Hayat at
+`<issuer>/media/<id>`. `HAYAT_STORAGE` picks where the files live:
+
+| `HAYAT_STORAGE` | Where | Set also |
+| --- | --- | --- |
+| `local` (default) | a directory, `/var/lib/hayat/media` unless `HAYAT_STORAGE_DIR` says otherwise. The auth and admin roles must mount the same one: compose shares one volume; in Kubernetes use a ReadWriteMany volume | `HAYAT_STORAGE_DIR` |
+| `s3` | any S3-compatible bucket: AWS S3, Cloudflare R2, MinIO. Nothing shared between pods | `HAYAT_S3_BUCKET`, `HAYAT_S3_ACCESS_KEY_ID`, `HAYAT_S3_SECRET_ACCESS_KEY`, and `HAYAT_S3_ENDPOINT`, `HAYAT_S3_REGION`, `HAYAT_S3_PREFIX`, `HAYAT_S3_PATH_STYLE` as needed |
+
+Images are never kept in the database. The bucket can stay private: browsers
+only ever load images from Hayat. The auth and admin roles check the store at
+boot and refuse to start if they can't write to it; the api and worker roles
+don't touch it. Back the volume up with the database: a restored database
+points at images by id.
 
 ## Develop
 
