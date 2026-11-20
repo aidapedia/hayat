@@ -14,6 +14,7 @@ package tenancy
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -52,9 +53,11 @@ type Tenant struct {
 	OwnerID     uuid.UUID
 	MemberCount int
 	// Logo is a media id, empty for none.
-	Logo      string
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	Logo string
+	// RequireMFA makes every member sign in with a second factor.
+	RequireMFA bool
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
 }
 
 type Member struct {
@@ -90,14 +93,14 @@ func Slugify(name string) string {
 
 const tenantColumns = `t.id, t.region, t.slug, t.name, n.owner_id,
 	(SELECT count(*) FROM group_members m WHERE m.region = t.region AND m.group_id = n.id),
-	t.logo, t.created_at, t.updated_at`
+	t.logo, t.require_mfa, t.created_at, t.updated_at`
 
 const tenantFrom = ` FROM tenants t JOIN nodes n ON n.region = t.region AND n.tenant_id = t.id AND n.type = 'hayat/tenant'`
 
 func scanTenant(row pgx.Row) (Tenant, error) {
 	var t Tenant
 	var owner *uuid.UUID
-	err := row.Scan(&t.ID, &t.Region, &t.Slug, &t.Name, &owner, &t.MemberCount, &t.Logo, &t.CreatedAt, &t.UpdatedAt)
+	err := row.Scan(&t.ID, &t.Region, &t.Slug, &t.Name, &owner, &t.MemberCount, &t.Logo, &t.RequireMFA, &t.CreatedAt, &t.UpdatedAt)
 	if owner != nil {
 		t.OwnerID = *owner
 	}
@@ -278,6 +281,44 @@ func (s *Service) Rename(ctx context.Context, id uuid.UUID, name, actor string) 
 		return err
 	})
 	return t, err
+}
+
+// SetRequireMFA turns the tenant's two-step verification requirement on or
+// off. It applies from each member's next sign-in: someone without a second
+// factor is asked to set one up before they get in.
+func (s *Service) SetRequireMFA(ctx context.Context, id uuid.UUID, on bool, actor string) (Tenant, error) {
+	var t Tenant
+	err := s.store.Tx(ctx, func(tx pgx.Tx) error {
+		region, err := s.regionOf(ctx, tx, id)
+		if err != nil {
+			return err
+		}
+		if _, err := tx.Exec(ctx, `UPDATE tenants SET require_mfa = $3, updated_at = now() WHERE region = $1 AND id = $2`, region, id, on); err != nil {
+			return err
+		}
+		if err := audit.Write(ctx, tx, region, actor, "tenant.require_mfa_changed", "tenant:"+id.String(), map[string]any{"require_mfa": on}); err != nil {
+			return err
+		}
+		t, err = s.get(ctx, tx, id)
+		return err
+	})
+	return t, err
+}
+
+// RequiresMFA reports whether any tenant the person belongs to requires a
+// second factor, and names the first such tenant for the message.
+func (s *Service) RequiresMFA(ctx context.Context, userID uuid.UUID) (bool, string, error) {
+	var name string
+	err := s.store.Pool.QueryRow(ctx, `SELECT t.name`+tenantFrom+`
+		JOIN group_members gm ON gm.region = n.region AND gm.group_id = n.id
+		WHERE gm.user_id = $1 AND t.require_mfa ORDER BY t.name LIMIT 1`, userID).Scan(&name)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, "", nil
+	}
+	if err != nil {
+		return false, "", err
+	}
+	return true, name, nil
 }
 
 // Delete removes an empty tenant and its roster.

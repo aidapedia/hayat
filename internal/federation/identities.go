@@ -153,6 +153,15 @@ func (f *Service) SignIn(ctx context.Context, r Return) (identity.User, error) {
 	return u, nil
 }
 
+// Owner is the account a finished trip's outside account is linked to,
+// without linking or creating anything: how "confirm it's you" with another
+// account checks that it is the same person.
+func (f *Service) Owner(ctx context.Context, r Return) (uuid.UUID, error) {
+	var userID uuid.UUID
+	err := f.store.Pool.QueryRow(ctx, `SELECT user_id FROM identity_refs WHERE provider_id = $1 AND subject = $2`, r.Provider.ID, r.Profile.Subject).Scan(&userID)
+	return userID, store.NotFound(err)
+}
+
 // usable is the account, refused when it is disabled.
 func (f *Service) usable(ctx context.Context, id uuid.UUID) (identity.User, error) {
 	u, err := f.ids.GetUser(ctx, id)
@@ -220,7 +229,12 @@ func (f *Service) Unlink(ctx context.Context, u identity.User, identityID uuid.U
 		return store.ErrNotFound
 	}
 	if !u.HasPassword && len(linked) == 1 {
-		return ErrLastWayIn
+		// A passkey signs in on its own, so it is a way in too.
+		if has, err := f.ids.HasPasskey(ctx, u.ID); err != nil {
+			return err
+		} else if !has {
+			return ErrLastWayIn
+		}
 	}
 	return f.store.Tx(ctx, func(tx pgx.Tx) error {
 		if _, err := tx.Exec(ctx, `DELETE FROM identity_refs WHERE identity_id = $1`, identityID); err != nil {

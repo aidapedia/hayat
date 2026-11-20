@@ -1,0 +1,17 @@
+{{define "content"}}
+{{if .HasPasskey}}
+{{template "passkey-error" .}}
+<button type="button" class="btn" data-passkey="mfa" data-csrf="{{.CSRF}}" data-auth-request="{{.AuthRequestID}}" hidden>{{template "passkey-icon"}}Use a passkey</button>
+<div class="or" role="separator" data-passkey-only hidden><span>or</span></div>
+{{end}}
+<form method="post" action="/mfa" class="form" novalidate>
+  <input type="hidden" name="csrf" value="{{.CSRF}}">
+  <label class="field">
+    <span>{{if .HasTOTP}}Code from your authenticator app{{else}}Recovery code{{end}}</span>
+    <input type="text" name="code" {{if .HasTOTP}}inputmode="numeric" autocomplete="one-time-code" maxlength="20"{{else}}autocomplete="off" maxlength="20"{{end}} required {{if not .HasPasskey}}autofocus{{end}}>
+  </label>
+  {{if .HasTOTP}}<p class="hint">Lost your device? Enter one of your recovery codes instead.</p>{{end}}
+  <button type="submit" class="{{if .HasPasskey}}btn btn-provider{{else}}btn{{end}}">Continue</button>
+</form>
+{{end}}
+{{define "foot"}}<a href="/login{{if .AuthRequestID}}?authRequestID={{.AuthRequestID}}{{end}}">Sign in as someone else</a>{{end}}

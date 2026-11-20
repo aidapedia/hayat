@@ -12,9 +12,11 @@
   </label>
   <button type="submit" class="btn">Sign in</button>
 </form>
-{{if or .Providers .CompanyURL}}
+{{if or .Providers .CompanyURL .Passkeys}}
 <div class="or" role="separator"><span>or</span></div>
 <div class="providers">
+  {{if .Passkeys}}{{template "passkey-error" .}}
+  <button type="button" class="btn btn-provider" data-passkey="login" data-csrf="{{.CSRF}}" data-auth-request="{{.AuthRequestID}}" hidden>{{template "passkey-icon"}}Sign in with a passkey</button>{{end}}
   {{range .Providers}}
   <a class="btn btn-provider" href="{{.URL}}">{{template "provider-icon" .Kind}}Continue with {{.Name}}</a>
   {{end}}

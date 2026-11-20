@@ -1,0 +1,13 @@
+{{define "content"}}
+<ol class="codes">{{range .Codes}}<li><code>{{.}}</code></li>{{end}}</ol>
+<p class="hint">Copy or print them now. You can make a fresh set any time from Account → Security, which voids these.</p>
+{{if .Confirm}}
+<form method="post" action="{{.Confirm}}" class="form">
+  <input type="hidden" name="csrf" value="{{.CSRF}}">
+  <input type="hidden" name="method" value="{{.Method}}">
+  <button type="submit" class="btn">I've saved them, continue</button>
+</form>
+{{else}}
+<a class="btn" href="{{if .ReturnTo}}{{.ReturnTo}}{{else}}{{.ConsoleURL}}{{end}}">I've saved them, continue</a>
+{{end}}
+{{end}}

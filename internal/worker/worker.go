@@ -130,6 +130,8 @@ func (w *Worker) cleanup(ctx context.Context) {
 		`DELETE FROM refresh_tokens WHERE region = $1 AND (revoked_at IS NOT NULL OR rotated_at IS NOT NULL OR expires_at < now()) AND created_at < now() - interval '30 days'`,
 		`DELETE FROM email_outbox WHERE region = $1 AND sent_at < now() - interval '30 days'`,
 		`DELETE FROM policy_events WHERE region = $1 AND created_at < now() - interval '1 day'`,
+		// Sign-ins half done: a second factor never entered, a passkey ceremony abandoned.
+		`DELETE FROM sign_in_challenges WHERE region = $1 AND expires_at < now()`,
 	} {
 		if _, err := w.store.Pool.Exec(ctx, q, w.cfg.Region); err != nil {
 			w.log.Error("cleanup", "err", err)

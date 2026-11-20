@@ -13,6 +13,7 @@ import (
 
 	"github.com/aidapedia/hayat/internal/errs"
 	"github.com/aidapedia/hayat/internal/federation"
+	"github.com/aidapedia/hayat/internal/identity"
 	"github.com/aidapedia/hayat/internal/store"
 )
 
@@ -164,6 +165,10 @@ func (s *Server) ssoCallback(w http.ResponseWriter, r *http.Request) {
 		s.ssoFailed(w, r, err)
 		return
 	}
+	if ret.AuthRequestID == reauthTrip {
+		s.reauthReturn(w, r, ret)
+		return
+	}
 	u, err := s.fed.SignIn(r.Context(), ret)
 	if err != nil {
 		s.ssoFailed(w, r, err)
@@ -173,21 +178,36 @@ func (s *Server) ssoCallback(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, s.cfg.ConsoleURL+"/account?linked="+url.QueryEscape(ret.Provider.Name), http.StatusFound)
 		return
 	}
-	sess, err := s.startSession(w, r, u, []string{"fed"})
-	if err != nil {
+	// A company's own provider decides how its people prove who they are;
+	// after Google or GitHub, a second factor is still asked for.
+	s.goNext(w, r, firstFactor{user: u, amr: []string{identity.AMRFed}, authRequestID: ret.AuthRequestID,
+		company: ret.Provider.Kind == "oidc"})
+}
+
+// reauthReturn finishes "confirm it's you" with another account: the outside
+// account must be one already linked to whoever is signed in here.
+func (s *Server) reauthReturn(w http.ResponseWriter, r *http.Request, ret federation.Return) {
+	returnTo := ""
+	if c, err := r.Cookie(reauthCookie); err == nil {
+		returnTo = s.safeReturn(c.Value)
+	}
+	http.SetCookie(w, &http.Cookie{Name: reauthCookie, Value: "", Path: "/sso", HttpOnly: true, MaxAge: -1,
+		Secure: s.cfg.SecureCookies(), SameSite: http.SameSiteLaxMode})
+	sess, u, ok := s.currentSession(r)
+	if !ok {
+		http.Redirect(w, r, "/login", http.StatusFound)
+		return
+	}
+	owner, err := s.fed.Owner(r.Context(), ret)
+	if err != nil || owner != u.ID {
+		s.message(w, r, "That's a different account", "Confirm with the "+ret.Provider.Name+" account linked to "+u.Email+".", http.StatusForbidden)
+		return
+	}
+	if err := s.ids.Reverify(r.Context(), sess, identity.AMRFed); err != nil {
 		s.serverError(w, r, err)
 		return
 	}
-	if ret.AuthRequestID == "" {
-		http.Redirect(w, r, s.cfg.ConsoleURL, http.StatusFound)
-		return
-	}
-	a, err := s.storage.LoadAuthRequest(r.Context(), ret.AuthRequestID)
-	if err != nil {
-		s.message(w, r, "Sign-in expired", "This sign-in took too long. Go back to the application and start again.", http.StatusBadRequest)
-		return
-	}
-	s.finish(w, r, a, sess)
+	http.Redirect(w, r, s.returnOrConsole(returnTo), http.StatusFound)
 }
 
 // enforcedProvider is the provider an address must sign in with, when its

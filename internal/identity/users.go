@@ -21,6 +21,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/go-webauthn/webauthn/webauthn"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"golang.org/x/text/language"
@@ -89,10 +90,14 @@ type Service struct {
 	store      *store.Store
 	issuer     string
 	sessionTTL time.Duration
+	sec        Security
+	passkeys   *webauthn.WebAuthn // nil when the issuer can't be a relying party
 }
 
 func New(s *store.Store, issuer string, sessionTTL time.Duration) *Service {
-	return &Service{store: s, issuer: strings.TrimRight(issuer, "/"), sessionTTL: sessionTTL}
+	svc := &Service{store: s, issuer: strings.TrimRight(issuer, "/"), sessionTTL: sessionTTL}
+	svc.passkeys = newRelyingParty(svc.issuer)
+	return svc
 }
 
 const userColumns = `id, region, email, email_verified_at IS NOT NULL, name, avatar_url, locale, zoneinfo, phone,
@@ -116,6 +121,9 @@ func NormalizeEmail(raw string) (string, error) {
 	return raw, nil
 }
 
+// checkPassword is the length rule alone: what an operator's own accounts
+// (`hayat seed`) must pass. Everything a person chooses goes through
+// checkNewPassword, which also asks about breaches.
 func checkPassword(p string) error {
 	if utf8.RuneCountInString(p) < MinPasswordLength || len(p) > maxPasswordLength {
 		return ErrWeakPassword
@@ -324,6 +332,9 @@ func (s *Service) ResendVerification(ctx context.Context, id uuid.UUID) error {
 // CreateAdmin makes the first instance admin from the setup page. The caller
 // has already checked the setup token.
 func (s *Service) CreateAdmin(ctx context.Context, rawEmail, name, password string) (User, error) {
+	if err := s.checkNewPassword(ctx, password); err != nil {
+		return User{}, err
+	}
 	return s.CreateActive(ctx, rawEmail, name, password, true, "setup")
 }
 
@@ -495,7 +506,7 @@ func (s *Service) CheckLink(ctx context.Context, region, token, purpose string) 
 // CompleteVerification is the emailed link of a pending account: the person
 // proves the mailbox and chooses a password in one step.
 func (s *Service) CompleteVerification(ctx context.Context, region, token, password string) (User, error) {
-	if err := checkPassword(password); err != nil {
+	if err := s.checkNewPassword(ctx, password); err != nil {
 		return User{}, err
 	}
 	hash, err := crypto.HashPassword(password)
@@ -555,7 +566,7 @@ func (s *Service) RequestPasswordReset(ctx context.Context, rawEmail string) err
 // ResetPassword sets a new password from an emailed link and signs the account
 // out everywhere.
 func (s *Service) ResetPassword(ctx context.Context, region, token, password string) (User, error) {
-	if err := checkPassword(password); err != nil {
+	if err := s.checkNewPassword(ctx, password); err != nil {
 		return User{}, err
 	}
 	hash, err := crypto.HashPassword(password)
@@ -571,7 +582,8 @@ func (s *Service) ResetPassword(ctx context.Context, region, token, password str
 		if owner.Status != StatusActive {
 			return ErrLinkInvalid
 		}
-		u, err = scanUser(tx.QueryRow(ctx, `UPDATE users SET password_hash = $3, updated_at = now()
+		// The mailbox answered: that also lifts a lockout.
+		u, err = scanUser(tx.QueryRow(ctx, `UPDATE users SET password_hash = $3, failed_logins = 0, locked_until = NULL, updated_at = now()
 			WHERE region = $1 AND id = $2 RETURNING `+userColumns, owner.Region, owner.ID, hash))
 		if err != nil {
 			return err
@@ -598,15 +610,28 @@ func (s *Service) Authenticate(ctx context.Context, email, password string) (Use
 		return User{}, err
 	}
 	var hash string
-	if err := s.store.Pool.QueryRow(ctx, `SELECT password_hash FROM users WHERE region = $1 AND id = $2`, u.Region, u.ID).Scan(&hash); err != nil {
+	var lockedUntil *time.Time
+	if err := s.store.Pool.QueryRow(ctx, `SELECT password_hash, locked_until FROM users WHERE region = $1 AND id = $2`,
+		u.Region, u.ID).Scan(&hash, &lockedUntil); err != nil {
 		return User{}, err
 	}
 	if u.Status == StatusPending {
 		crypto.BurnPasswordTime(password)
 		return User{}, ErrPending
 	}
+	if lockedUntil != nil && time.Now().Before(*lockedUntil) {
+		crypto.BurnPasswordTime(password)
+		return User{}, ErrLocked
+	}
 	if !crypto.VerifyPassword(hash, password) {
+		if err := s.failedLogin(ctx, u); err != nil {
+			return User{}, err
+		}
 		return User{}, ErrBadCredentials
+	}
+	if _, err := s.store.Pool.Exec(ctx, `UPDATE users SET failed_logins = 0, locked_until = NULL
+		WHERE region = $1 AND id = $2 AND (failed_logins <> 0 OR locked_until IS NOT NULL)`, u.Region, u.ID); err != nil {
+		return User{}, err
 	}
 	if u.Status == StatusDisabled {
 		return User{}, ErrDisabled
@@ -622,8 +647,33 @@ func (s *Service) Authenticate(ctx context.Context, email, password string) (Use
 	return u, nil
 }
 
+// failedLogin counts a wrong password. The tenth in a row locks the password
+// for a while and tells the owner, who can lift it by resetting the password.
+func (s *Service) failedLogin(ctx context.Context, u User) error {
+	return s.store.Tx(ctx, func(tx pgx.Tx) error {
+		var n int
+		if err := tx.QueryRow(ctx, `UPDATE users SET failed_logins = failed_logins + 1
+			WHERE region = $1 AND id = $2 RETURNING failed_logins`, u.Region, u.ID).Scan(&n); err != nil {
+			return err
+		}
+		if n < maxFailedLogins {
+			return nil
+		}
+		if _, err := tx.Exec(ctx, `UPDATE users SET failed_logins = 0, locked_until = $3 WHERE region = $1 AND id = $2`,
+			u.Region, u.ID, time.Now().Add(lockFor)); err != nil {
+			return err
+		}
+		if err := audit.Write(ctx, tx, u.Region, audit.System, "user.locked", "user:"+u.ID.String(), map[string]any{"minutes": int(lockFor.Minutes())}); err != nil {
+			return err
+		}
+		return hmail.Enqueue(ctx, tx, u.Region, u.Email, "Your Hayat password is locked for a while",
+			fmt.Sprintf("Hi %s,\n\nSomeone entered the wrong password for your account %d times in a row, so signing in with the password is paused for %d minutes.\n\nIf it was you, wait and try again, or choose a new password: %s/forgot\nIf it wasn't, your account is safe as long as the password is strong; consider turning on two-step verification.",
+				u.DisplayName(), maxFailedLogins, int(lockFor.Minutes()), s.issuer))
+	})
+}
+
 func (s *Service) ChangePassword(ctx context.Context, id uuid.UUID, current, next string, keepSession uuid.UUID) error {
-	if err := checkPassword(next); err != nil {
+	if err := s.checkNewPassword(ctx, next); err != nil {
 		return err
 	}
 	hash, err := crypto.HashPassword(next)

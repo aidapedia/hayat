@@ -69,6 +69,11 @@ func New(cfg config.Config, s *store.Store, log *slog.Logger) (*App, error) {
 		return nil, err
 	}
 	ids := identity.New(s, cfg.Issuer, cfg.SessionTTL)
+	sec := identity.Security{Box: box, IdleTimeout: cfg.SessionIdleTimeout}
+	if cfg.BreachedPasswords == "hibp" {
+		sec.Breached = identity.NewHIBP()
+	}
+	ids.SetSecurity(sec)
 	clients := hoidc.NewClients(s, cfg.Issuer, cfg.Dev)
 	keys := hoidc.NewKeyRing(s, box)
 	// Revisions are cached for a second: within that window Watch events and
@@ -111,7 +116,7 @@ func (a *App) AuthHandler(ctx context.Context) (http.Handler, func(), error) {
 		closeLimiter()
 		return nil, nil, err
 	}
-	srv, err := authserver.New(a.Cfg, a.Store, a.IDs, a.Storage, a.Clients, a.Pages, a.Catalog, a.Media, a.Fed, provider, limiter, a.Log)
+	srv, err := authserver.New(a.Cfg, a.Store, a.IDs, a.Storage, a.Clients, a.Pages, a.Catalog, a.Media, a.Fed, a.Tenants, provider, limiter, a.Log)
 	if err != nil {
 		closeLimiter()
 		return nil, nil, err
