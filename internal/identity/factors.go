@@ -169,7 +169,7 @@ func (s *Service) ResetFactors(ctx context.Context, userID uuid.UUID, actor stri
 			return err
 		}
 		return hmail.Enqueue(ctx, tx, u.Region, u.Email, "Two-step verification was reset on your Hayat account",
-			fmt.Sprintf("Hi %s,\n\nAn administrator removed your authenticator apps, passkeys and recovery codes, and signed you out everywhere. Sign in again and set up two-step verification from Account → Security.\n\nIf you didn't ask for this, contact your administrator.", u.DisplayName()))
+			fmt.Sprintf("Hi %s,\n\nAn administrator removed your authenticator apps, passkeys and recovery codes, and signed you out everywhere. Sign in again and set up two-step verification from Account → Two-step verification.\n\nIf you didn't ask for this, contact your administrator.", u.DisplayName()))
 	})
 }
 
@@ -476,6 +476,6 @@ func (s *Service) UseRecoveryCode(ctx context.Context, userID uuid.UUID, code st
 			return err
 		}
 		return hmail.Enqueue(ctx, tx, u.Region, u.Email, "A recovery code was used to sign in to Hayat",
-			fmt.Sprintf("Hi %s,\n\nSomeone just signed in to your account with a recovery code. Each code works once; make a fresh set from Account → Security if you are running low.\n\nIf this wasn't you, reset your password now: %s/forgot", u.DisplayName(), s.issuer))
+			fmt.Sprintf("Hi %s,\n\nSomeone just signed in to your account with a recovery code. Each code works once; make a fresh set from Account → Two-step verification if you are running low.\n\nIf this wasn't you, reset your password now: %s/forgot", u.DisplayName(), s.issuer))
 	})
 }

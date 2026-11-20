@@ -1,6 +1,6 @@
 {{define "content"}}
 <ol class="codes">{{range .Codes}}<li><code>{{.}}</code></li>{{end}}</ol>
-<p class="hint">Copy or print them now. You can make a fresh set any time from Account → Security, which voids these.</p>
+<p class="hint">Copy or print them now. You can make a fresh set any time from Account → Two-step verification, which voids these.</p>
 {{if .Confirm}}
 <form method="post" action="{{.Confirm}}" class="form">
   <input type="hidden" name="csrf" value="{{.CSRF}}">

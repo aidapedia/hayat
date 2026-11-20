@@ -1,14 +1,12 @@
 package authserver
 
 import (
-	"bytes"
 	"context"
 	"crypto/subtle"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"html/template"
-	"image/png"
 	"io"
 	"net/http"
 	"net/url"
@@ -445,12 +443,9 @@ func qrDataURL(text string) template.URL {
 	if err != nil {
 		return ""
 	}
-	code.Scale = 6
-	var buf bytes.Buffer
-	if err := png.Encode(&buf, code.Image()); err != nil {
-		return ""
-	}
-	return template.URL("data:image/png;base64," + base64.StdEncoding.EncodeToString(buf.Bytes())) //nolint:gosec // our own PNG
+	// PNG draws the quiet zone and scales each module (Image() doesn't scale).
+	code.Scale = 4
+	return template.URL("data:image/png;base64," + base64.StdEncoding.EncodeToString(code.PNG())) //nolint:gosec // our own PNG
 }
 
 // ---------- Confirming it's you: /reauth ----------
