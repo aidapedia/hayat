@@ -58,6 +58,9 @@ func (k *keyService) ListSigningKeys(ctx context.Context, _ *connect.Request[adm
 }
 
 func (k *keyService) RotateSigningKeys(ctx context.Context, _ *connect.Request[adminv1.RotateSigningKeysRequest]) (*connect.Response[adminv1.RotateSigningKeysResponse], error) {
+	if err := k.s.stepUp(ctx); err != nil {
+		return nil, err
+	}
 	if err := k.s.keys.Rotate(ctx, actor(ctx)); err != nil {
 		return nil, k.s.fail(err)
 	}

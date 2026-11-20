@@ -29,6 +29,7 @@ import (
 	hoidc "github.com/aidapedia/hayat/internal/oidc"
 	"github.com/aidapedia/hayat/internal/ratelimit"
 	"github.com/aidapedia/hayat/internal/revision"
+	"github.com/aidapedia/hayat/internal/store"
 	"github.com/aidapedia/hayat/internal/tenancy"
 	"github.com/aidapedia/hayat/internal/testdb"
 )
@@ -42,12 +43,16 @@ type harness struct {
 	fed   *federation.Service
 	idsvc *identity.Service
 	tsvc  *tenancy.Service
+	store *store.Store
 }
 
 func (h *harness) ids() *identity.Service    { return h.idsvc }
 func (h *harness) tenants() *tenancy.Service { return h.tsvc }
 
-func newHarness(t *testing.T) *harness {
+func newHarness(t *testing.T) *harness { return newHarnessWith(t, nil) }
+
+// newHarnessWith lets a test change the config before the server is built.
+func newHarnessWith(t *testing.T, tweak func(*config.Config)) *harness {
 	t.Helper()
 	s := testdb.New(t)
 	ctx := context.Background()
@@ -58,10 +63,16 @@ func newHarness(t *testing.T) *harness {
 	t.Cleanup(srv.Close)
 
 	key := make([]byte, 32)
-	cfg := config.Config{Region: "default", Issuer: srv.URL, ConsoleURL: "http://console.test", MasterKey: key,
+	// localhost, not 127.0.0.1: a passkey's relying party is a host name, never an address.
+	issuer := strings.Replace(srv.URL, "127.0.0.1", "localhost", 1)
+	cfg := config.Config{Region: "default", Issuer: issuer, ConsoleURL: "http://console.test", MasterKey: key,
 		SessionTTL: time.Hour, AccessTokenTTL: 10 * time.Minute, RefreshTokenTTL: time.Hour, Dev: true}
+	if tweak != nil {
+		tweak(&cfg)
+	}
 	box, _ := crypto.NewBox(key)
 	ids := identity.New(s, cfg.Issuer, cfg.SessionTTL)
+	ids.SetSecurity(identity.Security{Box: box})
 	clients := hoidc.NewClients(s, cfg.Issuer, cfg.Dev)
 	keys := hoidc.NewKeyRing(s, box)
 	if err := keys.Ensure(ctx); err != nil {
@@ -81,7 +92,7 @@ func newHarness(t *testing.T) *harness {
 	cat := catalog.New(s, revision.NewReader(s, time.Second))
 	tenants := tenancy.New(s)
 	fed := federation.New(s, box, ids, tenants, cfg.Issuer, true, log)
-	as, err := authserver.New(cfg, s, ids, storage, clients, pages, cat, med, fed, provider, ratelimit.NewMemory(), log)
+	as, err := authserver.New(cfg, s, ids, storage, clients, pages, cat, med, fed, tenants, provider, ratelimit.NewMemory(), log)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -90,7 +101,7 @@ func newHarness(t *testing.T) *harness {
 	if _, err := ids.CreateAdmin(ctx, "ana@example.com", "Ana", "correct horse battery"); err != nil {
 		t.Fatal(err)
 	}
-	return &harness{t: t, url: srv.URL, pages: pages, fed: fed, idsvc: ids, tsvc: tenants}
+	return &harness{t: t, url: issuer, pages: pages, fed: fed, idsvc: ids, tsvc: tenants, store: s}
 }
 
 func browser() *http.Client {

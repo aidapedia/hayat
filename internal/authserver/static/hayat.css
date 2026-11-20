@@ -234,3 +234,18 @@ body.layout-fullbleed {
   background: #e3a35c; color: #1d1206;
 }
 .preview fieldset.lock input:disabled, .preview fieldset.lock button:disabled { opacity: 1; cursor: default; }
+
+/* Second factors: the QR code, the key to type, recovery codes. */
+.choices { display: flex; flex-direction: column; gap: 10px; }
+.qr { display: block; margin: 4px auto 12px; width: 200px; height: 200px; image-rendering: pixelated; border-radius: 8px; }
+.secret { margin: 0 0 16px; text-align: center; }
+.secret code { font-size: 13px; word-spacing: -0.2em; white-space: nowrap; }
+.secret code, .codes code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: 0.02em; }
+.codes code { font-size: 14px; }
+.choices + .hint { margin-top: 12px; }
+.codes { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 20px; margin: 0 0 16px; padding: 12px 16px 12px 36px; border: 1px solid var(--edge); border-radius: 10px; }
+.btn svg { margin-right: 8px; vertical-align: -3px; }
+/* A passkey button standing on its own (outside a form) spans the card, like a form's. */
+.lock > .btn[data-passkey], .choices .btn { width: 100%; }
+.lock > .btn[data-passkey]:first-of-type { margin-top: 20px; }
+.codes + .hint, .secret + .form { margin-top: 0; }

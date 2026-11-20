@@ -3,6 +3,7 @@ package identity
 import (
 	"context"
 	"errors"
+	"slices"
 	"strings"
 	"time"
 
@@ -18,30 +19,60 @@ import (
 // what gives single sign-on: every service that sends the browser to Hayat
 // finds the session and gets a code without a prompt.
 type Session struct {
-	ID         uuid.UUID
-	Region     string
-	UserID     uuid.UUID
-	AMR        []string
-	IP         string
-	UserAgent  string
-	AuthTime   time.Time
+	ID        uuid.UUID
+	Region    string
+	UserID    uuid.UUID
+	AMR       []string
+	IP        string
+	UserAgent string
+	AuthTime  time.Time
+	// VerifiedAt is when the person last proved it was them in this session:
+	// signing in, or confirming again before a sensitive change.
+	VerifiedAt time.Time
 	LastSeenAt time.Time
 	ExpiresAt  time.Time
 	RevokedAt  *time.Time
 	CreatedAt  time.Time
+
+	idle bool // unused for longer than the idle timeout
 }
 
-func (s Session) Active() bool { return s.RevokedAt == nil && time.Now().Before(s.ExpiresAt) }
+func (s Session) Active() bool {
+	return s.RevokedAt == nil && !s.idle && time.Now().Before(s.ExpiresAt)
+}
+
+// MFA reports whether the session was signed in with more than one factor
+// (or a passkey the device unlocked).
+func (s Session) MFA() bool { return slices.Contains(s.AMR, AMRMFA) }
+
+// RecentlyVerified reports whether a sensitive change may go ahead without
+// asking the person to confirm it's them again.
+func (s Session) RecentlyVerified() bool { return time.Since(s.VerifiedAt) < StepUpWindow }
 
 var ErrNoSession = errors.New("no session")
 
-const sessionColumns = `id, region, user_id, amr, ip, user_agent, auth_time, last_seen_at, expires_at, revoked_at, created_at`
+const sessionColumns = `id, region, user_id, amr, ip, user_agent, auth_time, coalesce(verified_at, auth_time), last_seen_at, expires_at, revoked_at, created_at`
 
 func scanSession(row pgx.Row) (Session, error) {
 	var s Session
-	err := row.Scan(&s.ID, &s.Region, &s.UserID, &s.AMR, &s.IP, &s.UserAgent, &s.AuthTime, &s.LastSeenAt,
+	err := row.Scan(&s.ID, &s.Region, &s.UserID, &s.AMR, &s.IP, &s.UserAgent, &s.AuthTime, &s.VerifiedAt, &s.LastSeenAt,
 		&s.ExpiresAt, &s.RevokedAt, &s.CreatedAt)
 	return s, store.NotFound(err)
+}
+
+// lookedAt marks a session idle when nobody used it for longer than the
+// idle timeout, and records that it is in use otherwise. Recording every
+// request would turn reads into writes; once every few minutes is enough for
+// "last active" and for the timeout, which is at least 15 minutes.
+func (s *Service) lookedAt(ctx context.Context, sess Session) Session {
+	if s.sec.IdleTimeout > 0 && time.Since(sess.LastSeenAt) > s.sec.IdleTimeout {
+		sess.idle = true
+		return sess
+	}
+	if sess.Active() && time.Since(sess.LastSeenAt) > 5*time.Minute {
+		_, _ = s.store.Pool.Exec(ctx, `UPDATE sessions SET last_seen_at = now() WHERE region = $1 AND id = $2`, sess.Region, sess.ID)
+	}
+	return sess
 }
 
 // CreateSession signs a user in and returns the cookie value. The value is
@@ -56,8 +87,8 @@ func (s *Service) CreateSession(ctx context.Context, u User, amr []string, ip, u
 	err := s.store.Tx(ctx, func(tx pgx.Tx) error {
 		var err error
 		sess, err = scanSession(tx.QueryRow(ctx, `INSERT INTO sessions
-			(region, id, user_id, token_hash, amr, ip, user_agent, auth_time, last_seen_at, expires_at)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $8, $9) RETURNING `+sessionColumns,
+			(region, id, user_id, token_hash, amr, ip, user_agent, auth_time, verified_at, last_seen_at, expires_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $8, $8, $9) RETURNING `+sessionColumns,
 			u.Region, store.NewID(), u.ID, crypto.HashToken(token), nonNil(amr), ip, userAgent, now, now.Add(s.sessionTTL)))
 		if err != nil {
 			return err
@@ -85,18 +116,34 @@ func (s *Service) SessionByCookie(ctx context.Context, cookie string) (Session, 
 	if err != nil || u.Status != StatusActive {
 		return Session{}, User{}, ErrNoSession
 	}
-	// Recording every request would turn reads into writes; once every few
-	// minutes is enough for "last active".
-	if time.Since(sess.LastSeenAt) > 5*time.Minute {
-		_, _ = s.store.Pool.Exec(ctx, `UPDATE sessions SET last_seen_at = now() WHERE region = $1 AND id = $2`, sess.Region, sess.ID)
+	if sess = s.lookedAt(ctx, sess); !sess.Active() {
+		return Session{}, User{}, ErrNoSession
 	}
 	return sess, u, nil
 }
 
 // SessionByID is how token holders are checked: a token is only good while the
 // session it was issued under is alive and its user is active.
+// Using it counts as using the session: refreshing a token or calling the
+// console's API keeps an idle timeout away.
 func (s *Service) SessionByID(ctx context.Context, region string, id uuid.UUID) (Session, error) {
-	return scanSession(s.store.Pool.QueryRow(ctx, `SELECT `+sessionColumns+` FROM sessions WHERE region = $1 AND id = $2`, region, id))
+	sess, err := scanSession(s.store.Pool.QueryRow(ctx, `SELECT `+sessionColumns+` FROM sessions WHERE region = $1 AND id = $2`, region, id))
+	if err != nil {
+		return Session{}, err
+	}
+	return s.lookedAt(ctx, sess), nil
+}
+
+// Reverify records that the person just proved it was them again in this
+// session, so sensitive changes go through for the next few minutes.
+func (s *Service) Reverify(ctx context.Context, sess Session, method string) error {
+	return s.store.Tx(ctx, func(tx pgx.Tx) error {
+		if _, err := tx.Exec(ctx, `UPDATE sessions SET verified_at = now(), last_seen_at = now() WHERE region = $1 AND id = $2`,
+			sess.Region, sess.ID); err != nil {
+			return err
+		}
+		return audit.Write(ctx, tx, sess.Region, audit.UserActor(sess.UserID), "session.reverified", "session:"+sess.ID.String(), map[string]any{"method": method})
+	})
 }
 
 func (s *Service) ListSessions(ctx context.Context, userID uuid.UUID) ([]Session, error) {
@@ -111,6 +158,9 @@ func (s *Service) ListSessions(ctx context.Context, userID uuid.UUID) ([]Session
 		sess, err := scanSession(rows)
 		if err != nil {
 			return nil, err
+		}
+		if s.sec.IdleTimeout > 0 && time.Since(sess.LastSeenAt) > s.sec.IdleTimeout {
+			continue
 		}
 		out = append(out, sess)
 	}

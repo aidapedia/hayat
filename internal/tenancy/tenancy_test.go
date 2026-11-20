@@ -90,3 +90,35 @@ func TestTenantLifecycle(t *testing.T) {
 		t.Fatal("deleted tenant still readable")
 	}
 }
+
+func TestRequireMFA(t *testing.T) {
+	ctx := context.Background()
+	s := testdb.New(t)
+	ids := identity.New(s, "http://auth.test", time.Hour)
+	svc := tenancy.New(s)
+	owner, err := ids.CreateActive(ctx, "mfa-owner@example.com", "", "a long enough password", false, "test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	other, _, err := ids.Invite(ctx, "mfa-other@example.com", "", "test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tn, err := svc.Create(ctx, "Strict", "strict", owner.ID, "test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if on, _, _ := svc.RequiresMFA(ctx, owner.ID); on {
+		t.Fatal("off by default")
+	}
+	tn, err = svc.SetRequireMFA(ctx, tn.ID, true, "test")
+	if err != nil || !tn.RequireMFA {
+		t.Fatalf("set: %+v %v", tn, err)
+	}
+	if on, name, _ := svc.RequiresMFA(ctx, owner.ID); !on || name != "Strict" {
+		t.Fatalf("a member of a strict tenant: %v %q", on, name)
+	}
+	if on, _, _ := svc.RequiresMFA(ctx, other.ID); on {
+		t.Fatal("not a member, not required")
+	}
+}

@@ -56,10 +56,25 @@ type Config struct {
 	SMTPURL  string // smtp://user:pass@host:port; empty logs mail instead of sending it
 	MailFrom string
 
-	SessionTTL      time.Duration
-	AccessTokenTTL  time.Duration
-	RefreshTokenTTL time.Duration
-	KeyRotation     time.Duration
+	SessionTTL time.Duration
+	// SessionIdleTimeout ends a session nobody has used for this long (no
+	// page on Hayat, no token refresh, no console call). 0 turns it off.
+	SessionIdleTimeout time.Duration
+	AccessTokenTTL     time.Duration
+	RefreshTokenTTL    time.Duration
+	KeyRotation        time.Duration
+
+	// BreachedPasswords is "hibp" (the default) or "off". With hibp, a new
+	// password is checked against Have I Been Pwned's range API: only the first
+	// five hex characters of its SHA-1 leave the server. A failed lookup lets
+	// the password through.
+	BreachedPasswords string
+
+	// Turnstile puts Cloudflare's bot check on the sign-up and forgot-password
+	// pages when both keys are set. It is the one thing those pages load from
+	// another origin, so it is off unless the operator turns it on.
+	TurnstileSiteKey   string
+	TurnstileSecretKey string
 
 	// Storage is where uploaded images (avatars, logos) are kept.
 	Storage Storage
@@ -91,6 +106,9 @@ type Storage struct {
 // SecureCookies is true whenever the issuer is served over HTTPS.
 func (c Config) SecureCookies() bool { return strings.HasPrefix(c.Issuer, "https://") }
 
+// Turnstile reports whether the bot check is on.
+func (c Config) Turnstile() bool { return c.TurnstileSiteKey != "" }
+
 // ConsoleRedirectURI is the redirect URI of the built-in console client.
 func (c Config) ConsoleRedirectURI() string {
 	return strings.TrimRight(c.ConsoleURL, "/") + "/callback"
@@ -113,6 +131,10 @@ func Load() (Config, error) {
 		SMTPURL:     os.Getenv("HAYAT_SMTP_URL"),
 		MailFrom:    env("HAYAT_MAIL_FROM", "Hayat <no-reply@localhost>"),
 		Dev:         envBool("HAYAT_DEV", false),
+
+		BreachedPasswords:  env("HAYAT_BREACHED_PASSWORDS", "hibp"),
+		TurnstileSiteKey:   os.Getenv("HAYAT_TURNSTILE_SITE_KEY"),
+		TurnstileSecretKey: os.Getenv("HAYAT_TURNSTILE_SECRET_KEY"),
 		Storage: Storage{
 			Backend:     env("HAYAT_STORAGE", "local"),
 			Dir:         env("HAYAT_STORAGE_DIR", "/var/lib/hayat/media"),
@@ -129,6 +151,12 @@ func Load() (Config, error) {
 	var err error
 	if c.SessionTTL, err = envDuration("HAYAT_SESSION_TTL", 14*24*time.Hour); err != nil {
 		return c, err
+	}
+	if c.SessionIdleTimeout, err = envDuration("HAYAT_SESSION_IDLE_TIMEOUT", 0); err != nil {
+		return c, err
+	}
+	if c.SessionIdleTimeout != 0 && c.SessionIdleTimeout < 15*time.Minute {
+		return c, errors.New("HAYAT_SESSION_IDLE_TIMEOUT must be 0 (off) or at least 15m")
 	}
 	if c.AccessTokenTTL, err = envDuration("HAYAT_ACCESS_TOKEN_TTL", 10*time.Minute); err != nil {
 		return c, err
@@ -151,6 +179,12 @@ func Load() (Config, error) {
 	}
 	if !c.Dev && !strings.HasPrefix(c.Issuer, "https://") {
 		return c, errors.New("HAYAT_ISSUER must be https:// unless HAYAT_DEV=true")
+	}
+	if c.BreachedPasswords != "hibp" && c.BreachedPasswords != "off" {
+		return c, fmt.Errorf("HAYAT_BREACHED_PASSWORDS must be hibp or off, got %q", c.BreachedPasswords)
+	}
+	if (c.TurnstileSiteKey == "") != (c.TurnstileSecretKey == "") {
+		return c, errors.New("set both HAYAT_TURNSTILE_SITE_KEY and HAYAT_TURNSTILE_SECRET_KEY, or neither")
 	}
 	if c.MasterKey, err = decodeKey(os.Getenv("HAYAT_MASTER_KEY")); err != nil {
 		return c, err

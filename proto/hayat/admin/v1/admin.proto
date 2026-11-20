@@ -53,6 +53,8 @@ message Tenant {
   google.protobuf.Timestamp updated_at = 8;
   // <issuer>/media/<id>, empty for none.
   string logo_url = 9;
+  // Every member must sign in with a second factor.
+  bool require_mfa = 10;
 }
 
 message Member {
@@ -112,6 +114,58 @@ service AccountService {
   // The caller's picture: PNG, JPEG or WebP up to 5 MB, cropped square and
   // resized. Empty data removes it. It becomes the OIDC `picture` claim.
   rpc SetMyAvatar(SetMyAvatarRequest) returns (SetMyAvatarResponse);
+
+  // Two-step verification: the caller's authenticator apps and passkeys,
+  // and how many recovery codes are left. Factors are added on Hayat's own
+  // pages (setup_url), never through this API.
+  rpc GetMySecurity(GetMySecurityRequest) returns (GetMySecurityResponse);
+  // Needs a recent confirmation (see "Step-up" below).
+  rpc RemoveMyFactor(RemoveMyFactorRequest) returns (RemoveMyFactorResponse);
+  // A fresh set of recovery codes, which voids the old one. Needs a recent
+  // confirmation.
+  rpc RegenerateRecoveryCodes(RegenerateRecoveryCodesRequest) returns (RegenerateRecoveryCodesResponse);
+}
+
+// Step-up: sensitive calls (removing a factor, new recovery codes, unlinking
+// an account, promoting or disabling a user, rotating keys and secrets,
+// deleting or handing over a tenant, …) need the caller to have confirmed
+// it's them in the last ten minutes. Otherwise they fail with
+// PERMISSION_DENIED and the response header `hayat-step-up: required`; the
+// console then sends the person to <issuer>/reauth?return_to=<page>, which
+// brings them back.
+
+message Factor {
+  string id = 1;
+  // totp | passkey
+  string kind = 2;
+  string name = 3;
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp last_used_at = 5;
+}
+
+message GetMySecurityRequest {}
+message GetMySecurityResponse {
+  repeated Factor factors = 1;
+  int32 recovery_codes_left = 2;
+  // A tenant the caller belongs to requires a second factor; the last one
+  // can't be removed.
+  bool mfa_required = 3;
+  string mfa_required_by = 4;
+  // Where factors are added: <issuer>/mfa/setup. Append ?return_to=<page>.
+  string setup_url = 5;
+  // Where the caller confirms it's them: <issuer>/reauth. Append ?return_to=<page>.
+  string reauth_url = 6;
+}
+
+message RemoveMyFactorRequest {
+  string factor_id = 1;
+}
+message RemoveMyFactorResponse {}
+
+message RegenerateRecoveryCodesRequest {}
+message RegenerateRecoveryCodesResponse {
+  // Shown once.
+  repeated string codes = 1;
 }
 
 message SetMyAvatarRequest {
@@ -236,6 +290,9 @@ service UserService {
   rpc ResendVerification(ResendVerificationRequest) returns (ResendVerificationResponse);
   // Ends one session, or every session when session_id is empty.
   rpc RevokeUserSessions(RevokeUserSessionsRequest) returns (RevokeUserSessionsResponse);
+  // For someone who lost every second factor and their recovery codes:
+  // removes them all and signs them out everywhere. Needs a recent confirmation.
+  rpc ResetUserFactors(ResetUserFactorsRequest) returns (ResetUserFactorsResponse);
 }
 
 message ListUsersRequest {
@@ -255,6 +312,8 @@ message GetUserResponse {
   User user = 1;
   repeated Tenant tenants = 2;
   repeated Session sessions = 3;
+  // Their authenticator apps and passkeys (names and dates only).
+  repeated Factor factors = 4;
 }
 
 message InviteUserRequest {
@@ -304,6 +363,11 @@ message RevokeUserSessionsRequest {
 }
 message RevokeUserSessionsResponse {}
 
+message ResetUserFactorsRequest {
+  string id = 1;
+}
+message ResetUserFactorsResponse {}
+
 // ---------- Tenants ----------
 
 // Allowed by permission on the tenant node, so a tenant's owner (and anyone
@@ -329,6 +393,17 @@ service TenantService {
   rpc RemoveMember(RemoveMemberRequest) returns (RemoveMemberResponse);
   // The current owner or an instance admin.
   rpc TransferOwnership(TransferOwnershipRequest) returns (TransferOwnershipResponse);
+  // hayat.tenant.manage. From each member's next sign-in, someone without a
+  // second factor sets one up before they get in. Needs a recent confirmation.
+  rpc SetTenantRequireMFA(SetTenantRequireMFARequest) returns (SetTenantRequireMFAResponse);
+}
+
+message SetTenantRequireMFARequest {
+  string id = 1;
+  bool require_mfa = 2;
+}
+message SetTenantRequireMFAResponse {
+  Tenant tenant = 1;
 }
 
 message ListTenantsRequest {

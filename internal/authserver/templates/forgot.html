@@ -5,6 +5,7 @@
     <span>Email</span>
     <input type="email" name="email" value="{{.Email}}" autocomplete="email" required autofocus>
   </label>
+  {{template "turnstile" .}}
   <button type="submit" class="btn">Email me a reset link</button>
 </form>
 {{end}}

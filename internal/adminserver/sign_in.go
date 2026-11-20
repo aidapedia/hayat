@@ -67,6 +67,9 @@ func (si *signInService) SaveInstanceProvider(ctx context.Context, req *connect.
 	if err := si.s.requireAdmin(ctx); err != nil {
 		return nil, err
 	}
+	if err := si.s.stepUp(ctx); err != nil {
+		return nil, err
+	}
 	m := req.Msg
 	p, err := si.s.fed.SaveInstanceProvider(ctx, m.Kind, federation.ProviderInput{Name: m.Name, Issuer: m.Issuer, ClientID: m.ClientId,
 		ClientSecret: m.ClientSecret, Enabled: m.Enabled}, actor(ctx))
@@ -212,6 +215,9 @@ func (si *signInService) ListMySignInMethods(ctx context.Context, _ *connect.Req
 func (si *signInService) UnlinkMyAccount(ctx context.Context, req *connect.Request[adminv1.UnlinkMyAccountRequest]) (*connect.Response[adminv1.UnlinkMyAccountResponse], error) {
 	id, err := parseID(req.Msg.Id, "id")
 	if err != nil {
+		return nil, err
+	}
+	if err := si.s.stepUp(ctx); err != nil {
 		return nil, err
 	}
 	if err := si.s.fed.Unlink(ctx, caller(ctx).User, id); err != nil {

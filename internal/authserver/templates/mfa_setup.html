@@ -1,0 +1,18 @@
+{{define "content"}}
+<div class="choices">
+  <a class="btn btn-provider" href="/mfa/setup/app{{if .ReturnTo}}?return_to={{.ReturnTo}}{{end}}">
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M11 18h2"/></svg>
+    Authenticator app
+  </a>
+  {{if .Passkeys}}
+  {{template "passkey-error" .}}
+  <label class="field" data-passkey-only hidden>
+    <span>Passkey name</span>
+    <input type="text" name="passkey-name" maxlength="60" placeholder="e.g. MacBook, iPhone, YubiKey" data-passkey-name>
+  </label>
+  <button type="button" class="btn btn-provider" data-passkey="register" data-csrf="{{.CSRF}}" data-return-to="{{.ReturnTo}}" hidden>{{template "passkey-icon"}}Passkey on this device</button>
+  {{end}}
+</div>
+<p class="hint">An authenticator app makes a 6-digit code every 30 seconds. A passkey uses your fingerprint, face or device PIN, and also signs you in without a password.</p>
+{{end}}
+{{define "foot"}}{{if .ReturnTo}}<a href="{{.ReturnTo}}">Cancel</a>{{else}}<a href="/login{{if .AuthRequestID}}?authRequestID={{.AuthRequestID}}{{end}}">Sign in as someone else</a>{{end}}{{end}}

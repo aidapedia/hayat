@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { TenantService, type Tenant } from '@/shared/api/gen/hayat/admin/v1/admin_pb'
-import { errorMessage, useClient } from '@/shared/api/client'
+import { errorMessage, isStepUp, useClient } from '@/shared/api/client'
 import { formatDateTime } from '@/shared/lib/datetime'
 import { CopyField, DetailList, Field, LogoTile } from '@/shared/ui/bits'
 import { Button } from '@/shared/ui/button'
@@ -10,6 +10,7 @@ import { ConfirmDialog } from '@/shared/ui/confirm-dialog'
 import { ImageUpload } from '@/shared/ui/image-upload'
 import { Input } from '@/shared/ui/input'
 import { Narrow, Section } from '@/shared/ui/page/PageHeader'
+import { Switch } from '@/shared/ui/switch'
 
 /**
  * The tenant's profile (logo and name, for whoever holds
@@ -22,7 +23,21 @@ export function TenantSettings({ tenant: t, canEdit, canDelete, onChanged }: { t
   const [name, setName] = useState(t.name)
   const [busy, setBusy] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [savingMFA, setSavingMFA] = useState(false)
   useEffect(() => setName(t.name), [t.name])
+
+  const setRequireMFA = async (on: boolean) => {
+    setSavingMFA(true)
+    try {
+      await tenants.setTenantRequireMFA({ id: t.id, requireMfa: on })
+      toast.success(on ? 'Two-step verification is now required' : 'Two-step verification is optional again')
+      onChanged()
+    } catch (err) {
+      if (!isStepUp(err)) toast.error(errorMessage(err))
+    } finally {
+      setSavingMFA(false)
+    }
+  }
 
   const setLogo = async (data: Uint8Array) => {
     await tenants.setTenantLogo({ id: t.id, data })
@@ -70,6 +85,21 @@ export function TenantSettings({ tenant: t, canEdit, canDelete, onChanged }: { t
               </Button>
             </form>
           </div>
+        </Section>
+      )}
+
+      {canEdit && (
+        <Section title="Security">
+          <label className="flex items-center gap-4 rounded-xl border p-5">
+            <div className="min-w-0 flex-1">
+              <div className="text-[13px] font-semibold">Require two-step verification</div>
+              <p className="mt-0.5 text-[12px] text-muted-foreground">
+                Every member signs in with a code from an authenticator app or a passkey. Anyone who hasn&apos;t set one up is asked to at
+                their next sign-in. People who sign in through your company&apos;s identity provider follow its rules instead.
+              </p>
+            </div>
+            <Switch checked={t.requireMfa} disabled={savingMFA} onCheckedChange={(v) => void setRequireMFA(v)} />
+          </label>
         </Section>
       )}
 

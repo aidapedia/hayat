@@ -1,0 +1,16 @@
+{{define "content"}}
+{{if .QR}}<img class="qr" src="{{.QR}}" alt="QR code to scan with your authenticator app" width="200" height="200">{{end}}
+<p class="hint">Can't scan it? Enter this key in the app:</p>
+<p class="secret"><code>{{.Secret}}</code></p>
+<form method="post" action="/mfa/setup/app" class="form" novalidate>
+  <input type="hidden" name="csrf" value="{{.CSRF}}">
+  <input type="hidden" name="factor" value="{{.FactorID}}">
+  <input type="hidden" name="return_to" value="{{.ReturnTo}}">
+  <label class="field">
+    <span>6-digit code</span>
+    <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="8" required autofocus>
+  </label>
+  <button type="submit" class="btn">Turn on</button>
+</form>
+{{end}}
+{{define "foot"}}<a href="/mfa/setup{{if .ReturnTo}}?return_to={{.ReturnTo}}{{end}}">Choose another method</a>{{end}}

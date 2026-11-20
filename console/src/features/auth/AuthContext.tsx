@@ -1,8 +1,9 @@
-import { createContext, useCallback, useContext, useMemo, useRef, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from 'react'
 import { UserManager, type User } from 'oidc-client-ts'
 import type { Transport } from '@connectrpc/connect'
 import { createTransport, TransportContext } from '@/shared/api/client'
 import type { AppConfig } from '@/shared/lib/config'
+import { StepUpDialog, reauthURL } from './StepUpDialog'
 
 /**
  * The console signs in like any other Hayat client: authorization code + PKCE
@@ -15,6 +16,8 @@ type Auth = {
   manager: UserManager
   signIn: (returnTo?: string) => Promise<void>
   signOut: () => Promise<void>
+  /** Sends the person to confirm it's them on Hayat, then back to this page. */
+  confirmIdentity: () => void
 }
 
 const AuthContext = createContext<Auth | null>(null)
@@ -71,18 +74,27 @@ export function AuthProvider({ config, children }: { config: AppConfig; children
     }
   }, [manager])
 
+  const [stepUp, setStepUp] = useState(false)
   const transport: Transport = useMemo(
     () =>
-      createTransport(getToken, () => {
-        void manager.removeUser().then(() => signIn())
-      }),
+      createTransport(
+        getToken,
+        () => {
+          void manager.removeUser().then(() => signIn())
+        },
+        () => setStepUp(true),
+      ),
     [getToken, manager, signIn],
   )
 
-  const value = useMemo(() => ({ config, manager, signIn, signOut }), [config, manager, signIn, signOut])
+  const confirmIdentity = useCallback(() => window.location.assign(reauthURL(config.issuer)), [config.issuer])
+  const value = useMemo(() => ({ config, manager, signIn, signOut, confirmIdentity }), [config, manager, signIn, signOut, confirmIdentity])
   return (
     <AuthContext.Provider value={value}>
-      <TransportContext.Provider value={transport}>{children}</TransportContext.Provider>
+      <TransportContext.Provider value={transport}>
+        {children}
+        <StepUpDialog open={stepUp} onOpenChange={setStepUp} onConfirm={confirmIdentity} />
+      </TransportContext.Provider>
     </AuthContext.Provider>
   )
 }

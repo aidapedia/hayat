@@ -1,0 +1,32 @@
+{{define "content"}}
+{{if .HasPasskey}}
+{{template "passkey-error" .}}
+<button type="button" class="btn" data-passkey="reauth" data-csrf="{{.CSRF}}" data-return-to="{{.ReturnTo}}" hidden>{{template "passkey-icon"}}Use a passkey</button>
+{{end}}
+{{if or .HasPassword .HasTOTP}}
+{{if .HasPasskey}}<div class="or" role="separator" data-passkey-only hidden><span>or</span></div>{{end}}
+<form method="post" action="/reauth" class="form" novalidate>
+  <input type="hidden" name="csrf" value="{{.CSRF}}">
+  <input type="hidden" name="return_to" value="{{.ReturnTo}}">
+  {{if .HasPassword}}
+  <input type="email" name="email" value="{{.Email}}" autocomplete="username" hidden>
+  <label class="field">
+    <span>Password</span>
+    <input type="password" name="password" autocomplete="current-password" {{if not .HasPasskey}}autofocus{{end}}>
+  </label>
+  {{else}}
+  <label class="field">
+    <span>Code from your authenticator app</span>
+    <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="20">
+  </label>
+  {{end}}
+  <button type="submit" class="{{if .HasPasskey}}btn btn-provider{{else}}btn{{end}}">Confirm</button>
+</form>
+{{end}}
+{{if .Providers}}
+<div class="providers">
+  {{range .Providers}}<a class="btn btn-provider" href="{{.URL}}">{{template "provider-icon" .Kind}}Confirm with {{.Name}}</a>{{end}}
+</div>
+{{end}}
+{{end}}
+{{define "foot"}}{{if .ReturnTo}}<a href="{{.ReturnTo}}">Cancel</a>{{end}}{{end}}

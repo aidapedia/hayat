@@ -108,6 +108,16 @@ func (s *Server) brandFor(ctx context.Context, p *page, a *hoidc.AuthRequest) {
 	}
 }
 
+// brandForID is brandFor from an auth request's id, when there is one.
+func (s *Server) brandForID(ctx context.Context, p *page, authRequestID string) {
+	if authRequestID == "" {
+		return
+	}
+	if a, err := s.storage.LoadAuthRequest(ctx, authRequestID); err == nil {
+		s.brandFor(ctx, p, a)
+	}
+}
+
 // mediaFile serves an image internal/media keeps: avatars, logos. An image
 // never changes (a new upload is a new id), so it is cached for good; it is
 // sandboxed so that even a file a browser misread could run nothing.

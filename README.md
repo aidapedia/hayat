@@ -104,7 +104,26 @@ Contributing: [CONTRIBUTING.md](CONTRIBUTING.md)
   it's allowed to, and adds them to the tenant. People link and unlink accounts
   at Account → Sign-in methods. Each provider redirects to `<issuer>/sso/callback`.
 
-Not yet: MFA (rest of phase 3), multi-region on
+- **Two-step verification and passkeys**: people add an authenticator app
+  (any app that makes 6-digit codes) or a passkey at Account → Two-step
+  verification, and get ten one-time recovery codes. After a password (or
+  Google/GitHub) Hayat asks for the code or the passkey; a passkey also signs
+  in on its own ("Sign in with a passkey"), the device checking its owner. A
+  tenant can require two-step verification of every member: whoever hasn't set
+  it up does so before they get in. People who come through a company's own
+  identity provider follow its rules instead. An instance admin can reset
+  someone who lost every device.
+- **Account protection**: ten wrong passwords in a row pause the password for
+  15 minutes (and tell the owner); new passwords are checked against Have I
+  Been Pwned without sending the password (`HAYAT_BREACHED_PASSWORDS`);
+  sessions can end after a time unused (`HAYAT_SESSION_IDLE_TIMEOUT`);
+  Cloudflare Turnstile can guard sign-up and password reset
+  (`HAYAT_TURNSTILE_*`). Sensitive changes in the console — removing a
+  factor, new recovery codes, unlinking an account, promoting or disabling
+  someone, rotating keys and secrets, deleting or handing over a tenant —
+  ask the person to confirm it's them if they haven't in the last ten minutes.
+
+Not yet: multi-region on
 YugabyteDB (phase 4), a shared Redis decision cache (each api pod caches in
 memory today).
 
@@ -277,6 +296,17 @@ login pages — are checked, resized and re-encoded, then served by Hayat at
 | --- | --- | --- |
 | `local` (default) | a directory, `/var/lib/hayat/media` unless `HAYAT_STORAGE_DIR` says otherwise. The auth and admin roles must mount the same one: compose shares one volume; in Kubernetes use a ReadWriteMany volume | `HAYAT_STORAGE_DIR` |
 | `s3` | any S3-compatible bucket: AWS S3, Cloudflare R2, MinIO. Nothing shared between pods | `HAYAT_S3_BUCKET`, `HAYAT_S3_ACCESS_KEY_ID`, `HAYAT_S3_SECRET_ACCESS_KEY`, and `HAYAT_S3_ENDPOINT`, `HAYAT_S3_REGION`, `HAYAT_S3_PREFIX`, `HAYAT_S3_PATH_STYLE` as needed |
+
+**Account security**:
+
+| Variable | Default | What |
+| --- | --- | --- |
+| `HAYAT_SESSION_IDLE_TIMEOUT` | `0` (off) | End a session nobody used for this long (pages on Hayat, token refreshes and console calls count). At least `15m`. |
+| `HAYAT_BREACHED_PASSWORDS` | `hibp` | Check new passwords against Have I Been Pwned's range API: only the first five hex characters of the SHA-1 leave the server. A failed lookup lets the password through. `off` disables it. |
+| `HAYAT_TURNSTILE_SITE_KEY`, `HAYAT_TURNSTILE_SECRET_KEY` | unset | Cloudflare Turnstile on the sign-up and forgot-password pages. The only thing those pages then load from another origin. |
+
+Passkeys belong to the issuer's host name, so they keep working as long as
+`HAYAT_ISSUER`'s host stays the same; an IP address can't hold passkeys.
 
 Images are never kept in the database. The bucket can stay private: browsers
 only ever load images from Hayat. The auth and admin roles check the store at

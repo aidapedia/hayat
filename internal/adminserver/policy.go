@@ -575,6 +575,9 @@ func (r *registryService) RotateServiceSecret(ctx context.Context, req *connect.
 	if err := r.s.require(ctx, catalog.PermServiceManage, n); err != nil {
 		return nil, err
 	}
+	if err := r.s.stepUp(ctx); err != nil {
+		return nil, err
+	}
 	secret, err := r.s.clients.RotateSecret(ctx, svc.ClientID, actor(ctx))
 	if err != nil {
 		return nil, r.s.fail(err)

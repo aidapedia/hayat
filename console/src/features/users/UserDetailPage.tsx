@@ -7,7 +7,7 @@ import { errorMessage, useClient } from '@/shared/api/client'
 import { useQuery } from '@/shared/hooks/use-query'
 import { formatDateTime } from '@/shared/lib/datetime'
 import { useMe } from '@/features/auth'
-import { ProfileForm, SessionsTable } from '@/features/account'
+import { FactorList, ProfileForm, SessionsTable } from '@/features/account'
 import { CopyField, DetailList, ErrorState, LoadingState, PersonAvatar, Pill, StatusBadge } from '@/shared/ui/bits'
 import { Button } from '@/shared/ui/button'
 import { ConfirmDialog } from '@/shared/ui/confirm-dialog'
@@ -164,6 +164,36 @@ export default function UserDetailPage() {
                 await reload()
               }}
             />
+          </Section>
+          <Section
+            title="Two-step verification"
+            desc="Their authenticator apps and passkeys. Reset them for someone who lost every device and their recovery codes."
+            action={
+              data.factors.length > 0 && !self ? (
+                <Button
+                  variant="outline"
+                  onClick={() =>
+                    act({
+                      title: 'Reset two-step verification?',
+                      body: `Every authenticator app, passkey and recovery code of ${u.email} is removed, and they are signed out everywhere. Do this only once you are sure who asked.`,
+                      confirm: 'Reset',
+                      destructive: true,
+                      run: () => users.resetUserFactors({ id }).then(() => undefined),
+                    })
+                  }
+                >
+                  Reset
+                </Button>
+              ) : undefined
+            }
+          >
+            {data.factors.length === 0 ? (
+              <p className="text-[13px] text-faint">Not set up.</p>
+            ) : (
+              <div className="overflow-hidden rounded-xl border">
+                <FactorList factors={data.factors} />
+              </div>
+            )}
           </Section>
         </div>
         <div className="min-w-0 max-[1000px]:mt-9">

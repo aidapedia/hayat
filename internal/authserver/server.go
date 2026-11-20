@@ -17,6 +17,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"slices"
 	"strings"
 	"time"
 
@@ -33,6 +34,7 @@ import (
 	hoidc "github.com/aidapedia/hayat/internal/oidc"
 	"github.com/aidapedia/hayat/internal/ratelimit"
 	"github.com/aidapedia/hayat/internal/store"
+	"github.com/aidapedia/hayat/internal/tenancy"
 )
 
 const (
@@ -56,6 +58,7 @@ type Server struct {
 	cat       *catalog.Service
 	media     *media.Service
 	fed       *federation.Service
+	tenants   *tenancy.Service
 	provider  *op.Provider
 	limiter   ratelimit.Limiter
 	log       *slog.Logger
@@ -63,10 +66,12 @@ type Server struct {
 }
 
 func New(cfg config.Config, s *store.Store, ids *identity.Service, storage *hoidc.Storage, clients *hoidc.Clients,
-	pages *loginpage.Service, cat *catalog.Service, med *media.Service, fed *federation.Service, provider *op.Provider, limiter ratelimit.Limiter, log *slog.Logger) (*Server, error) {
-	srv := &Server{cfg: cfg, store: s, ids: ids, storage: storage, clients: clients, pages: pages, cat: cat, media: med, fed: fed, provider: provider,
-		limiter: limiter, log: log, templates: map[string]*template.Template{}}
-	for _, name := range []string{"login", "signup", "password", "forgot", "setup", "message", "sso"} {
+	pages *loginpage.Service, cat *catalog.Service, med *media.Service, fed *federation.Service, tenants *tenancy.Service,
+	provider *op.Provider, limiter ratelimit.Limiter, log *slog.Logger) (*Server, error) {
+	srv := &Server{cfg: cfg, store: s, ids: ids, storage: storage, clients: clients, pages: pages, cat: cat, media: med, fed: fed, tenants: tenants,
+		provider: provider, limiter: limiter, log: log, templates: map[string]*template.Template{}}
+	for _, name := range []string{"login", "signup", "password", "forgot", "setup", "message", "sso",
+		"mfa", "mfa_setup", "mfa_app", "recovery", "reauth"} {
 		t, err := template.ParseFS(templateFS, "templates/layout.html", "templates/"+name+".html")
 		if err != nil {
 			return nil, err
@@ -102,6 +107,18 @@ func (s *Server) Handler() http.Handler {
 	r.Get("/sso/start/{id}", s.ssoStart)
 	r.Get("/sso/link/{id}", s.ssoLink)
 	r.Get("/sso/callback", s.ssoCallback)
+	r.Get("/mfa", s.mfaPage)
+	r.Post("/mfa", s.mfaSubmit)
+	r.Get("/mfa/setup", s.mfaSetupPage)
+	r.Get("/mfa/setup/app", s.appSetupPage)
+	r.Post("/mfa/setup/app", s.appSetupSubmit)
+	r.Get("/mfa/setup/added", s.passkeyAdded)
+	r.Post("/mfa/setup/done", s.setupDone)
+	r.Get("/reauth", s.reauthPage)
+	r.Post("/reauth", s.reauthSubmit)
+	r.Get("/reauth/sso/{id}", s.reauthSSO)
+	r.Post("/passkey/begin", s.passkeyBegin)
+	r.Post("/passkey/finish", s.passkeyFinish)
 	r.Get("/media/{id}", s.mediaFile)
 	r.Get("/brand/asset/{id}", s.mediaFile) // login page logos published before media existed
 	r.Get("/preview/login", s.previewPage)
@@ -143,6 +160,21 @@ type page struct {
 	// The login page's other ways in: Google, GitHub, company SSO.
 	Providers  []providerButton
 	CompanyURL string
+
+	// Second factors and passkeys.
+	Passkeys    bool // this server can use passkeys at all
+	HasPassword bool
+	HasTOTP     bool
+	HasPasskey  bool
+	QR          template.URL // the authenticator app's setup, drawn as a PNG
+	Secret      string
+	FactorID    string
+	Codes       []string // recovery codes, shown once
+	Method      string
+	ReturnTo    string
+
+	// Turnstile is the site key when the bot check is on for this page.
+	Turnstile string
 }
 
 func (s *Server) render(w http.ResponseWriter, r *http.Request, name string, p page, status int) {
@@ -152,8 +184,16 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, name string, p p
 	p.ConsoleURL = s.cfg.ConsoleURL
 	if name == "login" {
 		s.signInOptions(r.Context(), &p)
+		p.Passkeys = s.ids.PasskeysAvailable()
 	}
 	styles, frames := "'self'", "'none'"
+	scripts, childFrames := "'self'", ""
+	if p.Turnstile != "" {
+		// Cloudflare's widget: the one thing a sign-in page loads from
+		// elsewhere, and only when the operator turned it on.
+		scripts += " " + turnstileOrigin
+		childFrames = "; frame-src " + turnstileOrigin
+	}
 	if p.Brand != nil {
 		p.Nonce = crypto.NewToken()
 		styles += " 'nonce-" + p.Nonce + "'"
@@ -163,7 +203,7 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, name string, p p
 		w.Header().Del("X-Frame-Options")
 	}
 	w.Header().Set("Content-Security-Policy", "default-src 'self'; img-src 'self' data:; style-src "+styles+
-		"; script-src 'self'; frame-ancestors "+frames+"; base-uri 'none'")
+		"; script-src "+scripts+childFrames+"; frame-ancestors "+frames+"; base-uri 'none'")
 	if p.MinLength == 0 {
 		p.MinLength = identity.MinPasswordLength
 	}
@@ -253,11 +293,12 @@ func clientIP(r *http.Request) string {
 // finish completes an auth request with a session and sends the browser back
 // through the provider's callback, which issues the code.
 func (s *Server) finish(w http.ResponseWriter, r *http.Request, a *hoidc.AuthRequest, sess identity.Session) {
-	if err := s.storage.CompleteAuthRequest(r.Context(), a, sess); err != nil {
-		s.message(w, r, "Sign-in expired", "This sign-in took too long. Go back to the application and start again.", http.StatusBadRequest)
+	to, err := s.completeURL(r.Context(), a, sess)
+	if err != nil {
+		s.signInFailed(w, r, err)
 		return
 	}
-	http.Redirect(w, r, s.cfg.Issuer+"/authorize/callback?id="+url.QueryEscape(a.GetID()), http.StatusFound)
+	http.Redirect(w, r, to, http.StatusFound)
 }
 
 func (s *Server) loginPage(w http.ResponseWriter, r *http.Request) {
@@ -275,10 +316,11 @@ func (s *Server) loginPage(w http.ResponseWriter, r *http.Request) {
 		s.message(w, r, "Sign-in expired", "This sign-in link has expired. Go back to the application and start again.", http.StatusBadRequest)
 		return
 	}
-	sess, _, ok := s.currentSession(r)
+	sess, u, ok := s.currentSession(r)
 	// Single sign-on: an existing session completes the request without a
-	// prompt, unless the client asked for a fresh sign-in.
-	if ok && !a.PromptLogin() && !a.TooOld(sess.AuthTime) {
+	// prompt, unless the client asked for a fresh sign-in, or the session is
+	// weaker than the account now needs.
+	if ok && !a.PromptLogin() && !a.TooOld(sess.AuthTime) && s.strongEnough(r.Context(), sess, u) {
 		s.finish(w, r, a, sess)
 		return
 	}
@@ -351,6 +393,9 @@ func (s *Server) loginSubmit(w http.ResponseWriter, r *http.Request) {
 	u, err := s.ids.Authenticate(r.Context(), email, r.PostFormValue("password"))
 	if err != nil {
 		switch {
+		case errors.Is(err, identity.ErrLocked):
+			p.Error = "Too many sign-in attempts. Wait a few minutes and try again."
+			s.render(w, r, "login", p, http.StatusTooManyRequests)
 		case errors.Is(err, identity.ErrBadCredentials), errors.Is(err, identity.ErrPending), errors.Is(err, identity.ErrDisabled):
 			p.Error = err.Error()
 			s.render(w, r, "login", p, http.StatusUnauthorized)
@@ -359,16 +404,22 @@ func (s *Server) loginSubmit(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	sess, err := s.startSession(w, r, u, []string{"pwd"})
-	if err != nil {
-		s.serverError(w, r, err)
-		return
+	s.goNext(w, r, firstFactor{user: u, amr: []string{identity.AMRPassword}, authRequestID: id})
+}
+
+// strongEnough reports whether an existing session may sign the person in to
+// another application without asking again: a session made before they set
+// up a second factor, or before a tenant of theirs required one, may not.
+// Sessions from another account keep working: their provider decided.
+func (s *Server) strongEnough(ctx context.Context, sess identity.Session, u identity.User) bool {
+	if sess.MFA() || slices.Contains(sess.AMR, identity.AMRFed) {
+		return true
 	}
-	if a == nil {
-		http.Redirect(w, r, s.cfg.ConsoleURL, http.StatusFound)
-		return
+	if has, err := s.ids.HasSecondFactor(ctx, u.ID); err != nil || has {
+		return false
 	}
-	s.finish(w, r, a, sess)
+	required, _, err := s.tenants.RequiresMFA(ctx, u.ID)
+	return err == nil && !required
 }
 
 // ---------- Sign up and verification ----------
@@ -381,6 +432,7 @@ func (s *Server) signupPage(w http.ResponseWriter, r *http.Request) {
 			p.Heading = "Create your account"
 		}
 	}
+	s.withTurnstile(&p)
 	s.render(w, r, "signup", p, http.StatusOK)
 }
 
@@ -391,6 +443,12 @@ func (s *Server) signupSubmit(w http.ResponseWriter, r *http.Request) {
 	email := strings.TrimSpace(r.PostFormValue("email"))
 	name := strings.TrimSpace(r.PostFormValue("name"))
 	p := page{Title: "Create account", Heading: "Create your account", Email: email, Name: name}
+	s.withTurnstile(&p)
+	if !s.human(r.Context(), r) {
+		p.Error = "We couldn't confirm you're a person. Complete the check and try again."
+		s.render(w, r, "signup", p, http.StatusBadRequest)
+		return
+	}
 	if !s.limiter.Allow(r.Context(), "signup:ip:"+clientIP(r), 10, time.Hour) {
 		p.Error = "Too many sign-ups from your network. Try again later."
 		s.render(w, r, "signup", p, http.StatusTooManyRequests)
@@ -434,8 +492,9 @@ func (s *Server) verifySubmit(w http.ResponseWriter, r *http.Request) {
 // ---------- Password reset ----------
 
 func (s *Server) forgotPage(w http.ResponseWriter, r *http.Request) {
-	s.render(w, r, "forgot", page{Title: "Reset password", Heading: "Reset your password",
-		Sub: "We'll email you a link to choose a new one."}, http.StatusOK)
+	p := page{Title: "Reset password", Heading: "Reset your password", Sub: "We'll email you a link to choose a new one."}
+	s.withTurnstile(&p)
+	s.render(w, r, "forgot", p, http.StatusOK)
 }
 
 func (s *Server) forgotSubmit(w http.ResponseWriter, r *http.Request) {
@@ -443,17 +502,24 @@ func (s *Server) forgotSubmit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	email := strings.TrimSpace(r.PostFormValue("email"))
+	if !s.human(r.Context(), r) {
+		p := page{Title: "Reset password", Heading: "Reset your password", Email: email,
+			Error: "We couldn't confirm you're a person. Complete the check and try again."}
+		s.withTurnstile(&p)
+		s.render(w, r, "forgot", p, http.StatusBadRequest)
+		return
+	}
 	if !s.limiter.Allow(r.Context(), "forgot:ip:"+clientIP(r), 10, time.Hour) ||
 		!s.limiter.Allow(r.Context(), "forgot:email:"+strings.ToLower(email), 3, time.Hour) {
 		s.render(w, r, "forgot", page{Title: "Reset password", Heading: "Reset your password", Email: email,
-			Error: "Too many reset requests. Try again in an hour."}, http.StatusTooManyRequests)
+			Error: "Too many reset requests. Try again in an hour.", Turnstile: s.siteKey()}, http.StatusTooManyRequests)
 		return
 	}
 	if _, enforced := s.enforcedProvider(r.Context(), email); enforced {
 		email = strings.TrimSpace(email) // no password to reset: the company signs them in; answer the same
 	} else if err := s.ids.RequestPasswordReset(r.Context(), email); err != nil {
 		if errors.Is(err, identity.ErrInvalidEmail) {
-			s.render(w, r, "forgot", page{Title: "Reset password", Heading: "Reset your password", Email: email, Error: err.Error()}, http.StatusBadRequest)
+			s.render(w, r, "forgot", page{Title: "Reset password", Heading: "Reset your password", Email: email, Error: err.Error(), Turnstile: s.siteKey()}, http.StatusBadRequest)
 			return
 		}
 		s.serverError(w, r, err)
@@ -497,7 +563,7 @@ func (s *Server) passwordSubmit(w http.ResponseWriter, r *http.Request, action, 
 	}
 	u, err := apply(r.Context(), region, token, pw)
 	switch {
-	case errors.Is(err, identity.ErrWeakPassword):
+	case errors.Is(err, identity.ErrWeakPassword), errors.Is(err, identity.ErrBreachedPassword):
 		p.Error = err.Error()
 		s.render(w, r, "password", p, http.StatusBadRequest)
 		return
@@ -508,8 +574,15 @@ func (s *Server) passwordSubmit(w http.ResponseWriter, r *http.Request, action, 
 		s.serverError(w, r, err)
 		return
 	}
-	if _, err := s.startSession(w, r, u, []string{"pwd"}); err != nil {
-		s.serverError(w, r, err)
+	// A new password is one factor: someone with a second factor still
+	// confirms it before they are in.
+	to, err := s.next(w, r, firstFactor{user: u, amr: []string{identity.AMRPassword}})
+	if err != nil {
+		s.signInFailed(w, r, err)
+		return
+	}
+	if to != s.cfg.ConsoleURL {
+		http.Redirect(w, r, to, http.StatusFound)
 		return
 	}
 	s.render(w, r, "message", page{Title: "You're all set", Heading: "You're all set",
