@@ -221,12 +221,30 @@ func (t *tenantService) RenameTenant(ctx context.Context, req *connect.Request[a
 	return connect.NewResponse(&adminv1.RenameTenantResponse{Tenant: t.s.toTenant(tn)}), nil
 }
 
+func (t *tenantService) SetTenantRequireMFA(ctx context.Context, req *connect.Request[adminv1.SetTenantRequireMFARequest]) (*connect.Response[adminv1.SetTenantRequireMFAResponse], error) {
+	id, err := t.require(ctx, req.Msg.Id, catalog.PermTenantManage)
+	if err != nil {
+		return nil, err
+	}
+	if err := t.s.stepUp(ctx); err != nil {
+		return nil, err
+	}
+	tn, err := t.s.tenants.SetRequireMFA(ctx, id, req.Msg.RequireMfa, actor(ctx))
+	if err != nil {
+		return nil, t.s.fail(err)
+	}
+	return connect.NewResponse(&adminv1.SetTenantRequireMFAResponse{Tenant: t.s.toTenant(tn)}), nil
+}
+
 func (t *tenantService) DeleteTenant(ctx context.Context, req *connect.Request[adminv1.DeleteTenantRequest]) (*connect.Response[adminv1.DeleteTenantResponse], error) {
 	if err := t.s.requireAdmin(ctx); err != nil {
 		return nil, err
 	}
 	id, err := parseID(req.Msg.Id, "id")
 	if err != nil {
+		return nil, err
+	}
+	if err := t.s.stepUp(ctx); err != nil {
 		return nil, err
 	}
 	if err := t.s.tenants.Delete(ctx, id, actor(ctx)); err != nil {
@@ -294,6 +312,9 @@ func (t *tenantService) TransferOwnership(ctx context.Context, req *connect.Requ
 	}
 	if me := caller(ctx).User; !me.IsAdmin() && cur.OwnerID != me.ID {
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.New("only the owner can hand the tenant to someone else"))
+	}
+	if err := t.s.stepUp(ctx); err != nil {
+		return nil, err
 	}
 	tn, err := t.s.tenants.TransferOwnership(ctx, tenantID, userID, actor(ctx))
 	if err != nil {

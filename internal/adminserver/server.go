@@ -120,6 +120,7 @@ func (s *Server) Handler() http.Handler {
 		AllowedOrigins: []string{s.cfg.ConsoleURL},
 		AllowedMethods: []string{http.MethodGet, http.MethodPost},
 		AllowedHeaders: []string{"Authorization", "Content-Type", "Connect-Protocol-Version", "Connect-Timeout-Ms"},
+		ExposedHeaders: []string{stepUpHeader},
 		MaxAge:         600,
 	})
 	return c.Handler(mux)
@@ -130,6 +131,7 @@ func (s *Server) Handler() http.Handler {
 type principal struct {
 	User      identity.User
 	SessionID uuid.UUID
+	Session   identity.Session
 }
 
 type principalKey struct{}
@@ -184,7 +186,22 @@ func (s *Server) principal(ctx context.Context, header string) (principal, error
 	if err != nil || !sess.Active() || sess.UserID != u.ID {
 		return principal{}, errors.New("session has ended")
 	}
-	return principal{User: u, SessionID: sid}, nil
+	return principal{User: u, SessionID: sid, Session: sess}, nil
+}
+
+// stepUpHeader marks a refusal the person can clear by confirming it's them.
+const stepUpHeader = "Hayat-Step-Up"
+
+// stepUp lets a sensitive change through only when the caller confirmed it's
+// them in the last minutes (signing in counts). The console answers the
+// refusal by sending them to <issuer>/reauth, which brings them back.
+func (s *Server) stepUp(ctx context.Context) error {
+	if caller(ctx).Session.RecentlyVerified() {
+		return nil
+	}
+	err := connect.NewError(connect.CodePermissionDenied, errors.New("confirm it's you to make this change"))
+	err.Meta().Set(stepUpHeader, "required")
+	return err
 }
 
 // ---------- Errors ----------

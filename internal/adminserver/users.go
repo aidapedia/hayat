@@ -48,8 +48,12 @@ func (u *userService) GetUser(ctx context.Context, req *connect.Request[adminv1.
 	if err != nil {
 		return nil, u.s.fail(err)
 	}
+	factors, err := u.s.ids.Factors(ctx, id)
+	if err != nil {
+		return nil, u.s.fail(err)
+	}
 	return connect.NewResponse(&adminv1.GetUserResponse{User: toUser(user), Tenants: u.s.toTenants(tenants),
-		Sessions: toSessions(sessions, caller(ctx).SessionID.String())}), nil
+		Sessions: toSessions(sessions, caller(ctx).SessionID.String()), Factors: toFactors(factors)}), nil
 }
 
 func (u *userService) InviteUser(ctx context.Context, req *connect.Request[adminv1.InviteUserRequest]) (*connect.Response[adminv1.InviteUserResponse], error) {
@@ -81,6 +85,9 @@ func (u *userService) SetUserDisabled(ctx context.Context, req *connect.Request[
 	if req.Msg.Disabled && id == caller(ctx).User.ID {
 		return nil, invalid("you can't disable your own account")
 	}
+	if err := u.s.stepUp(ctx); err != nil {
+		return nil, err
+	}
 	user, err := u.s.ids.SetStatus(ctx, id, req.Msg.Disabled, actor(ctx))
 	if err != nil {
 		return nil, u.s.fail(err)
@@ -93,11 +100,31 @@ func (u *userService) SetUserAdmin(ctx context.Context, req *connect.Request[adm
 	if err != nil {
 		return nil, err
 	}
+	if err := u.s.stepUp(ctx); err != nil {
+		return nil, err
+	}
 	user, err := u.s.ids.SetSystemRole(ctx, id, req.Msg.Admin, actor(ctx))
 	if err != nil {
 		return nil, u.s.fail(err)
 	}
 	return connect.NewResponse(&adminv1.SetUserAdminResponse{User: toUser(user)}), nil
+}
+
+func (u *userService) ResetUserFactors(ctx context.Context, req *connect.Request[adminv1.ResetUserFactorsRequest]) (*connect.Response[adminv1.ResetUserFactorsResponse], error) {
+	id, err := parseID(req.Msg.Id, "id")
+	if err != nil {
+		return nil, err
+	}
+	if id == caller(ctx).User.ID {
+		return nil, invalid("remove your own methods from Account")
+	}
+	if err := u.s.stepUp(ctx); err != nil {
+		return nil, err
+	}
+	if err := u.s.ids.ResetFactors(ctx, id, actor(ctx)); err != nil {
+		return nil, u.s.fail(err)
+	}
+	return connect.NewResponse(&adminv1.ResetUserFactorsResponse{}), nil
 }
 
 func (u *userService) ResendVerification(ctx context.Context, req *connect.Request[adminv1.ResendVerificationRequest]) (*connect.Response[adminv1.ResendVerificationResponse], error) {

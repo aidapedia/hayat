@@ -145,6 +145,34 @@ func (s *Service) RemoveFactor(ctx context.Context, userID, factorID uuid.UUID, 
 	})
 }
 
+// ResetFactors removes every factor and recovery code of someone who lost
+// them all, and signs them out everywhere: an instance admin's last resort.
+func (s *Service) ResetFactors(ctx context.Context, userID uuid.UUID, actor string) error {
+	return s.store.Tx(ctx, func(tx pgx.Tx) error {
+		u, err := s.getUser(ctx, tx, userID)
+		if err != nil {
+			return err
+		}
+		for _, q := range []string{
+			`DELETE FROM passkey_refs WHERE factor_id IN (SELECT id FROM user_factors WHERE region = $1 AND user_id = $2)`,
+			`DELETE FROM user_factors WHERE region = $1 AND user_id = $2`,
+			`DELETE FROM recovery_codes WHERE region = $1 AND user_id = $2`,
+		} {
+			if _, err := tx.Exec(ctx, q, u.Region, userID); err != nil {
+				return err
+			}
+		}
+		if err := revokeAllSessions(ctx, tx, u.Region, userID); err != nil {
+			return err
+		}
+		if err := audit.Write(ctx, tx, u.Region, actor, "user.factors_reset", "user:"+userID.String(), nil); err != nil {
+			return err
+		}
+		return hmail.Enqueue(ctx, tx, u.Region, u.Email, "Two-step verification was reset on your Hayat account",
+			fmt.Sprintf("Hi %s,\n\nAn administrator removed your authenticator apps, passkeys and recovery codes, and signed you out everywhere. Sign in again and set up two-step verification from Account → Security.\n\nIf you didn't ask for this, contact your administrator.", u.DisplayName()))
+	})
+}
+
 func factorLabel(kind string) string {
 	if kind == FactorPasskey {
 		return "passkey"

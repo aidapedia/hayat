@@ -175,6 +175,9 @@ func (r *registryService) RotateServiceClientSecret(ctx context.Context, req *co
 	if err != nil {
 		return nil, err
 	}
+	if err := r.s.stepUp(ctx); err != nil {
+		return nil, err
+	}
 	secret, err := r.s.clients.RotateSecret(ctx, cur.ID, actor(ctx))
 	if err != nil {
 		return nil, r.s.fail(err)

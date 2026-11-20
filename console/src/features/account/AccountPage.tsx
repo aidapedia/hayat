@@ -12,6 +12,7 @@ import { ImageUpload } from '@/shared/ui/image-upload'
 import { PasswordInput } from '@/shared/ui/password-input'
 import { Narrow, PageHeader, Section } from '@/shared/ui/page/PageHeader'
 import { ProfileForm } from './ProfileForm'
+import { SecurityPanel } from './SecurityPanel'
 import { SessionsTable } from './SessionsTable'
 
 function PasswordForm({ hasPassword }: { hasPassword: boolean }) {
@@ -126,6 +127,9 @@ export default function AccountPage() {
           </Section>
           <Section title="Sign-in methods" desc="Your password, and the accounts you can sign in with instead.">
             <MySignInMethods />
+          </Section>
+          <Section title="Two-step verification" desc="A second step after your password: a code from an app, or a passkey.">
+            <SecurityPanel />
           </Section>
           <Section title="Password">
             <PasswordForm hasPassword={user.hasPassword} />

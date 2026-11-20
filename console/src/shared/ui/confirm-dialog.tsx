@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
-import { errorMessage } from '@/shared/api/client'
+import { errorMessage, isStepUp } from '@/shared/api/client'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,7 +49,9 @@ export function ConfirmDialog({
       onOpenChange(false)
       setTyped('')
     } catch (err) {
-      toast.error(errorMessage(err))
+      // "Confirm it's you" has its own dialog; step aside for it.
+      if (isStepUp(err)) onOpenChange(false)
+      else toast.error(errorMessage(err))
     } finally {
       setBusy(false)
     }

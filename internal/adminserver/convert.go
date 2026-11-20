@@ -52,6 +52,7 @@ func (s *Server) toTenant(t tenancy.Tenant) *adminv1.Tenant {
 	return &adminv1.Tenant{
 		Id: t.ID.String(), Slug: t.Slug, Name: t.Name, OwnerId: t.OwnerID.String(), MemberCount: int32(t.MemberCount),
 		Region: t.Region, CreatedAt: ts(t.CreatedAt), UpdatedAt: ts(t.UpdatedAt), LogoUrl: media.Link(s.cfg.Issuer, t.Logo),
+		RequireMfa: t.RequireMFA,
 	}
 }
 

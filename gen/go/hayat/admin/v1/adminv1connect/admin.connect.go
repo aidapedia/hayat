@@ -70,6 +70,15 @@ const (
 	// AccountServiceSetMyAvatarProcedure is the fully-qualified name of the AccountService's
 	// SetMyAvatar RPC.
 	AccountServiceSetMyAvatarProcedure = "/hayat.admin.v1.AccountService/SetMyAvatar"
+	// AccountServiceGetMySecurityProcedure is the fully-qualified name of the AccountService's
+	// GetMySecurity RPC.
+	AccountServiceGetMySecurityProcedure = "/hayat.admin.v1.AccountService/GetMySecurity"
+	// AccountServiceRemoveMyFactorProcedure is the fully-qualified name of the AccountService's
+	// RemoveMyFactor RPC.
+	AccountServiceRemoveMyFactorProcedure = "/hayat.admin.v1.AccountService/RemoveMyFactor"
+	// AccountServiceRegenerateRecoveryCodesProcedure is the fully-qualified name of the
+	// AccountService's RegenerateRecoveryCodes RPC.
+	AccountServiceRegenerateRecoveryCodesProcedure = "/hayat.admin.v1.AccountService/RegenerateRecoveryCodes"
 	// OverviewServiceGetOverviewProcedure is the fully-qualified name of the OverviewService's
 	// GetOverview RPC.
 	OverviewServiceGetOverviewProcedure = "/hayat.admin.v1.OverviewService/GetOverview"
@@ -93,6 +102,9 @@ const (
 	// UserServiceRevokeUserSessionsProcedure is the fully-qualified name of the UserService's
 	// RevokeUserSessions RPC.
 	UserServiceRevokeUserSessionsProcedure = "/hayat.admin.v1.UserService/RevokeUserSessions"
+	// UserServiceResetUserFactorsProcedure is the fully-qualified name of the UserService's
+	// ResetUserFactors RPC.
+	UserServiceResetUserFactorsProcedure = "/hayat.admin.v1.UserService/ResetUserFactors"
 	// TenantServiceListTenantsProcedure is the fully-qualified name of the TenantService's ListTenants
 	// RPC.
 	TenantServiceListTenantsProcedure = "/hayat.admin.v1.TenantService/ListTenants"
@@ -121,6 +133,9 @@ const (
 	// TenantServiceTransferOwnershipProcedure is the fully-qualified name of the TenantService's
 	// TransferOwnership RPC.
 	TenantServiceTransferOwnershipProcedure = "/hayat.admin.v1.TenantService/TransferOwnership"
+	// TenantServiceSetTenantRequireMFAProcedure is the fully-qualified name of the TenantService's
+	// SetTenantRequireMFA RPC.
+	TenantServiceSetTenantRequireMFAProcedure = "/hayat.admin.v1.TenantService/SetTenantRequireMFA"
 	// KeyServiceListSigningKeysProcedure is the fully-qualified name of the KeyService's
 	// ListSigningKeys RPC.
 	KeyServiceListSigningKeysProcedure = "/hayat.admin.v1.KeyService/ListSigningKeys"
@@ -146,6 +161,15 @@ type AccountServiceClient interface {
 	// The caller's picture: PNG, JPEG or WebP up to 5 MB, cropped square and
 	// resized. Empty data removes it. It becomes the OIDC `picture` claim.
 	SetMyAvatar(context.Context, *connect.Request[v1.SetMyAvatarRequest]) (*connect.Response[v1.SetMyAvatarResponse], error)
+	// Two-step verification: the caller's authenticator apps and passkeys,
+	// and how many recovery codes are left. Factors are added on Hayat's own
+	// pages (setup_url), never through this API.
+	GetMySecurity(context.Context, *connect.Request[v1.GetMySecurityRequest]) (*connect.Response[v1.GetMySecurityResponse], error)
+	// Needs a recent confirmation (see "Step-up" below).
+	RemoveMyFactor(context.Context, *connect.Request[v1.RemoveMyFactorRequest]) (*connect.Response[v1.RemoveMyFactorResponse], error)
+	// A fresh set of recovery codes, which voids the old one. Needs a recent
+	// confirmation.
+	RegenerateRecoveryCodes(context.Context, *connect.Request[v1.RegenerateRecoveryCodesRequest]) (*connect.Response[v1.RegenerateRecoveryCodesResponse], error)
 }
 
 // NewAccountServiceClient constructs a client for the hayat.admin.v1.AccountService service. By
@@ -207,19 +231,40 @@ func NewAccountServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(accountServiceMethods.ByName("SetMyAvatar")),
 			connect.WithClientOptions(opts...),
 		),
+		getMySecurity: connect.NewClient[v1.GetMySecurityRequest, v1.GetMySecurityResponse](
+			httpClient,
+			baseURL+AccountServiceGetMySecurityProcedure,
+			connect.WithSchema(accountServiceMethods.ByName("GetMySecurity")),
+			connect.WithClientOptions(opts...),
+		),
+		removeMyFactor: connect.NewClient[v1.RemoveMyFactorRequest, v1.RemoveMyFactorResponse](
+			httpClient,
+			baseURL+AccountServiceRemoveMyFactorProcedure,
+			connect.WithSchema(accountServiceMethods.ByName("RemoveMyFactor")),
+			connect.WithClientOptions(opts...),
+		),
+		regenerateRecoveryCodes: connect.NewClient[v1.RegenerateRecoveryCodesRequest, v1.RegenerateRecoveryCodesResponse](
+			httpClient,
+			baseURL+AccountServiceRegenerateRecoveryCodesProcedure,
+			connect.WithSchema(accountServiceMethods.ByName("RegenerateRecoveryCodes")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // accountServiceClient implements AccountServiceClient.
 type accountServiceClient struct {
-	getMe           *connect.Client[v1.GetMeRequest, v1.GetMeResponse]
-	updateMe        *connect.Client[v1.UpdateMeRequest, v1.UpdateMeResponse]
-	changePassword  *connect.Client[v1.ChangePasswordRequest, v1.ChangePasswordResponse]
-	listMySessions  *connect.Client[v1.ListMySessionsRequest, v1.ListMySessionsResponse]
-	revokeMySession *connect.Client[v1.RevokeMySessionRequest, v1.RevokeMySessionResponse]
-	getMyAppearance *connect.Client[v1.GetMyAppearanceRequest, v1.GetMyAppearanceResponse]
-	setMyAppearance *connect.Client[v1.SetMyAppearanceRequest, v1.SetMyAppearanceResponse]
-	setMyAvatar     *connect.Client[v1.SetMyAvatarRequest, v1.SetMyAvatarResponse]
+	getMe                   *connect.Client[v1.GetMeRequest, v1.GetMeResponse]
+	updateMe                *connect.Client[v1.UpdateMeRequest, v1.UpdateMeResponse]
+	changePassword          *connect.Client[v1.ChangePasswordRequest, v1.ChangePasswordResponse]
+	listMySessions          *connect.Client[v1.ListMySessionsRequest, v1.ListMySessionsResponse]
+	revokeMySession         *connect.Client[v1.RevokeMySessionRequest, v1.RevokeMySessionResponse]
+	getMyAppearance         *connect.Client[v1.GetMyAppearanceRequest, v1.GetMyAppearanceResponse]
+	setMyAppearance         *connect.Client[v1.SetMyAppearanceRequest, v1.SetMyAppearanceResponse]
+	setMyAvatar             *connect.Client[v1.SetMyAvatarRequest, v1.SetMyAvatarResponse]
+	getMySecurity           *connect.Client[v1.GetMySecurityRequest, v1.GetMySecurityResponse]
+	removeMyFactor          *connect.Client[v1.RemoveMyFactorRequest, v1.RemoveMyFactorResponse]
+	regenerateRecoveryCodes *connect.Client[v1.RegenerateRecoveryCodesRequest, v1.RegenerateRecoveryCodesResponse]
 }
 
 // GetMe calls hayat.admin.v1.AccountService.GetMe.
@@ -262,6 +307,21 @@ func (c *accountServiceClient) SetMyAvatar(ctx context.Context, req *connect.Req
 	return c.setMyAvatar.CallUnary(ctx, req)
 }
 
+// GetMySecurity calls hayat.admin.v1.AccountService.GetMySecurity.
+func (c *accountServiceClient) GetMySecurity(ctx context.Context, req *connect.Request[v1.GetMySecurityRequest]) (*connect.Response[v1.GetMySecurityResponse], error) {
+	return c.getMySecurity.CallUnary(ctx, req)
+}
+
+// RemoveMyFactor calls hayat.admin.v1.AccountService.RemoveMyFactor.
+func (c *accountServiceClient) RemoveMyFactor(ctx context.Context, req *connect.Request[v1.RemoveMyFactorRequest]) (*connect.Response[v1.RemoveMyFactorResponse], error) {
+	return c.removeMyFactor.CallUnary(ctx, req)
+}
+
+// RegenerateRecoveryCodes calls hayat.admin.v1.AccountService.RegenerateRecoveryCodes.
+func (c *accountServiceClient) RegenerateRecoveryCodes(ctx context.Context, req *connect.Request[v1.RegenerateRecoveryCodesRequest]) (*connect.Response[v1.RegenerateRecoveryCodesResponse], error) {
+	return c.regenerateRecoveryCodes.CallUnary(ctx, req)
+}
+
 // AccountServiceHandler is an implementation of the hayat.admin.v1.AccountService service.
 type AccountServiceHandler interface {
 	GetMe(context.Context, *connect.Request[v1.GetMeRequest]) (*connect.Response[v1.GetMeResponse], error)
@@ -276,6 +336,15 @@ type AccountServiceHandler interface {
 	// The caller's picture: PNG, JPEG or WebP up to 5 MB, cropped square and
 	// resized. Empty data removes it. It becomes the OIDC `picture` claim.
 	SetMyAvatar(context.Context, *connect.Request[v1.SetMyAvatarRequest]) (*connect.Response[v1.SetMyAvatarResponse], error)
+	// Two-step verification: the caller's authenticator apps and passkeys,
+	// and how many recovery codes are left. Factors are added on Hayat's own
+	// pages (setup_url), never through this API.
+	GetMySecurity(context.Context, *connect.Request[v1.GetMySecurityRequest]) (*connect.Response[v1.GetMySecurityResponse], error)
+	// Needs a recent confirmation (see "Step-up" below).
+	RemoveMyFactor(context.Context, *connect.Request[v1.RemoveMyFactorRequest]) (*connect.Response[v1.RemoveMyFactorResponse], error)
+	// A fresh set of recovery codes, which voids the old one. Needs a recent
+	// confirmation.
+	RegenerateRecoveryCodes(context.Context, *connect.Request[v1.RegenerateRecoveryCodesRequest]) (*connect.Response[v1.RegenerateRecoveryCodesResponse], error)
 }
 
 // NewAccountServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -333,6 +402,24 @@ func NewAccountServiceHandler(svc AccountServiceHandler, opts ...connect.Handler
 		connect.WithSchema(accountServiceMethods.ByName("SetMyAvatar")),
 		connect.WithHandlerOptions(opts...),
 	)
+	accountServiceGetMySecurityHandler := connect.NewUnaryHandler(
+		AccountServiceGetMySecurityProcedure,
+		svc.GetMySecurity,
+		connect.WithSchema(accountServiceMethods.ByName("GetMySecurity")),
+		connect.WithHandlerOptions(opts...),
+	)
+	accountServiceRemoveMyFactorHandler := connect.NewUnaryHandler(
+		AccountServiceRemoveMyFactorProcedure,
+		svc.RemoveMyFactor,
+		connect.WithSchema(accountServiceMethods.ByName("RemoveMyFactor")),
+		connect.WithHandlerOptions(opts...),
+	)
+	accountServiceRegenerateRecoveryCodesHandler := connect.NewUnaryHandler(
+		AccountServiceRegenerateRecoveryCodesProcedure,
+		svc.RegenerateRecoveryCodes,
+		connect.WithSchema(accountServiceMethods.ByName("RegenerateRecoveryCodes")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/hayat.admin.v1.AccountService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case AccountServiceGetMeProcedure:
@@ -351,6 +438,12 @@ func NewAccountServiceHandler(svc AccountServiceHandler, opts ...connect.Handler
 			accountServiceSetMyAppearanceHandler.ServeHTTP(w, r)
 		case AccountServiceSetMyAvatarProcedure:
 			accountServiceSetMyAvatarHandler.ServeHTTP(w, r)
+		case AccountServiceGetMySecurityProcedure:
+			accountServiceGetMySecurityHandler.ServeHTTP(w, r)
+		case AccountServiceRemoveMyFactorProcedure:
+			accountServiceRemoveMyFactorHandler.ServeHTTP(w, r)
+		case AccountServiceRegenerateRecoveryCodesProcedure:
+			accountServiceRegenerateRecoveryCodesHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -390,6 +483,18 @@ func (UnimplementedAccountServiceHandler) SetMyAppearance(context.Context, *conn
 
 func (UnimplementedAccountServiceHandler) SetMyAvatar(context.Context, *connect.Request[v1.SetMyAvatarRequest]) (*connect.Response[v1.SetMyAvatarResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.AccountService.SetMyAvatar is not implemented"))
+}
+
+func (UnimplementedAccountServiceHandler) GetMySecurity(context.Context, *connect.Request[v1.GetMySecurityRequest]) (*connect.Response[v1.GetMySecurityResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.AccountService.GetMySecurity is not implemented"))
+}
+
+func (UnimplementedAccountServiceHandler) RemoveMyFactor(context.Context, *connect.Request[v1.RemoveMyFactorRequest]) (*connect.Response[v1.RemoveMyFactorResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.AccountService.RemoveMyFactor is not implemented"))
+}
+
+func (UnimplementedAccountServiceHandler) RegenerateRecoveryCodes(context.Context, *connect.Request[v1.RegenerateRecoveryCodesRequest]) (*connect.Response[v1.RegenerateRecoveryCodesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.AccountService.RegenerateRecoveryCodes is not implemented"))
 }
 
 // OverviewServiceClient is a client for the hayat.admin.v1.OverviewService service.
@@ -475,6 +580,9 @@ type UserServiceClient interface {
 	ResendVerification(context.Context, *connect.Request[v1.ResendVerificationRequest]) (*connect.Response[v1.ResendVerificationResponse], error)
 	// Ends one session, or every session when session_id is empty.
 	RevokeUserSessions(context.Context, *connect.Request[v1.RevokeUserSessionsRequest]) (*connect.Response[v1.RevokeUserSessionsResponse], error)
+	// For someone who lost every second factor and their recovery codes:
+	// removes them all and signs them out everywhere. Needs a recent confirmation.
+	ResetUserFactors(context.Context, *connect.Request[v1.ResetUserFactorsRequest]) (*connect.Response[v1.ResetUserFactorsResponse], error)
 }
 
 // NewUserServiceClient constructs a client for the hayat.admin.v1.UserService service. By default,
@@ -536,6 +644,12 @@ func NewUserServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 			connect.WithSchema(userServiceMethods.ByName("RevokeUserSessions")),
 			connect.WithClientOptions(opts...),
 		),
+		resetUserFactors: connect.NewClient[v1.ResetUserFactorsRequest, v1.ResetUserFactorsResponse](
+			httpClient,
+			baseURL+UserServiceResetUserFactorsProcedure,
+			connect.WithSchema(userServiceMethods.ByName("ResetUserFactors")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -549,6 +663,7 @@ type userServiceClient struct {
 	setUserAdmin       *connect.Client[v1.SetUserAdminRequest, v1.SetUserAdminResponse]
 	resendVerification *connect.Client[v1.ResendVerificationRequest, v1.ResendVerificationResponse]
 	revokeUserSessions *connect.Client[v1.RevokeUserSessionsRequest, v1.RevokeUserSessionsResponse]
+	resetUserFactors   *connect.Client[v1.ResetUserFactorsRequest, v1.ResetUserFactorsResponse]
 }
 
 // ListUsers calls hayat.admin.v1.UserService.ListUsers.
@@ -591,6 +706,11 @@ func (c *userServiceClient) RevokeUserSessions(ctx context.Context, req *connect
 	return c.revokeUserSessions.CallUnary(ctx, req)
 }
 
+// ResetUserFactors calls hayat.admin.v1.UserService.ResetUserFactors.
+func (c *userServiceClient) ResetUserFactors(ctx context.Context, req *connect.Request[v1.ResetUserFactorsRequest]) (*connect.Response[v1.ResetUserFactorsResponse], error) {
+	return c.resetUserFactors.CallUnary(ctx, req)
+}
+
 // UserServiceHandler is an implementation of the hayat.admin.v1.UserService service.
 type UserServiceHandler interface {
 	ListUsers(context.Context, *connect.Request[v1.ListUsersRequest]) (*connect.Response[v1.ListUsersResponse], error)
@@ -604,6 +724,9 @@ type UserServiceHandler interface {
 	ResendVerification(context.Context, *connect.Request[v1.ResendVerificationRequest]) (*connect.Response[v1.ResendVerificationResponse], error)
 	// Ends one session, or every session when session_id is empty.
 	RevokeUserSessions(context.Context, *connect.Request[v1.RevokeUserSessionsRequest]) (*connect.Response[v1.RevokeUserSessionsResponse], error)
+	// For someone who lost every second factor and their recovery codes:
+	// removes them all and signs them out everywhere. Needs a recent confirmation.
+	ResetUserFactors(context.Context, *connect.Request[v1.ResetUserFactorsRequest]) (*connect.Response[v1.ResetUserFactorsResponse], error)
 }
 
 // NewUserServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -661,6 +784,12 @@ func NewUserServiceHandler(svc UserServiceHandler, opts ...connect.HandlerOption
 		connect.WithSchema(userServiceMethods.ByName("RevokeUserSessions")),
 		connect.WithHandlerOptions(opts...),
 	)
+	userServiceResetUserFactorsHandler := connect.NewUnaryHandler(
+		UserServiceResetUserFactorsProcedure,
+		svc.ResetUserFactors,
+		connect.WithSchema(userServiceMethods.ByName("ResetUserFactors")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/hayat.admin.v1.UserService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case UserServiceListUsersProcedure:
@@ -679,6 +808,8 @@ func NewUserServiceHandler(svc UserServiceHandler, opts ...connect.HandlerOption
 			userServiceResendVerificationHandler.ServeHTTP(w, r)
 		case UserServiceRevokeUserSessionsProcedure:
 			userServiceRevokeUserSessionsHandler.ServeHTTP(w, r)
+		case UserServiceResetUserFactorsProcedure:
+			userServiceResetUserFactorsHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -720,6 +851,10 @@ func (UnimplementedUserServiceHandler) RevokeUserSessions(context.Context, *conn
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.UserService.RevokeUserSessions is not implemented"))
 }
 
+func (UnimplementedUserServiceHandler) ResetUserFactors(context.Context, *connect.Request[v1.ResetUserFactorsRequest]) (*connect.Response[v1.ResetUserFactorsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.UserService.ResetUserFactors is not implemented"))
+}
+
 // TenantServiceClient is a client for the hayat.admin.v1.TenantService service.
 type TenantServiceClient interface {
 	// An instance admin sees every tenant; anyone else, the ones they belong to.
@@ -742,6 +877,9 @@ type TenantServiceClient interface {
 	RemoveMember(context.Context, *connect.Request[v1.RemoveMemberRequest]) (*connect.Response[v1.RemoveMemberResponse], error)
 	// The current owner or an instance admin.
 	TransferOwnership(context.Context, *connect.Request[v1.TransferOwnershipRequest]) (*connect.Response[v1.TransferOwnershipResponse], error)
+	// hayat.tenant.manage. From each member's next sign-in, someone without a
+	// second factor sets one up before they get in. Needs a recent confirmation.
+	SetTenantRequireMFA(context.Context, *connect.Request[v1.SetTenantRequireMFARequest]) (*connect.Response[v1.SetTenantRequireMFAResponse], error)
 }
 
 // NewTenantServiceClient constructs a client for the hayat.admin.v1.TenantService service. By
@@ -815,21 +953,28 @@ func NewTenantServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			connect.WithSchema(tenantServiceMethods.ByName("TransferOwnership")),
 			connect.WithClientOptions(opts...),
 		),
+		setTenantRequireMFA: connect.NewClient[v1.SetTenantRequireMFARequest, v1.SetTenantRequireMFAResponse](
+			httpClient,
+			baseURL+TenantServiceSetTenantRequireMFAProcedure,
+			connect.WithSchema(tenantServiceMethods.ByName("SetTenantRequireMFA")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // tenantServiceClient implements TenantServiceClient.
 type tenantServiceClient struct {
-	listTenants       *connect.Client[v1.ListTenantsRequest, v1.ListTenantsResponse]
-	getTenant         *connect.Client[v1.GetTenantRequest, v1.GetTenantResponse]
-	listMembers       *connect.Client[v1.ListMembersRequest, v1.ListMembersResponse]
-	createTenant      *connect.Client[v1.CreateTenantRequest, v1.CreateTenantResponse]
-	renameTenant      *connect.Client[v1.RenameTenantRequest, v1.RenameTenantResponse]
-	setTenantLogo     *connect.Client[v1.SetTenantLogoRequest, v1.SetTenantLogoResponse]
-	deleteTenant      *connect.Client[v1.DeleteTenantRequest, v1.DeleteTenantResponse]
-	addMember         *connect.Client[v1.AddMemberRequest, v1.AddMemberResponse]
-	removeMember      *connect.Client[v1.RemoveMemberRequest, v1.RemoveMemberResponse]
-	transferOwnership *connect.Client[v1.TransferOwnershipRequest, v1.TransferOwnershipResponse]
+	listTenants         *connect.Client[v1.ListTenantsRequest, v1.ListTenantsResponse]
+	getTenant           *connect.Client[v1.GetTenantRequest, v1.GetTenantResponse]
+	listMembers         *connect.Client[v1.ListMembersRequest, v1.ListMembersResponse]
+	createTenant        *connect.Client[v1.CreateTenantRequest, v1.CreateTenantResponse]
+	renameTenant        *connect.Client[v1.RenameTenantRequest, v1.RenameTenantResponse]
+	setTenantLogo       *connect.Client[v1.SetTenantLogoRequest, v1.SetTenantLogoResponse]
+	deleteTenant        *connect.Client[v1.DeleteTenantRequest, v1.DeleteTenantResponse]
+	addMember           *connect.Client[v1.AddMemberRequest, v1.AddMemberResponse]
+	removeMember        *connect.Client[v1.RemoveMemberRequest, v1.RemoveMemberResponse]
+	transferOwnership   *connect.Client[v1.TransferOwnershipRequest, v1.TransferOwnershipResponse]
+	setTenantRequireMFA *connect.Client[v1.SetTenantRequireMFARequest, v1.SetTenantRequireMFAResponse]
 }
 
 // ListTenants calls hayat.admin.v1.TenantService.ListTenants.
@@ -882,6 +1027,11 @@ func (c *tenantServiceClient) TransferOwnership(ctx context.Context, req *connec
 	return c.transferOwnership.CallUnary(ctx, req)
 }
 
+// SetTenantRequireMFA calls hayat.admin.v1.TenantService.SetTenantRequireMFA.
+func (c *tenantServiceClient) SetTenantRequireMFA(ctx context.Context, req *connect.Request[v1.SetTenantRequireMFARequest]) (*connect.Response[v1.SetTenantRequireMFAResponse], error) {
+	return c.setTenantRequireMFA.CallUnary(ctx, req)
+}
+
 // TenantServiceHandler is an implementation of the hayat.admin.v1.TenantService service.
 type TenantServiceHandler interface {
 	// An instance admin sees every tenant; anyone else, the ones they belong to.
@@ -904,6 +1054,9 @@ type TenantServiceHandler interface {
 	RemoveMember(context.Context, *connect.Request[v1.RemoveMemberRequest]) (*connect.Response[v1.RemoveMemberResponse], error)
 	// The current owner or an instance admin.
 	TransferOwnership(context.Context, *connect.Request[v1.TransferOwnershipRequest]) (*connect.Response[v1.TransferOwnershipResponse], error)
+	// hayat.tenant.manage. From each member's next sign-in, someone without a
+	// second factor sets one up before they get in. Needs a recent confirmation.
+	SetTenantRequireMFA(context.Context, *connect.Request[v1.SetTenantRequireMFARequest]) (*connect.Response[v1.SetTenantRequireMFAResponse], error)
 }
 
 // NewTenantServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -973,6 +1126,12 @@ func NewTenantServiceHandler(svc TenantServiceHandler, opts ...connect.HandlerOp
 		connect.WithSchema(tenantServiceMethods.ByName("TransferOwnership")),
 		connect.WithHandlerOptions(opts...),
 	)
+	tenantServiceSetTenantRequireMFAHandler := connect.NewUnaryHandler(
+		TenantServiceSetTenantRequireMFAProcedure,
+		svc.SetTenantRequireMFA,
+		connect.WithSchema(tenantServiceMethods.ByName("SetTenantRequireMFA")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/hayat.admin.v1.TenantService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case TenantServiceListTenantsProcedure:
@@ -995,6 +1154,8 @@ func NewTenantServiceHandler(svc TenantServiceHandler, opts ...connect.HandlerOp
 			tenantServiceRemoveMemberHandler.ServeHTTP(w, r)
 		case TenantServiceTransferOwnershipProcedure:
 			tenantServiceTransferOwnershipHandler.ServeHTTP(w, r)
+		case TenantServiceSetTenantRequireMFAProcedure:
+			tenantServiceSetTenantRequireMFAHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -1042,6 +1203,10 @@ func (UnimplementedTenantServiceHandler) RemoveMember(context.Context, *connect.
 
 func (UnimplementedTenantServiceHandler) TransferOwnership(context.Context, *connect.Request[v1.TransferOwnershipRequest]) (*connect.Response[v1.TransferOwnershipResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.TenantService.TransferOwnership is not implemented"))
+}
+
+func (UnimplementedTenantServiceHandler) SetTenantRequireMFA(context.Context, *connect.Request[v1.SetTenantRequireMFARequest]) (*connect.Response[v1.SetTenantRequireMFAResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.TenantService.SetTenantRequireMFA is not implemented"))
 }
 
 // KeyServiceClient is a client for the hayat.admin.v1.KeyService service.

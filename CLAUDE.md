@@ -2,8 +2,10 @@
 
 Identity provider + tree-based RBAC shared by many services. Design and roadmap:
 https://claude.ai/artifact/AceR8JGbXjPdNE2mz8WHck. Phases 1 (identity) and 2
-(resource tree, contracts, service API, SDKs) are built; of phase 3, login
-pages, Google/GitHub and company SSO are built, MFA is next.
+(resource tree, contracts, service API, SDKs) are built; phase 3 (login
+pages, Google/GitHub and company SSO, two-step verification and passkeys) is
+built. Clerk gap roadmap: https://claude.ai/artifact/DVzV22FxJ787TwARh6cgbN
+(phase 1, account security, is done).
 
 ## Standards
 - Simple and readable over clever. Start minimal, verify, then grow.
@@ -109,6 +111,28 @@ pages, Google/GitHub and company SSO are built, MFA is next.
   and reset, server-side — except for instance admins, so a broken IdP can't
   lock out who fixes it. Every trip is PKCE + a single-use state bound to the
   browser by the `hayat_sso` cookie. Removing a person's last way in is refused.
+- **A password is one factor.** After a password, a reset link or Google/GitHub
+  comes, in order (`authserver.next`): the second factor if the person has one
+  (`/mfa`: authenticator code, passkey or recovery code), setting one up if a
+  tenant requires it (`tenants.require_mfa` → `/mfa/setup`), then the session.
+  A passkey sign-in is two factors on its own (`amr: ["hwk","mfa"]`); a
+  company's own IdP (`kind = oidc`) decides for its people. The half-done
+  sign-in lives in `sign_in_challenges` (cookie `hayat_challenge`), never in
+  the form. Factors are added only on Hayat's pages: a passkey's relying party
+  is the issuer's host, and a TOTP secret (sealed under the master key) never
+  passes through the console. Single sign-on refuses a session weaker than the
+  account now needs (`strongEnough`).
+- **Sensitive admin calls step up**: `s.stepUp(ctx)` after the permission
+  check refuses unless the session's `verified_at` is within 10 minutes
+  (sign-in sets it; `/reauth` refreshes it), answering PERMISSION_DENIED with
+  `Hayat-Step-Up: required`; the console's StepUpDialog sends the person to
+  `<issuer>/reauth?return_to=`, which only returns to the console or Hayat.
+- **Lockout and breached passwords live in identity**: 10 wrong passwords in a
+  row lock the password 15 minutes (`ErrLocked` reads like the rate limit, so
+  it reveals nothing); a reset lifts it. Every password a person chooses goes
+  through `checkNewPassword` (length + HIBP, failing open); `hayat seed` only
+  checks length. Turnstile (opt-in) is the one thing a sign-in page loads from
+  another origin, on sign-up and forgot password only.
 - **Every uploaded image goes through `internal/media`**: decoded, size-capped,
   resized and re-encoded (so EXIF and anything that isn't pixels is dropped),
   then served by the auth role at `<issuer>/media/<id>` — never a bucket URL, so
@@ -129,7 +153,8 @@ cmd/hayat/            the one binary: serve --role=auth|admin|api|worker, migrat
 internal/config       every env var
 internal/store        pgx pool, Tx with retry, UUIDv7, ErrNotFound
 internal/migrate      append-only runner over migrations/<engine>
-internal/identity     users, emailed links, sessions
+internal/identity     users, emailed links, sessions, factors (TOTP, passkeys, recovery codes),
+                      sign-in challenges, lockout, breached-password check, idle timeout
 internal/tenancy      tenants, the tenant node, members
 internal/oidc         zitadel/oidc storage: clients, keys, auth requests, tokens
 internal/revision     per-tenant revisions + policy events (Watch)
@@ -142,6 +167,7 @@ internal/loginpage    each service's login page: draft, published versions, logo
 internal/federation   sign in with Google, GitHub, company OIDC: providers (sealed secrets), linked accounts, verified domains
 internal/media        uploaded images (avatars, tenant/service/login-page logos): checks + resizes, Store = local | s3 (SigV4)
 internal/adminserver  the admin role: Connect handlers for proto/hayat/admin/v1
+internal/testkey      a software passkey for tests: real WebAuthn messages, no browser
 internal/worker       outbox mail, cleanup, key rotation (leased)
 internal/app          wires modules into roles
 proto/ → gen/go, console/src/shared/api/gen   (make generate; output is committed)
