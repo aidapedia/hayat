@@ -5,7 +5,7 @@ import type { Node } from '@/shared/api/gen/hayat/admin/v1/policy_pb'
 import { cn } from '@/shared/lib/utils'
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuLabel, ContextMenuTrigger } from '@/shared/ui/context-menu'
 import { NodeIcon } from './NodeIcon'
-import { ancestorIds, childrenMap, isContainer, nodeHref, TENANT } from './tree'
+import { ancestorIds, childrenMap, isContainer, nodeHref, ROOT, TENANT } from './tree'
 
 /** One tenant's nodes, loaded when the tenant is first opened. */
 export type TenantTree = { nodes?: Node[]; loading: boolean; error?: string | null }
@@ -13,6 +13,8 @@ export type TenantTree = { nodes?: Node[]; loading: boolean; error?: string | nu
 export type TreeActions = {
   onCreateGroup: (tenantId: string, parent: Node) => void
   onMove: (tenantId: string, node: Node) => void
+  /** Absent when the caller can't create tenants: the root then has no menu. */
+  onCreateTenant?: () => void
 }
 
 const rowBase = 'group flex w-full items-center gap-2 rounded-[7px] px-2.5 py-1.5 text-left text-xs'
@@ -107,6 +109,22 @@ function RowMenu({ node, tenantId, actions, children }: { node?: Node; tenantId:
   )
 }
 
+/** Right-click on the instance root offers a new tenant — the only thing filed directly under it. */
+function RootMenu({ onCreateTenant, children }: { onCreateTenant?: () => void; children: ReactNode }) {
+  if (!onCreateTenant) return children
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
+      <ContextMenuContent className="w-52">
+        <ContextMenuLabel>Hayat</ContextMenuLabel>
+        <ContextMenuItem onSelect={onCreateTenant}>
+          <Plus /> New tenant
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
+  )
+}
+
 /** The nodes under one tenant, nested, with guide lines down each level. */
 function TenantBranch({
   tenantId,
@@ -176,9 +194,10 @@ function TenantBranch({
 }
 
 /**
- * Every tenant, each one a branch that loads the first time it opens. The
- * shape follows tabletsgo's tree: a compact row per node, guide lines down
- * each level, a child count, right-click to add a group or move a node.
+ * The instance root ("Hayat") and every tenant under it, each tenant a branch
+ * that loads the first time it opens. The shape follows tabletsgo's tree: a
+ * compact row per node, guide lines down each level, a child count,
+ * right-click to add a tenant (on the root), a group, or move a node.
  */
 export function ResourceTree({
   tenants,
@@ -198,6 +217,7 @@ export function ResourceTree({
 }) {
   // Tenants start closed (an instance can hold hundreds); the selected one opens.
   const [open, setOpen] = useState(() => new Set<string>(selectedTenant ? [selectedTenant] : []))
+  const [rootOpen, setRootOpen] = useState(true)
 
   useEffect(() => {
     if (!selectedTenant) return
@@ -220,47 +240,71 @@ export function ResourceTree({
 
   return (
     <div className="flex flex-col gap-0.5">
-      {tenants.map((t) => {
-        const tree = trees[t.id]
-        const root = tree?.nodes?.find((n) => n.type === TENANT)
-        const count = tree?.nodes && root ? tree.nodes.filter((n) => n.parentId === root.id).length : undefined
-        const expanded = open.has(t.id)
-        const selected = selectedTenant === t.id && (!selectedNode || selectedNode === root?.id)
-        return (
-          <div key={t.id}>
-            <RowMenu node={root} tenantId={t.id} actions={actions}>
-              <Row
-                to={nodeHref(t.id)}
-                type={TENANT}
-                name={root?.name ?? t.name}
-                count={count}
-                selected={selected}
-                // Unknown until loaded, so a tenant offers to open; once loaded, only if something is inside.
-                // An open one always offers to close — an empty tenant stays open on "Nothing filed here yet".
-                expandable={expanded || count === undefined || count > 0 || !!tree?.error}
-                expanded={expanded}
-                busy={expanded && tree?.loading && !tree.nodes}
-                onToggle={() => setTenant(t.id, !expanded)}
-                onOpen={() => setTenant(t.id, true)}
-              />
-            </RowMenu>
-            {expanded && tree && (tree.nodes || tree.error) && (
-              <div className="ml-3 flex flex-col gap-0.5 border-l pl-1.5">
-                {tree.error ? (
-                  <p className="py-1.5 pl-2.5 text-[11px] text-destructive">
-                    {tree.error}{' '}
-                    <button type="button" className="underline" onClick={() => onLoad(t.id)}>
-                      Retry
-                    </button>
-                  </p>
-                ) : (
-                  <TenantBranch tenantId={t.id} nodes={tree.nodes!} selectedNode={selectedTenant === t.id ? selectedNode : undefined} actions={actions} />
+      {/* The instance root is always there, so an instance with no tenant yet
+          still has somewhere to right-click a first one into. */}
+      <RootMenu onCreateTenant={actions.onCreateTenant}>
+        <Row
+          to="/resource-tree"
+          type={ROOT}
+          name="Hayat"
+          count={tenants.length}
+          selected={!selectedTenant}
+          expandable
+          expanded={rootOpen}
+          onToggle={() => setRootOpen((o) => !o)}
+          onOpen={() => setRootOpen(true)}
+        />
+      </RootMenu>
+      {rootOpen && (
+        <div className="ml-3 flex flex-col gap-0.5 border-l pl-1.5">
+          {tenants.length === 0 && (
+            <p className="py-1.5 pl-2.5 text-[11px] text-faint">
+              No tenants yet.{actions.onCreateTenant && ' Right-click Hayat to create one.'}
+            </p>
+          )}
+          {tenants.map((t) => {
+            const tree = trees[t.id]
+            const root = tree?.nodes?.find((n) => n.type === TENANT)
+            const count = tree?.nodes && root ? tree.nodes.filter((n) => n.parentId === root.id).length : undefined
+            const expanded = open.has(t.id)
+            const selected = selectedTenant === t.id && (!selectedNode || selectedNode === root?.id)
+            return (
+              <div key={t.id}>
+                <RowMenu node={root} tenantId={t.id} actions={actions}>
+                  <Row
+                    to={nodeHref(t.id)}
+                    type={TENANT}
+                    name={root?.name ?? t.name}
+                    count={count}
+                    selected={selected}
+                    // Unknown until loaded, so a tenant offers to open; once loaded, only if something is inside.
+                    // An open one always offers to close — an empty tenant stays open on "Nothing filed here yet".
+                    expandable={expanded || count === undefined || count > 0 || !!tree?.error}
+                    expanded={expanded}
+                    busy={expanded && tree?.loading && !tree.nodes}
+                    onToggle={() => setTenant(t.id, !expanded)}
+                    onOpen={() => setTenant(t.id, true)}
+                  />
+                </RowMenu>
+                {expanded && tree && (tree.nodes || tree.error) && (
+                  <div className="ml-3 flex flex-col gap-0.5 border-l pl-1.5">
+                    {tree.error ? (
+                      <p className="py-1.5 pl-2.5 text-[11px] text-destructive">
+                        {tree.error}{' '}
+                        <button type="button" className="underline" onClick={() => onLoad(t.id)}>
+                          Retry
+                        </button>
+                      </p>
+                    ) : (
+                      <TenantBranch tenantId={t.id} nodes={tree.nodes!} selectedNode={selectedTenant === t.id ? selectedNode : undefined} actions={actions} />
+                    )}
+                  </div>
                 )}
               </div>
-            )}
-          </div>
-        )
-      })}
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

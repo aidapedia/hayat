@@ -1,13 +1,14 @@
 import { useCallback, useMemo, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { useNavigate, useParams } from 'react-router'
 import { FolderTree, RefreshCw, ShieldCheck } from 'lucide-react'
 import { TenantService } from '@/shared/api/gen/hayat/admin/v1/admin_pb'
 import { TreeAdminService, type Node } from '@/shared/api/gen/hayat/admin/v1/policy_pb'
 import { useMe } from '@/features/auth'
+import { CreateTenantDialog } from '@/features/tenants'
 import { errorMessage, useClient } from '@/shared/api/client'
 import { usePagedList } from '@/shared/hooks/use-paged-list'
 import { useQuery } from '@/shared/hooks/use-query'
-import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/bits'
+import { ErrorState, LoadingState } from '@/shared/ui/bits'
 import { Button } from '@/shared/ui/button'
 import { PageHeader } from '@/shared/ui/page/PageHeader'
 import { allMembers } from './api'
@@ -16,7 +17,7 @@ import { NodePanel } from './NodePanel'
 import { ResourceTree, type TenantTree } from './ResourceTree'
 import { nodeHref, TENANT } from './tree'
 
-type TreeDialog = { kind: 'group' | 'move'; tenantId: string; node: Node }
+type TreeDialog = { kind: 'group' | 'move'; tenantId: string; node: Node } | { kind: 'tenant' }
 
 /**
  * The Resource Tree: every tenant with the groups and resources filed in it on
@@ -80,8 +81,10 @@ export default function ResourceTreePage() {
     () => ({
       onCreateGroup: (t: string, node: Node) => setDialog({ kind: 'group', tenantId: t, node }),
       onMove: (t: string, node: Node) => setDialog({ kind: 'move', tenantId: t, node }),
+      // Only an instance admin may create a tenant; for anyone else the root has no menu.
+      onCreateTenant: isAdmin ? () => setDialog({ kind: 'tenant' }) : undefined,
     }),
-    [],
+    [isAdmin],
   )
 
   return (
@@ -103,20 +106,6 @@ export default function ResourceTreePage() {
         </div>
       ) : list.loading && list.items.length === 0 ? (
         <LoadingState />
-      ) : tenants.length === 0 ? (
-        <div className="mt-6">
-          <EmptyState icon={FolderTree} title="No tenants yet">
-            The tree starts at a tenant.{' '}
-            {isAdmin && (
-              <>
-                <Link to="/tenants" className="underline">
-                  Create one
-                </Link>{' '}
-                and its groups and resources show up here.
-              </>
-            )}
-          </EmptyState>
-        </div>
       ) : (
         <div className="mt-6 grid grid-cols-[320px_minmax(0,1fr)] items-start gap-4 max-[900px]:grid-cols-1">
           {/* Tree */}
@@ -144,7 +133,7 @@ export default function ResourceTreePage() {
                 </Button>
               )}
             </div>
-            <p className="mt-3 border-t px-1.5 pt-2.5 text-[10px] leading-relaxed text-faint">Right-click a node to add a group or move it.</p>
+            <p className="mt-3 border-t px-1.5 pt-2.5 text-[10px] leading-relaxed text-faint">Right-click a node to add a tenant or group, or to move it.</p>
           </div>
 
           {/* Detail */}
@@ -184,6 +173,16 @@ export default function ResourceTreePage() {
         </div>
       )}
 
+      {dialog?.kind === 'tenant' && (
+        <CreateTenantDialog
+          onClose={() => setDialog(null)}
+          onCreated={async (t) => {
+            setDialog(null)
+            await list.reload()
+            navigate(nodeHref(t.id))
+          }}
+        />
+      )}
       {dialog?.kind === 'group' && (
         <CreateGroupDialog
           parent={dialog.node}
