@@ -13,10 +13,11 @@ import {
 /**
  * The signed-in person's theme, applied to the whole console.
  *
- * A theme is the account's — one for every app they sign in to with Hayat — so
- * it is stored on the account (AccountService.GetMyAppearance, loaded by
- * SessionGate) and edited at Account → Appearance. Services read the same
- * theme through DirectoryService.GetUserAppearance.
+ * The account has a theme every app follows, and the person may give one app —
+ * this console included ("hayat") — a theme of its own. Both are stored on the
+ * account (AccountService.GetMyAppearance, loaded by SessionGate) and edited at
+ * Account → Appearance; a service reads the one that applies to it through
+ * DirectoryService.GetUserAppearance.
  *
  * The last theme applied is remembered in this browser only to paint the first
  * frame, before the account answers; the account's answer always replaces it.
@@ -25,12 +26,12 @@ import {
 /** Hayat as it ships — index.css's two palettes, the 16px root, 0.625rem corners, the 16.5rem sidebar. */
 export const DEFAULTS: AppDefaults = {
   light: {
-    accent: '#1d6a54', background: '#ffffff', surface: '#ffffff', text: '#16181c', muted: '#555b63', border: '#e3e6e3',
+    accent: '#1d6a54', accentText: '#ffffff', background: '#ffffff', surface: '#ffffff', text: '#16181c', muted: '#555b63', border: '#e3e6e3',
     sidebarBackground: '#f6f7f6', sidebarText: '#16181c', sidebarActive: '#eceeec', sidebarBorder: '#e3e6e3',
     success: '#16a34a', warning: '#b8860b', destructive: '#e03131',
   },
   dark: {
-    accent: '#3fae86', background: '#080a09', surface: '#101413', text: '#f2f5f3', muted: '#a3aea8', border: '#222a27',
+    accent: '#3fae86', accentText: '#ffffff', background: '#080a09', surface: '#101413', text: '#f2f5f3', muted: '#a3aea8', border: '#222a27',
     sidebarBackground: '#0c0f0e', sidebarText: '#f2f5f3', sidebarActive: '#1b2120', sidebarBorder: '#222a27',
     success: '#22c55e', warning: '#d6a73a', destructive: '#ef5350',
   },
@@ -127,7 +128,7 @@ function apply(look: Look | null, resolved: Resolved) {
 
   // The root font size is what every rem scales with; --spacing is Tailwind's
   // spacing step; the font is set on <html> because Tailwind inlines --font-sans.
-  const s = sizeTokens(look)
+  const s = sizeTokens(look, DEFAULTS)
   root.style.fontSize = s.fontSize || ''
   root.style.fontFamily = s.fontFamily || ''
   setVar('--spacing', s.spacing)
@@ -137,10 +138,19 @@ function apply(look: Look | null, resolved: Resolved) {
   loadFont(look?.font)
 }
 
+/** This console's app in GetMyAppearance's list. */
+export const CONSOLE_APP = 'hayat'
+
+/** What this console shows: its own theme when the person gave it one, else the account's. */
+export function consoleLook(res: { appearance?: unknown; apps?: { app: string; own: boolean; appearance?: unknown }[] }): unknown {
+  const mine = res.apps?.find((a) => a.app === CONSOLE_APP)
+  return (mine?.own ? mine.appearance : res.appearance) ?? null
+}
+
 type ThemeContextValue = {
   /** What is showing: the account's theme, or one being previewed. */
   look: Look | null
-  /** The account's theme. */
+  /** The theme this console shows when nothing is previewed. */
   saved: Look | null
   resolved: Resolved
   systemDark: boolean
@@ -148,7 +158,7 @@ type ThemeContextValue = {
   loaded: boolean
   /** Show a theme without saving it; `undefined` goes back to the saved one. */
   preview: (look: Look | null | undefined) => void
-  /** The account's theme, as Hayat answered it (any shape; it is normalized here). */
+  /** The theme this console shows, as Hayat answered it (any shape; it is normalized here). See `consoleLook`. */
   receive: (appearance: unknown) => void
 }
 

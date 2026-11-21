@@ -14,11 +14,12 @@ import (
 	"github.com/aidapedia/hayat/internal/store"
 )
 
-// Appearance is how every app looks for one person: one theme per account,
-// edited in Hayat's console and read by every service that signs people in
-// with Hayat. Every field is optional; an empty one means "the app's own
-// default", so an account that never chose anything looks like each app
-// ships, and the stored theme only overrides what the person changed.
+// Appearance is how an app looks for one person. The account has one theme,
+// which every app follows; the person may also give one app a theme of its
+// own (AppAppearances). Both are edited in Hayat's console and read by the
+// services that sign people in with Hayat. Every field is optional; an empty
+// one means "the app's own default", so an account that never chose anything
+// looks like each app ships, and a theme only overrides what was changed.
 //
 // The JSON names are the proto3 JSON of hayat.*.v1.Appearance, which is also
 // what services hand their browsers, so the shape is the same end to end.
@@ -28,7 +29,9 @@ type Appearance struct {
 	// system | light | dark: which neutral palette fills the colors left empty.
 	Mode string `json:"mode,omitempty"`
 
-	Accent     string `json:"accent,omitempty"`
+	Accent string `json:"accent,omitempty"`
+	// Text on the accent (buttons). Empty is black or white, whichever reads.
+	AccentText string `json:"accentText,omitempty"`
 	Background string `json:"background,omitempty"`
 	Surface    string `json:"surface,omitempty"`
 	Text       string `json:"text,omitempty"`
@@ -48,8 +51,10 @@ type Appearance struct {
 
 	// system | inter | plex
 	Font string `json:"font,omitempty"`
-	// Pixels of the root font size, 12–18.
+	// Pixels of the root font size, 12–18. Older themes only: Scale wins.
 	TextSize *int32 `json:"textSize,omitempty"`
+	// The interface's size as a percent of the app's own text size, 80–120.
+	Scale *int32 `json:"scale,omitempty"`
 	// comfortable | compact | condensed
 	Density string `json:"density,omitempty"`
 	// Corner radius in pixels, 0–18. 0 is square, so "unset" is nil.
@@ -92,7 +97,7 @@ func (a *Appearance) Normalize() (*Appearance, error) {
 	}
 	out := *a
 	colors := map[string]*string{
-		"accent": &out.Accent, "background": &out.Background, "surface": &out.Surface, "text": &out.Text,
+		"accent": &out.Accent, "accent text": &out.AccentText, "background": &out.Background, "surface": &out.Surface, "text": &out.Text,
 		"muted": &out.Muted, "border": &out.Border, "sidebar background": &out.SidebarBackground,
 		"sidebar text": &out.SidebarText, "sidebar active": &out.SidebarActive, "sidebar border": &out.SidebarBorder,
 		"success": &out.Success, "warning": &out.Warning, "destructive": &out.Destructive,
@@ -112,6 +117,7 @@ func (a *Appearance) Normalize() (*Appearance, error) {
 		oneOf("density", out.Density, "comfortable", "compact", "condensed"),
 		oneOf("content width", out.ContentWidth, "narrow", "default", "full"),
 		within("text size", out.TextSize, 12, 18),
+		within("scale", out.Scale, 80, 120),
 		within("corner radius", out.Radius, 0, 18),
 		within("sidebar width", out.SidebarWidth, 200, 320),
 	} {
@@ -125,17 +131,52 @@ func (a *Appearance) Normalize() (*Appearance, error) {
 	return &out, nil
 }
 
-// Appearance is the person's theme, or nil when they never chose one.
+// Appearance is the account's theme, or nil when they never chose one.
 func (s *Service) Appearance(ctx context.Context, id uuid.UUID) (*Appearance, error) {
+	look, _, err := s.Appearances(ctx, id)
+	return look, err
+}
+
+// Appearances is the account's theme (nil when never chosen) and every app
+// given a theme of its own, by app ("hayat" or a service id). An app missing
+// from the map follows the account's theme.
+func (s *Service) Appearances(ctx context.Context, id uuid.UUID) (*Appearance, map[string]Appearance, error) {
 	region, err := s.regionOf(ctx, s.store.Pool, id)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	var raw []byte
-	if err := s.store.Pool.QueryRow(ctx, `SELECT appearance FROM users WHERE region = $1 AND id = $2`, region, id).Scan(&raw); err != nil {
-		return nil, store.NotFound(err)
+	var raw, apps []byte
+	if err := s.store.Pool.QueryRow(ctx, `SELECT appearance, app_appearances FROM users WHERE region = $1 AND id = $2`,
+		region, id).Scan(&raw, &apps); err != nil {
+		return nil, nil, store.NotFound(err)
 	}
-	return decodeAppearance(raw)
+	look, err := decodeAppearance(raw)
+	if err != nil {
+		return nil, nil, err
+	}
+	own := map[string]Appearance{}
+	if len(apps) > 0 && string(apps) != "null" {
+		if err := json.Unmarshal(apps, &own); err != nil {
+			return nil, nil, err
+		}
+	}
+	return look, own, nil
+}
+
+// AppearanceFor is what one app shows for the person: the theme they gave it
+// of its own (`own`, nil meaning the app's defaults), or else the account's.
+func (s *Service) AppearanceFor(ctx context.Context, id uuid.UUID, app string) (look *Appearance, own bool, err error) {
+	account, apps, err := s.Appearances(ctx, id)
+	if err != nil {
+		return nil, false, err
+	}
+	if a, ok := apps[app]; ok {
+		if a == (Appearance{}) {
+			return nil, true, nil
+		}
+		return &a, true, nil
+	}
+	return account, false, nil
 }
 
 func decodeAppearance(raw []byte) (*Appearance, error) {
@@ -174,6 +215,56 @@ func (s *Service) SetAppearance(ctx context.Context, id uuid.UUID, a *Appearance
 			return err
 		}
 		return audit.Write(ctx, tx, region, actor, "user.appearance_updated", "user:"+id.String(), nil)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return a, nil
+}
+
+var appName = regexp.MustCompile(`^[a-z][a-z0-9-]{0,62}$`)
+
+// SetAppAppearance gives one app ("hayat" or a service id) a theme of its own;
+// own=false sends it back to the account's theme. A theme that sets nothing is
+// still the app's own: it shows that app's defaults. → the app's own theme,
+// nil for its defaults or when it follows the account.
+func (s *Service) SetAppAppearance(ctx context.Context, id uuid.UUID, app string, a *Appearance, own bool, actor string) (*Appearance, error) {
+	if !appName.MatchString(app) {
+		return nil, errs.New("unknown app")
+	}
+	value := "{}"
+	if own {
+		var err error
+		if a, err = a.Normalize(); err != nil {
+			return nil, err
+		}
+		if a != nil {
+			b, err := json.Marshal(a)
+			if err != nil {
+				return nil, err
+			}
+			value = string(b)
+		}
+	} else {
+		a = nil
+	}
+	err := s.store.Tx(ctx, func(tx pgx.Tx) error {
+		region, err := s.regionOf(ctx, tx, id)
+		if err != nil {
+			return err
+		}
+		q := `UPDATE users SET app_appearances = NULLIF(COALESCE(app_appearances, '{}'::jsonb) - $3::text, '{}'::jsonb), updated_at = now()
+			WHERE region = $1 AND id = $2`
+		args := []any{region, id, app}
+		if own {
+			q = `UPDATE users SET app_appearances = jsonb_set(COALESCE(app_appearances, '{}'::jsonb), ARRAY[$3::text], $4::jsonb), updated_at = now()
+				WHERE region = $1 AND id = $2`
+			args = append(args, value)
+		}
+		if _, err := tx.Exec(ctx, q, args...); err != nil {
+			return err
+		}
+		return audit.Write(ctx, tx, region, actor, "user.app_appearance_updated", "user:"+id.String(), map[string]any{"app": app, "own": own})
 	})
 	if err != nil {
 		return nil, err

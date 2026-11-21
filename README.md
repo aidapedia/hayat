@@ -33,11 +33,12 @@ Contributing: [CONTRIBUTING.md](CONTRIBUTING.md)
 - **Accounts**: sign-up where the password is chosen from the emailed link,
   password reset, sessions with single sign-on across every application, and a
   first-admin setup page guarded by a token printed in the log.
-- **Appearance**: one theme per account — colors (accent, content, sidebar,
-  status), text size, density, corners, sidebar and content width, font —
-  edited at Account → Appearance and read by every service
-  (`DirectoryService.GetUserAppearance`), so every app looks the same for that
-  person. Anything left on Default stays each app's own.
+- **Appearance**: a theme per account — colors (accent, button text, content,
+  sidebar, status), UI scale, density, corners, sidebar and page width, font —
+  that every app follows, and optionally a theme of its own for any one app.
+  Both are edited at Account → Appearance; each service reads the one that
+  applies to it (`DirectoryService.GetUserAppearance`). Anything left on
+  Default stays each app's own.
 - **Tenants**: organisations shared by every service, with members and an owner.
 
 **Phase 2, authorization**

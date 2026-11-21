@@ -1399,7 +1399,13 @@ type Appearance struct {
 	// Sidebar width in pixels, 200–320.
 	SidebarWidth *int32 `protobuf:"varint,21,opt,name=sidebar_width,json=sidebarWidth,proto3,oneof" json:"sidebar_width,omitempty"`
 	// narrow | default | full
-	ContentWidth  string `protobuf:"bytes,22,opt,name=content_width,json=contentWidth,proto3" json:"content_width,omitempty"`
+	ContentWidth string `protobuf:"bytes,22,opt,name=content_width,json=contentWidth,proto3" json:"content_width,omitempty"`
+	// Text on the accent: buttons and anything else filled with it. Empty is
+	// black or white, whichever reads better on the accent.
+	AccentText string `protobuf:"bytes,23,opt,name=accent_text,json=accentText,proto3" json:"accent_text,omitempty"`
+	// The interface's size as a percent of the app's own text size, 80–120.
+	// It wins over text_size, which only older themes set.
+	Scale         *int32 `protobuf:"varint,24,opt,name=scale,proto3,oneof" json:"scale,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1588,6 +1594,20 @@ func (x *Appearance) GetContentWidth() string {
 	return ""
 }
 
+func (x *Appearance) GetAccentText() string {
+	if x != nil {
+		return x.AccentText
+	}
+	return ""
+}
+
+func (x *Appearance) GetScale() int32 {
+	if x != nil && x.Scale != nil {
+		return *x.Scale
+	}
+	return 0
+}
+
 type GetUserAppearanceRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -1635,7 +1655,10 @@ func (x *GetUserAppearanceRequest) GetUserId() string {
 type GetUserAppearanceResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Absent when the person never chose a theme.
-	Appearance    *Appearance `protobuf:"bytes,1,opt,name=appearance,proto3" json:"appearance,omitempty"`
+	Appearance *Appearance `protobuf:"bytes,1,opt,name=appearance,proto3" json:"appearance,omitempty"`
+	// The person gave the calling service a theme of its own; otherwise this is
+	// their account's theme.
+	Own           bool `protobuf:"varint,2,opt,name=own,proto3" json:"own,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1675,6 +1698,13 @@ func (x *GetUserAppearanceResponse) GetAppearance() *Appearance {
 		return x.Appearance
 	}
 	return nil
+}
+
+func (x *GetUserAppearanceResponse) GetOwn() bool {
+	if x != nil {
+		return x.Own
+	}
+	return false
 }
 
 type Tenant struct {
@@ -3606,7 +3636,7 @@ const file_hayat_authz_v1_authz_proto_rawDesc = "" +
 	"\x03rev\x18\x01 \x01(\x03R\x03rev\x12\x1b\n" +
 	"\ttenant_id\x18\x02 \x01(\tR\btenantId\"K\n" +
 	"\x13GetResourceResponse\x124\n" +
-	"\bresource\x18\x01 \x01(\v2\x18.hayat.authz.v1.ResourceR\bresource\"\xdd\x05\n" +
+	"\bresource\x18\x01 \x01(\v2\x18.hayat.authz.v1.ResourceR\bresource\"\xa3\x06\n" +
 	"\n" +
 	"Appearance\x12\x16\n" +
 	"\x06preset\x18\x01 \x01(\tR\x06preset\x12\x12\n" +
@@ -3633,17 +3663,22 @@ const file_hayat_authz_v1_authz_proto_rawDesc = "" +
 	"\adensity\x18\x13 \x01(\tR\adensity\x12\x1b\n" +
 	"\x06radius\x18\x14 \x01(\x05H\x01R\x06radius\x88\x01\x01\x12(\n" +
 	"\rsidebar_width\x18\x15 \x01(\x05H\x02R\fsidebarWidth\x88\x01\x01\x12#\n" +
-	"\rcontent_width\x18\x16 \x01(\tR\fcontentWidthB\f\n" +
+	"\rcontent_width\x18\x16 \x01(\tR\fcontentWidth\x12\x1f\n" +
+	"\vaccent_text\x18\x17 \x01(\tR\n" +
+	"accentText\x12\x19\n" +
+	"\x05scale\x18\x18 \x01(\x05H\x03R\x05scale\x88\x01\x01B\f\n" +
 	"\n" +
 	"_text_sizeB\t\n" +
 	"\a_radiusB\x10\n" +
-	"\x0e_sidebar_width\"3\n" +
+	"\x0e_sidebar_widthB\b\n" +
+	"\x06_scale\"3\n" +
 	"\x18GetUserAppearanceRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\"W\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\"i\n" +
 	"\x19GetUserAppearanceResponse\x12:\n" +
 	"\n" +
 	"appearance\x18\x01 \x01(\v2\x1a.hayat.authz.v1.AppearanceR\n" +
-	"appearance\"\xbb\x01\n" +
+	"appearance\x12\x10\n" +
+	"\x03own\x18\x02 \x01(\bR\x03own\"\xbb\x01\n" +
 	"\x06Tenant\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04slug\x18\x02 \x01(\tR\x04slug\x12\x12\n" +

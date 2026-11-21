@@ -204,9 +204,10 @@ service DirectoryService {
   // granted, not what it adds up to: ask PermissionsAt for that. Only the
   // tenant, its groups and the calling service's own resource types are listed.
   rpc ListTenantGrants(ListTenantGrantsRequest) returns (ListTenantGrantsResponse);
-  // How every app looks for a person: one theme per account, chosen in Hayat's
-  // console. Apply it to their session; don't keep a copy, so a change shows
-  // on their next page load.
+  // How the calling service looks for a person: the theme they gave this
+  // service of its own, or else their account's, which every other app
+  // follows. Both are chosen in Hayat's console. Apply it to their session;
+  // don't keep a copy, so a change shows on their next page load.
   rpc GetUserAppearance(GetUserAppearanceRequest) returns (GetUserAppearanceResponse);
 }
 
@@ -244,6 +245,12 @@ message Appearance {
   optional int32 sidebar_width = 21;
   // narrow | default | full
   string content_width = 22;
+  // Text on the accent: buttons and anything else filled with it. Empty is
+  // black or white, whichever reads better on the accent.
+  string accent_text = 23;
+  // The interface's size as a percent of the app's own text size, 80–120.
+  // It wins over text_size, which only older themes set.
+  optional int32 scale = 24;
 }
 
 message GetUserAppearanceRequest {
@@ -253,6 +260,9 @@ message GetUserAppearanceRequest {
 message GetUserAppearanceResponse {
   // Absent when the person never chose a theme.
   Appearance appearance = 1;
+  // The person gave the calling service a theme of its own; otherwise this is
+  // their account's theme.
+  bool own = 2;
 }
 
 message Tenant {

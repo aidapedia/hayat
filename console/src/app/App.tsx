@@ -132,7 +132,7 @@ export default function App() {
                     }
                   />
                   <Route
-                    path="/account/appearance"
+                    path="/account/appearance/:app?"
                     element={
                       <Suspense fallback={<LoadingState />}>
                         <AppearancePage />

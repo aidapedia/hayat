@@ -434,9 +434,10 @@ type DirectoryServiceClient interface {
 	// granted, not what it adds up to: ask PermissionsAt for that. Only the
 	// tenant, its groups and the calling service's own resource types are listed.
 	ListTenantGrants(context.Context, *connect.Request[v1.ListTenantGrantsRequest]) (*connect.Response[v1.ListTenantGrantsResponse], error)
-	// How every app looks for a person: one theme per account, chosen in Hayat's
-	// console. Apply it to their session; don't keep a copy, so a change shows
-	// on their next page load.
+	// How the calling service looks for a person: the theme they gave this
+	// service of its own, or else their account's, which every other app
+	// follows. Both are chosen in Hayat's console. Apply it to their session;
+	// don't keep a copy, so a change shows on their next page load.
 	GetUserAppearance(context.Context, *connect.Request[v1.GetUserAppearanceRequest]) (*connect.Response[v1.GetUserAppearanceResponse], error)
 }
 
@@ -544,9 +545,10 @@ type DirectoryServiceHandler interface {
 	// granted, not what it adds up to: ask PermissionsAt for that. Only the
 	// tenant, its groups and the calling service's own resource types are listed.
 	ListTenantGrants(context.Context, *connect.Request[v1.ListTenantGrantsRequest]) (*connect.Response[v1.ListTenantGrantsResponse], error)
-	// How every app looks for a person: one theme per account, chosen in Hayat's
-	// console. Apply it to their session; don't keep a copy, so a change shows
-	// on their next page load.
+	// How the calling service looks for a person: the theme they gave this
+	// service of its own, or else their account's, which every other app
+	// follows. Both are chosen in Hayat's console. Apply it to their session;
+	// don't keep a copy, so a change shows on their next page load.
 	GetUserAppearance(context.Context, *connect.Request[v1.GetUserAppearanceRequest]) (*connect.Response[v1.GetUserAppearanceResponse], error)
 }
 

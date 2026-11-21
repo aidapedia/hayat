@@ -33,9 +33,12 @@ built. Clerk gap roadmap: https://claude.ai/artifact/DVzV22FxJ787TwARh6cgbN
   never reveal whether an address exists; disabling or resetting ends every
   session, and a refresh token dies with its session; the last instance admin
   can't be demoted or disabled.
-- **A person's theme is the account's** (`users.appearance`, `identity.Appearance`):
-  one per account, edited only through AccountService, read by services through
-  `DirectoryService.GetUserAppearance`, never cached by them. Every field is
+- **A person's theme is the account's, unless an app has its own**
+  (`users.appearance`, `users.app_appearances`, `identity.Appearance`): the account's
+  theme is the one every app follows; an app ("hayat" for this console, else a
+  service id) may be given its own. Edited only through AccountService; a service
+  reads the one that applies to it through `DirectoryService.GetUserAppearance`
+  (resolved from the calling service, never a parameter), never cached by it. Every field is
   optional — empty means "the app's own default". `console/src/shared/lib/appearance.ts`
   and `features/account/AppearanceEditor.tsx` are kept identical with tabletsgo's
   console copies; change both.
