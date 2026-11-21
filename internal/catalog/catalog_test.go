@@ -50,7 +50,7 @@ func TestPlatformCatalog(t *testing.T) {
 	if !snap.CanContain(catalog.TypeTenant, catalog.TypeGroup) || snap.CanContain(catalog.TypeGroup, catalog.TypeTenant) {
 		t.Fatal("type containment wrong")
 	}
-	if len(snap.Roles[catalog.RoleTenantAdmin].Permissions) != 5 {
+	if len(snap.Roles[catalog.RoleTenantAdmin].Permissions) != 6 { // five, plus hayat.agents.manage
 		t.Fatalf("tenant admin role: %+v", snap.Roles[catalog.RoleTenantAdmin])
 	}
 }

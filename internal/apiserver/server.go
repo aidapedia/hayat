@@ -7,7 +7,9 @@
 // accepted, for a mesh that terminates TLS in front of it.
 //
 // A caller is a service: it presents an access token from the client
-// credentials grant, issued to the client its registration created.
+// credentials grant, issued to the client its registration created. The one
+// exception is EnrollmentService, where a service without credentials yet
+// presents the enrollment code an owner made for it.
 package apiserver
 
 import (
@@ -25,9 +27,11 @@ import (
 	"github.com/zitadel/oidc/v3/pkg/op"
 
 	"github.com/aidapedia/hayat/gen/go/hayat/authz/v1/authzv1connect"
+	"github.com/aidapedia/hayat/internal/agents"
 	"github.com/aidapedia/hayat/internal/authz"
 	"github.com/aidapedia/hayat/internal/catalog"
 	"github.com/aidapedia/hayat/internal/config"
+	"github.com/aidapedia/hayat/internal/enrollment"
 	"github.com/aidapedia/hayat/internal/errs"
 	"github.com/aidapedia/hayat/internal/identity"
 	hoidc "github.com/aidapedia/hayat/internal/oidc"
@@ -37,6 +41,9 @@ import (
 )
 
 type Server struct {
+	agents   *agents.Service
+	enroll   *enrollment.Service
+	keys     *hoidc.KeyRing
 	cfg      config.Config
 	store    *store.Store
 	cat      *catalog.Service
@@ -57,8 +64,8 @@ type cachedService struct {
 }
 
 func New(cfg config.Config, s *store.Store, cat *catalog.Service, t *tree.Service, engine *authz.Engine, ids *identity.Service,
-	tenants *tenancy.Service, storage *hoidc.Storage, log *slog.Logger) *Server {
-	return &Server{cfg: cfg, store: s, cat: cat, tree: t, engine: engine, ids: ids, tenants: tenants, log: log,
+	tenants *tenancy.Service, storage *hoidc.Storage, keys *hoidc.KeyRing, enroll *enrollment.Service, log *slog.Logger) *Server {
+	return &Server{agents: agents.New(s), enroll: enroll, keys: keys, cfg: cfg, store: s, cat: cat, tree: t, engine: engine, ids: ids, tenants: tenants, log: log,
 		verifier: op.NewAccessTokenVerifier(cfg.Issuer, &op.OpenIDKeySet{Storage: storage}),
 		services: map[string]cachedService{}}
 }
@@ -71,6 +78,9 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle(authzv1connect.NewDirectoryServiceHandler(&directoryService{s}, opts))
 	mux.Handle(authzv1connect.NewWatchServiceHandler(&watchService{s}, opts))
 	mux.Handle(authzv1connect.NewSchemaServiceHandler(&schemaService{s}, opts))
+	mux.Handle(authzv1connect.NewAgentServiceHandler(&agentService{s}, opts))
+	// No access token here: the enrollment code is the credential.
+	mux.Handle(authzv1connect.NewEnrollmentServiceHandler(&enrollmentService{s}))
 	return mux
 }
 
@@ -166,6 +176,22 @@ func (s *Server) fail(err error) error {
 }
 
 func invalid(msg string) error { return connect.NewError(connect.CodeInvalidArgument, errors.New(msg)) }
+
+// parseSubject reads who a decision is about: a person (user_id) or an agent
+// (agent_id), exactly one of them.
+func parseSubject(userID, agentID string) (uuid.UUID, error) {
+	switch {
+	case userID != "" && agentID != "":
+		return uuid.Nil, invalid("ask about a person (user_id) or an agent (agent_id), not both")
+	case agentID != "":
+		id, err := uuid.Parse(agentID)
+		if err != nil {
+			return uuid.Nil, invalid("agent_id is not a valid id")
+		}
+		return id, nil
+	}
+	return parseUser(userID)
+}
 
 func parseUser(raw string) (uuid.UUID, error) {
 	id, err := uuid.Parse(raw)

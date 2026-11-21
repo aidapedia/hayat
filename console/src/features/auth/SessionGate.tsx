@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router'
 import { AccountService, type GetMeResponse } from '@/shared/api/gen/hayat/admin/v1/admin_pb'
 import { errorMessage, useClient } from '@/shared/api/client'
 import { setDisplayZone } from '@/shared/lib/datetime'
-import { useTheme } from '@/shared/lib/theme'
+import { consoleLook, useTheme } from '@/shared/lib/theme'
 import { Button } from '@/shared/ui/button'
 import { LoadingState } from '@/shared/ui/bits'
 import { useAuth } from './AuthContext'
@@ -33,11 +33,11 @@ export function SessionGate({ children }: { children: ReactNode }) {
       return
     }
     try {
-      // The theme is the account's, so it arrives with the account. A failure
-      // to read it only costs the defaults.
+      // The theme arrives with the account: this console's own, or else the
+      // account's. A failure to read it only costs the defaults.
       const [res, look] = await Promise.all([
         account.getMe({}),
-        account.getMyAppearance({}).then((r) => r.appearance ?? null, () => null),
+        account.getMyAppearance({}).then(consoleLook, () => null),
       ])
       setDisplayZone(res.user?.zoneinfo)
       receive(look)

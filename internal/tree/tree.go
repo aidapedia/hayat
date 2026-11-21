@@ -43,6 +43,7 @@ var (
 	ErrTooDeep       = errs.New("the tree would be deeper than 16 levels")
 	ErrNotGroup      = errs.New("only groups can be changed this way")
 	ErrNotMember     = errs.New("that person isn't a member of this tenant")
+	ErrAgentOwner    = errs.New("an agent can't own a resource; its sponsor can")
 	ErrNotYourType   = errs.New("a service can only manage its own resource types")
 	ErrGrantExists   = errs.New("that role is already granted to them here")
 	ErrNameMissing   = errs.New("give it a name")
@@ -355,6 +356,7 @@ func (t *Service) deleteNode(ctx context.Context, tx pgx.Tx, n Node, kind string
 		`DELETE FROM grants WHERE region = $1 AND node_id = $2`,
 		`DELETE FROM grants WHERE region = $1 AND principal_type = 'group' AND principal_id = $2`,
 		`DELETE FROM group_members WHERE region = $1 AND group_id = $2`,
+		`DELETE FROM agent_groups WHERE region = $1 AND group_id = $2`,
 		`DELETE FROM nodes WHERE region = $1 AND id = $2`,
 	} {
 		if _, err := tx.Exec(ctx, q, n.Region, n.ID); err != nil {
@@ -403,6 +405,16 @@ func (t *Service) UpsertResource(ctx context.Context, svc string, in ResourceInp
 	var n Node
 	var rev int64
 	err = t.store.Tx(ctx, func(tx pgx.Tx) error {
+		if in.OwnerID != nil {
+			// Owning a node allows everything on it; that is never an agent's.
+			var agent bool
+			if err := tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM agent_refs WHERE id = $1)`, *in.OwnerID).Scan(&agent); err != nil {
+				return err
+			}
+			if agent {
+				return ErrAgentOwner
+			}
+		}
 		var parent Node
 		var err error
 		if in.ParentID != uuid.Nil {

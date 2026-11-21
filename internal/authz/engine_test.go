@@ -14,6 +14,7 @@ import (
 	"github.com/aidapedia/hayat/internal/catalog"
 	"github.com/aidapedia/hayat/internal/identity"
 	"github.com/aidapedia/hayat/internal/revision"
+	"github.com/aidapedia/hayat/internal/store"
 	"github.com/aidapedia/hayat/internal/tenancy"
 	"github.com/aidapedia/hayat/internal/testdb"
 	"github.com/aidapedia/hayat/internal/tree"
@@ -35,6 +36,7 @@ default_roles:
 
 type world struct {
 	t       *testing.T
+	store   *store.Store
 	ctx     context.Context
 	ids     *identity.Service
 	tenants *tenancy.Service
@@ -54,7 +56,7 @@ func build(t *testing.T) *world {
 	s := testdb.New(t)
 	ctx := context.Background()
 	revs := revision.NewReader(s, time.Second)
-	w := &world{t: t, ctx: ctx, ids: identity.New(s, "http://auth.test", time.Hour), tenants: tenancy.New(s), users: map[string]uuid.UUID{}}
+	w := &world{t: t, store: s, ctx: ctx, ids: identity.New(s, "http://auth.test", time.Hour), tenants: tenancy.New(s), users: map[string]uuid.UUID{}}
 	w.cat = catalog.New(s, revs)
 	w.tree = tree.New(s, w.cat, revs)
 	w.engine = authz.New(s, w.cat, w.ids, revs)

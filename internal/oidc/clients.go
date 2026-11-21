@@ -204,6 +204,10 @@ func (cs *Clients) validate(in *ClientInput) error {
 	return nil
 }
 
+// CheckRedirect tells whether a redirect URI would be accepted, before anything
+// is written for it.
+func (cs *Clients) CheckRedirect(raw string) error { return cs.checkRedirect(raw) }
+
 // checkRedirect accepts https URIs, and http only for localhost (or anything in
 // dev mode). Fragments are never allowed: the code would leak into them.
 func (cs *Clients) checkRedirect(raw string) error {

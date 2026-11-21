@@ -67,6 +67,9 @@ const (
 	// AccountServiceSetMyAppearanceProcedure is the fully-qualified name of the AccountService's
 	// SetMyAppearance RPC.
 	AccountServiceSetMyAppearanceProcedure = "/hayat.admin.v1.AccountService/SetMyAppearance"
+	// AccountServiceSetMyAppAppearanceProcedure is the fully-qualified name of the AccountService's
+	// SetMyAppAppearance RPC.
+	AccountServiceSetMyAppAppearanceProcedure = "/hayat.admin.v1.AccountService/SetMyAppAppearance"
 	// AccountServiceSetMyAvatarProcedure is the fully-qualified name of the AccountService's
 	// SetMyAvatar RPC.
 	AccountServiceSetMyAvatarProcedure = "/hayat.admin.v1.AccountService/SetMyAvatar"
@@ -154,10 +157,13 @@ type AccountServiceClient interface {
 	ChangePassword(context.Context, *connect.Request[v1.ChangePasswordRequest]) (*connect.Response[v1.ChangePasswordResponse], error)
 	ListMySessions(context.Context, *connect.Request[v1.ListMySessionsRequest]) (*connect.Response[v1.ListMySessionsResponse], error)
 	RevokeMySession(context.Context, *connect.Request[v1.RevokeMySessionRequest]) (*connect.Response[v1.RevokeMySessionResponse], error)
-	// How every app looks for the caller: one theme per account, which every
-	// service reads through DirectoryService.GetUserAppearance.
+	// How every app looks for the caller: the account's theme, which every app
+	// follows, and any app given a theme of its own. A service reads the one
+	// that applies to it through DirectoryService.GetUserAppearance.
 	GetMyAppearance(context.Context, *connect.Request[v1.GetMyAppearanceRequest]) (*connect.Response[v1.GetMyAppearanceResponse], error)
 	SetMyAppearance(context.Context, *connect.Request[v1.SetMyAppearanceRequest]) (*connect.Response[v1.SetMyAppearanceResponse], error)
+	// Give one app a theme of its own, or send it back to the account's.
+	SetMyAppAppearance(context.Context, *connect.Request[v1.SetMyAppAppearanceRequest]) (*connect.Response[v1.SetMyAppAppearanceResponse], error)
 	// The caller's picture: PNG, JPEG or WebP up to 5 MB, cropped square and
 	// resized. Empty data removes it. It becomes the OIDC `picture` claim.
 	SetMyAvatar(context.Context, *connect.Request[v1.SetMyAvatarRequest]) (*connect.Response[v1.SetMyAvatarResponse], error)
@@ -225,6 +231,12 @@ func NewAccountServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(accountServiceMethods.ByName("SetMyAppearance")),
 			connect.WithClientOptions(opts...),
 		),
+		setMyAppAppearance: connect.NewClient[v1.SetMyAppAppearanceRequest, v1.SetMyAppAppearanceResponse](
+			httpClient,
+			baseURL+AccountServiceSetMyAppAppearanceProcedure,
+			connect.WithSchema(accountServiceMethods.ByName("SetMyAppAppearance")),
+			connect.WithClientOptions(opts...),
+		),
 		setMyAvatar: connect.NewClient[v1.SetMyAvatarRequest, v1.SetMyAvatarResponse](
 			httpClient,
 			baseURL+AccountServiceSetMyAvatarProcedure,
@@ -261,6 +273,7 @@ type accountServiceClient struct {
 	revokeMySession         *connect.Client[v1.RevokeMySessionRequest, v1.RevokeMySessionResponse]
 	getMyAppearance         *connect.Client[v1.GetMyAppearanceRequest, v1.GetMyAppearanceResponse]
 	setMyAppearance         *connect.Client[v1.SetMyAppearanceRequest, v1.SetMyAppearanceResponse]
+	setMyAppAppearance      *connect.Client[v1.SetMyAppAppearanceRequest, v1.SetMyAppAppearanceResponse]
 	setMyAvatar             *connect.Client[v1.SetMyAvatarRequest, v1.SetMyAvatarResponse]
 	getMySecurity           *connect.Client[v1.GetMySecurityRequest, v1.GetMySecurityResponse]
 	removeMyFactor          *connect.Client[v1.RemoveMyFactorRequest, v1.RemoveMyFactorResponse]
@@ -302,6 +315,11 @@ func (c *accountServiceClient) SetMyAppearance(ctx context.Context, req *connect
 	return c.setMyAppearance.CallUnary(ctx, req)
 }
 
+// SetMyAppAppearance calls hayat.admin.v1.AccountService.SetMyAppAppearance.
+func (c *accountServiceClient) SetMyAppAppearance(ctx context.Context, req *connect.Request[v1.SetMyAppAppearanceRequest]) (*connect.Response[v1.SetMyAppAppearanceResponse], error) {
+	return c.setMyAppAppearance.CallUnary(ctx, req)
+}
+
 // SetMyAvatar calls hayat.admin.v1.AccountService.SetMyAvatar.
 func (c *accountServiceClient) SetMyAvatar(ctx context.Context, req *connect.Request[v1.SetMyAvatarRequest]) (*connect.Response[v1.SetMyAvatarResponse], error) {
 	return c.setMyAvatar.CallUnary(ctx, req)
@@ -329,10 +347,13 @@ type AccountServiceHandler interface {
 	ChangePassword(context.Context, *connect.Request[v1.ChangePasswordRequest]) (*connect.Response[v1.ChangePasswordResponse], error)
 	ListMySessions(context.Context, *connect.Request[v1.ListMySessionsRequest]) (*connect.Response[v1.ListMySessionsResponse], error)
 	RevokeMySession(context.Context, *connect.Request[v1.RevokeMySessionRequest]) (*connect.Response[v1.RevokeMySessionResponse], error)
-	// How every app looks for the caller: one theme per account, which every
-	// service reads through DirectoryService.GetUserAppearance.
+	// How every app looks for the caller: the account's theme, which every app
+	// follows, and any app given a theme of its own. A service reads the one
+	// that applies to it through DirectoryService.GetUserAppearance.
 	GetMyAppearance(context.Context, *connect.Request[v1.GetMyAppearanceRequest]) (*connect.Response[v1.GetMyAppearanceResponse], error)
 	SetMyAppearance(context.Context, *connect.Request[v1.SetMyAppearanceRequest]) (*connect.Response[v1.SetMyAppearanceResponse], error)
+	// Give one app a theme of its own, or send it back to the account's.
+	SetMyAppAppearance(context.Context, *connect.Request[v1.SetMyAppAppearanceRequest]) (*connect.Response[v1.SetMyAppAppearanceResponse], error)
 	// The caller's picture: PNG, JPEG or WebP up to 5 MB, cropped square and
 	// resized. Empty data removes it. It becomes the OIDC `picture` claim.
 	SetMyAvatar(context.Context, *connect.Request[v1.SetMyAvatarRequest]) (*connect.Response[v1.SetMyAvatarResponse], error)
@@ -396,6 +417,12 @@ func NewAccountServiceHandler(svc AccountServiceHandler, opts ...connect.Handler
 		connect.WithSchema(accountServiceMethods.ByName("SetMyAppearance")),
 		connect.WithHandlerOptions(opts...),
 	)
+	accountServiceSetMyAppAppearanceHandler := connect.NewUnaryHandler(
+		AccountServiceSetMyAppAppearanceProcedure,
+		svc.SetMyAppAppearance,
+		connect.WithSchema(accountServiceMethods.ByName("SetMyAppAppearance")),
+		connect.WithHandlerOptions(opts...),
+	)
 	accountServiceSetMyAvatarHandler := connect.NewUnaryHandler(
 		AccountServiceSetMyAvatarProcedure,
 		svc.SetMyAvatar,
@@ -436,6 +463,8 @@ func NewAccountServiceHandler(svc AccountServiceHandler, opts ...connect.Handler
 			accountServiceGetMyAppearanceHandler.ServeHTTP(w, r)
 		case AccountServiceSetMyAppearanceProcedure:
 			accountServiceSetMyAppearanceHandler.ServeHTTP(w, r)
+		case AccountServiceSetMyAppAppearanceProcedure:
+			accountServiceSetMyAppAppearanceHandler.ServeHTTP(w, r)
 		case AccountServiceSetMyAvatarProcedure:
 			accountServiceSetMyAvatarHandler.ServeHTTP(w, r)
 		case AccountServiceGetMySecurityProcedure:
@@ -479,6 +508,10 @@ func (UnimplementedAccountServiceHandler) GetMyAppearance(context.Context, *conn
 
 func (UnimplementedAccountServiceHandler) SetMyAppearance(context.Context, *connect.Request[v1.SetMyAppearanceRequest]) (*connect.Response[v1.SetMyAppearanceResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.AccountService.SetMyAppearance is not implemented"))
+}
+
+func (UnimplementedAccountServiceHandler) SetMyAppAppearance(context.Context, *connect.Request[v1.SetMyAppAppearanceRequest]) (*connect.Response[v1.SetMyAppAppearanceResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.AccountService.SetMyAppAppearance is not implemented"))
 }
 
 func (UnimplementedAccountServiceHandler) SetMyAvatar(context.Context, *connect.Request[v1.SetMyAvatarRequest]) (*connect.Response[v1.SetMyAvatarResponse], error) {

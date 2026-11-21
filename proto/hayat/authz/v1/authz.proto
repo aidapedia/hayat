@@ -71,6 +71,9 @@ message CheckRequest {
   Consistency consistency = 4;
   // Return the reason. Off by default to keep answers small.
   bool explain = 5;
+  // Ask about an agent instead of a person: set agent_id and leave user_id
+  // empty. An agent holds less than a person could: see AgentService.
+  string agent_id = 6;
 }
 
 message CheckResponse {
@@ -95,6 +98,8 @@ message PermissionsAtRequest {
   string user_id = 1;
   ResourceRef resource = 2;
   Consistency consistency = 3;
+  // An agent instead of a person, as in CheckRequest.
+  string agent_id = 4;
 }
 
 message PermissionsAtResponse {
@@ -112,6 +117,8 @@ message LookupResourcesRequest {
   int32 page_size = 5;
   string page_token = 6;
   Consistency consistency = 7;
+  // An agent instead of a person, as in CheckRequest.
+  string agent_id = 8;
 }
 
 message LookupResourcesResponse {
@@ -126,8 +133,11 @@ message LookupSubjectsRequest {
 }
 
 message Subject {
+  // A person's id; empty when the subject is an agent.
   string user_id = 1;
   Reason reason = 2;
+  // An agent's id; empty when the subject is a person.
+  string agent_id = 3;
 }
 
 message LookupSubjectsResponse {
@@ -194,9 +204,10 @@ service DirectoryService {
   // granted, not what it adds up to: ask PermissionsAt for that. Only the
   // tenant, its groups and the calling service's own resource types are listed.
   rpc ListTenantGrants(ListTenantGrantsRequest) returns (ListTenantGrantsResponse);
-  // How every app looks for a person: one theme per account, chosen in Hayat's
-  // console. Apply it to their session; don't keep a copy, so a change shows
-  // on their next page load.
+  // How the calling service looks for a person: the theme they gave this
+  // service of its own, or else their account's, which every other app
+  // follows. Both are chosen in Hayat's console. Apply it to their session;
+  // don't keep a copy, so a change shows on their next page load.
   rpc GetUserAppearance(GetUserAppearanceRequest) returns (GetUserAppearanceResponse);
 }
 
@@ -234,6 +245,12 @@ message Appearance {
   optional int32 sidebar_width = 21;
   // narrow | default | full
   string content_width = 22;
+  // Text on the accent: buttons and anything else filled with it. Empty is
+  // black or white, whichever reads better on the accent.
+  string accent_text = 23;
+  // The interface's size as a percent of the app's own text size, 80–120.
+  // It wins over text_size, which only older themes set.
+  optional int32 scale = 24;
 }
 
 message GetUserAppearanceRequest {
@@ -243,6 +260,9 @@ message GetUserAppearanceRequest {
 message GetUserAppearanceResponse {
   // Absent when the person never chose a theme.
   Appearance appearance = 1;
+  // The person gave the calling service a theme of its own; otherwise this is
+  // their account's theme.
+  bool own = 2;
 }
 
 message Tenant {
@@ -361,6 +381,62 @@ message PolicyEvent {
   google.protobuf.Timestamp at = 5;
 }
 
+// ---------- Agents ----------
+
+// Agents are members that aren't people: they hold roles and work in
+// services, but never sign in. Each lives in one tenant and answers to a
+// person there (its sponsor); if the sponsor leaves, it pauses. A service sees
+// only the agents that work in it, and may act as one with an agent token.
+service AgentService {
+  rpc GetAgent(GetAgentRequest) returns (GetAgentResponse);
+  // The tenant's agents that work in the calling service.
+  rpc ListTenantAgents(ListTenantAgentsRequest) returns (ListTenantAgentsResponse);
+  // A short-lived token to act as the agent: sub "agent:<id>", aud the calling
+  // service. Refused unless the agent and its sponsor are active and the agent
+  // works in the calling service. Check every action as the agent (agent_id).
+  rpc IssueAgentToken(IssueAgentTokenRequest) returns (IssueAgentTokenResponse);
+}
+
+message Agent {
+  string id = 1;
+  string tenant_id = 2;
+  string handle = 3;
+  string name = 4;
+  string sponsor_user_id = 5;
+  // active | paused | disabled
+  string status = 6;
+  // Why it isn't active: "sponsor_left", or empty when a person paused it.
+  string status_reason = 7;
+  // The services (namespaces) it works in.
+  repeated string services = 8;
+  repeated string group_ids = 9;
+}
+
+message GetAgentRequest {
+  string agent_id = 1;
+}
+
+message GetAgentResponse {
+  Agent agent = 1;
+}
+
+message ListTenantAgentsRequest {
+  string tenant_id = 1;
+}
+
+message ListTenantAgentsResponse {
+  repeated Agent agents = 1;
+}
+
+message IssueAgentTokenRequest {
+  string agent_id = 1;
+}
+
+message IssueAgentTokenResponse {
+  string access_token = 1;
+  google.protobuf.Timestamp expires_at = 2;
+}
+
 // ---------- Contracts from CI ----------
 
 service SchemaService {
@@ -377,4 +453,76 @@ message PublishContractResponse {
   int32 version = 1;
   string status = 2;
   repeated string namespaces = 3;
+}
+
+// ---------- Enrollment ----------
+
+// The one service that takes no access token: the enrollment code is the
+// credential. A service's deployment is given a code an owner made in Hayat's
+// console, calls Enroll once, and keeps what comes back. A code for a service
+// Hayat doesn't know registers it; a code for one it knows rotates its API
+// secret (the old one stops working at once). A code is single use; one that
+// fails is given back, so the caller can fix its request and retry.
+service EnrollmentService {
+  // What a code would do, without spending it: a setup page shows this before
+  // the person confirms.
+  rpc InspectEnrollment(InspectEnrollmentRequest) returns (InspectEnrollmentResponse);
+  rpc Enroll(EnrollRequest) returns (EnrollResponse);
+}
+
+message InspectEnrollmentRequest {
+  string code = 1;
+}
+
+message InspectEnrollmentResponse {
+  string service_id = 1;
+  // The name it registers under (or the service's name when it exists).
+  string display_name = 2;
+  // Redeeming it registers the service; otherwise it rotates its API secret.
+  bool registers = 3;
+  // Who made the code: by default, the admin of a service it registers.
+  string made_by_email = 4;
+  string made_by_name = 5;
+  google.protobuf.Timestamp expires_at = 6;
+  string issuer = 7;
+}
+
+message EnrollRequest {
+  // "hye_…", from the console or `hayat enrollment-code`.
+  string code = 1;
+  // The service's contract (YAML or JSON), published when it is newer than
+  // the latest version. Optional.
+  string manifest = 2;
+  // Used when this registers the service.
+  string display_name = 3;
+  string description = 4;
+  // The service's public address. When set, a public sign-in client with
+  // <app_url>/callback as a redirect is made, or kept if one exists.
+  string app_url = 5;
+  // A role of the service's own namespace (e.g. "tabletsgo.admin") granted
+  // at the root to whoever made the code (or admin_email), when this
+  // registers the service.
+  string admin_role = 6;
+  // Who gets admin_role instead of the code's maker. Someone Hayat doesn't
+  // know yet is invited (an email with a link to choose a password).
+  string admin_email = 7;
+}
+
+message EnrollResponse {
+  string service_id = 1;
+  // The service's API credential (client credentials grant).
+  string client_id = 2;
+  string client_secret = 3;
+  // The public sign-in client for app_url; empty without one.
+  string web_client_id = 4;
+  // Hayat's issuer: where people sign in, and what tokens name.
+  string issuer = 5;
+  // This call registered the service; otherwise it rotated the secret.
+  bool registered = 6;
+  int32 contract_version = 7;
+  // "active", "pending" (it waits for other services' owners), or empty when
+  // nothing was published.
+  string contract_status = 8;
+  // What worked but deserves a look (a role not granted, a client turned off).
+  repeated string warnings = 9;
 }

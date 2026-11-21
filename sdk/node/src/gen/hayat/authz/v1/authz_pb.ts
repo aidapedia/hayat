@@ -19,7 +19,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file hayat/authz/v1/authz.proto.
  */
 export const file_hayat_authz_v1_authz: GenFile = /*@__PURE__*/
-  fileDesc("ChpoYXlhdC9hdXRoei92MS9hdXRoei5wcm90bxIOaGF5YXQuYXV0aHoudjEiQQoLUmVzb3VyY2VSZWYSDAoEdHlwZRgBIAEoCRITCgtleHRlcm5hbF9pZBgCIAEoCRIPCgdub2RlX2lkGAMgASgJIj0KC0NvbnNpc3RlbmN5EhQKDGF0X2xlYXN0X3JldhgBIAEoAxIYChBmdWxseV9jb25zaXN0ZW50GAIgASgIIpcBCgZSZWFzb24SDAoEa2luZBgBIAEoCRIPCgdub2RlX2lkGAIgASgJEhEKCW5vZGVfdHlwZRgDIAEoCRIRCglub2RlX25hbWUYBCABKAkSDAoEcm9sZRgFIAEoCRIWCg5wcmluY2lwYWxfdHlwZRgGIAEoCRIUCgxwcmluY2lwYWxfaWQYByABKAkSDAoEdGV4dBgIIAEoCSKOAQoIUmVzb3VyY2USDwoHbm9kZV9pZBgBIAEoCRIMCgR0eXBlGAIgASgJEhMKC2V4dGVybmFsX2lkGAMgASgJEgwKBG5hbWUYBCABKAkSEQoJdGVuYW50X2lkGAUgASgJEhYKDnBhcmVudF9ub2RlX2lkGAYgASgJEhUKDW93bmVyX3VzZXJfaWQYByABKAkipQEKDENoZWNrUmVxdWVzdBIPCgd1c2VyX2lkGAEgASgJEhIKCnBlcm1pc3Npb24YAiABKAkSLQoIcmVzb3VyY2UYAyABKAsyGy5oYXlhdC5hdXRoei52MS5SZXNvdXJjZVJlZhIwCgtjb25zaXN0ZW5jeRgEIAEoCzIbLmhheWF0LmF1dGh6LnYxLkNvbnNpc3RlbmN5Eg8KB2V4cGxhaW4YBSABKAgiaAoNQ2hlY2tSZXNwb25zZRIPCgdhbGxvd2VkGAEgASgIEgsKA3JldhgCIAEoAxIRCgl0ZW5hbnRfaWQYAyABKAkSJgoGcmVhc29uGAQgASgLMhYuaGF5YXQuYXV0aHoudjEuUmVhc29uIkEKEUJhdGNoQ2hlY2tSZXF1ZXN0EiwKBmNoZWNrcxgBIAMoCzIcLmhheWF0LmF1dGh6LnYxLkNoZWNrUmVxdWVzdCJEChJCYXRjaENoZWNrUmVzcG9uc2USLgoHcmVzdWx0cxgBIAMoCzIdLmhheWF0LmF1dGh6LnYxLkNoZWNrUmVzcG9uc2UiiAEKFFBlcm1pc3Npb25zQXRSZXF1ZXN0Eg8KB3VzZXJfaWQYASABKAkSLQoIcmVzb3VyY2UYAiABKAsyGy5oYXlhdC5hdXRoei52MS5SZXNvdXJjZVJlZhIwCgtjb25zaXN0ZW5jeRgDIAEoCzIbLmhheWF0LmF1dGh6LnYxLkNvbnNpc3RlbmN5IkwKFVBlcm1pc3Npb25zQXRSZXNwb25zZRITCgtwZXJtaXNzaW9ucxgBIAMoCRILCgNyZXYYAiABKAMSEQoJdGVuYW50X2lkGAMgASgJIrcBChZMb29rdXBSZXNvdXJjZXNSZXF1ZXN0Eg8KB3VzZXJfaWQYASABKAkSEgoKcGVybWlzc2lvbhgCIAEoCRIMCgR0eXBlGAMgASgJEhEKCXRlbmFudF9pZBgEIAEoCRIRCglwYWdlX3NpemUYBSABKAUSEgoKcGFnZV90b2tlbhgGIAEoCRIwCgtjb25zaXN0ZW5jeRgHIAEoCzIbLmhheWF0LmF1dGh6LnYxLkNvbnNpc3RlbmN5Il8KF0xvb2t1cFJlc291cmNlc1Jlc3BvbnNlEisKCXJlc291cmNlcxgBIAMoCzIYLmhheWF0LmF1dGh6LnYxLlJlc291cmNlEhcKD25leHRfcGFnZV90b2tlbhgCIAEoCSKMAQoVTG9va3VwU3ViamVjdHNSZXF1ZXN0EhIKCnBlcm1pc3Npb24YASABKAkSLQoIcmVzb3VyY2UYAiABKAsyGy5oYXlhdC5hdXRoei52MS5SZXNvdXJjZVJlZhIwCgtjb25zaXN0ZW5jeRgDIAEoCzIbLmhheWF0LmF1dGh6LnYxLkNvbnNpc3RlbmN5IkIKB1N1YmplY3QSDwoHdXNlcl9pZBgBIAEoCRImCgZyZWFzb24YAiABKAsyFi5oYXlhdC5hdXRoei52MS5SZWFzb24iQwoWTG9va3VwU3ViamVjdHNSZXNwb25zZRIpCghzdWJqZWN0cxgBIAMoCzIXLmhheWF0LmF1dGh6LnYxLlN1YmplY3QijAEKFVVwc2VydFJlc291cmNlUmVxdWVzdBIMCgR0eXBlGAEgASgJEhMKC2V4dGVybmFsX2lkGAIgASgJEgwKBG5hbWUYAyABKAkSKwoGcGFyZW50GAQgASgLMhsuaGF5YXQuYXV0aHoudjEuUmVzb3VyY2VSZWYSFQoNb3duZXJfdXNlcl9pZBgFIAEoCSI6ChVEZWxldGVSZXNvdXJjZVJlcXVlc3QSDAoEdHlwZRgBIAEoCRITCgtleHRlcm5hbF9pZBgCIAEoCSJDChJHZXRSZXNvdXJjZVJlcXVlc3QSLQoIcmVzb3VyY2UYASABKAsyGy5oYXlhdC5hdXRoei52MS5SZXNvdXJjZVJlZiJkChZVcHNlcnRSZXNvdXJjZVJlc3BvbnNlEgsKA3JldhgBIAEoAxIRCgl0ZW5hbnRfaWQYAiABKAkSKgoIcmVzb3VyY2UYAyABKAsyGC5oYXlhdC5hdXRoei52MS5SZXNvdXJjZSI4ChZEZWxldGVSZXNvdXJjZVJlc3BvbnNlEgsKA3JldhgBIAEoAxIRCgl0ZW5hbnRfaWQYAiABKAkiQQoTR2V0UmVzb3VyY2VSZXNwb25zZRIqCghyZXNvdXJjZRgBIAEoCzIYLmhheWF0LmF1dGh6LnYxLlJlc291cmNlIu4DCgpBcHBlYXJhbmNlEg4KBnByZXNldBgBIAEoCRIMCgRtb2RlGAIgASgJEg4KBmFjY2VudBgDIAEoCRISCgpiYWNrZ3JvdW5kGAQgASgJEg8KB3N1cmZhY2UYBSABKAkSDAoEdGV4dBgGIAEoCRINCgVtdXRlZBgHIAEoCRIOCgZib3JkZXIYCCABKAkSHQoVc2lkZWJhcl9tYXRjaF9jb250ZW50GAkgASgIEhoKEnNpZGViYXJfYmFja2dyb3VuZBgKIAEoCRIUCgxzaWRlYmFyX3RleHQYCyABKAkSFgoOc2lkZWJhcl9hY3RpdmUYDCABKAkSFgoOc2lkZWJhcl9ib3JkZXIYDSABKAkSDwoHc3VjY2VzcxgOIAEoCRIPCgd3YXJuaW5nGA8gASgJEhMKC2Rlc3RydWN0aXZlGBAgASgJEgwKBGZvbnQYESABKAkSFgoJdGV4dF9zaXplGBIgASgFSACIAQESDwoHZGVuc2l0eRgTIAEoCRITCgZyYWRpdXMYFCABKAVIAYgBARIaCg1zaWRlYmFyX3dpZHRoGBUgASgFSAKIAQESFQoNY29udGVudF93aWR0aBgWIAEoCUIMCgpfdGV4dF9zaXplQgkKB19yYWRpdXNCEAoOX3NpZGViYXJfd2lkdGgiKwoYR2V0VXNlckFwcGVhcmFuY2VSZXF1ZXN0Eg8KB3VzZXJfaWQYASABKAkiSwoZR2V0VXNlckFwcGVhcmFuY2VSZXNwb25zZRIuCgphcHBlYXJhbmNlGAEgASgLMhouaGF5YXQuYXV0aHoudjEuQXBwZWFyYW5jZSKAAQoGVGVuYW50EgoKAmlkGAEgASgJEgwKBHNsdWcYAiABKAkSDAoEbmFtZRgDIAEoCRIVCg1vd25lcl91c2VyX2lkGAQgASgJEg8KB25vZGVfaWQYBSABKAkSFAoMbWVtYmVyX2NvdW50GAYgASgFEhAKCGxvZ29fdXJsGAcgASgJIikKFkxpc3RVc2VyVGVuYW50c1JlcXVlc3QSDwoHdXNlcl9pZBgBIAEoCSJCChdMaXN0VXNlclRlbmFudHNSZXNwb25zZRInCgd0ZW5hbnRzGAEgAygLMhYuaGF5YXQuYXV0aHoudjEuVGVuYW50Ii0KGExpc3RUZW5hbnRNZW1iZXJzUmVxdWVzdBIRCgl0ZW5hbnRfaWQYASABKAkicwoMVGVuYW50TWVtYmVyEiIKBHVzZXIYASABKAsyFC5oYXlhdC5hdXRoei52MS5Vc2VyEhAKCGlzX293bmVyGAIgASgIEi0KCWpvaW5lZF9hdBgDIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiSgoZTGlzdFRlbmFudE1lbWJlcnNSZXNwb25zZRItCgdtZW1iZXJzGAEgAygLMhwuaGF5YXQuYXV0aHoudjEuVGVuYW50TWVtYmVyIj4KF0xpc3RUZW5hbnRHcmFudHNSZXF1ZXN0EhEKCXRlbmFudF9pZBgBIAEoCRIQCgh1c2VyX2lkcxgCIAMoCSKvAQoLTWVtYmVyR3JhbnQSDwoHdXNlcl9pZBgBIAEoCRIqCghyZXNvdXJjZRgCIAEoCzIYLmhheWF0LmF1dGh6LnYxLlJlc291cmNlEgsKA3ZpYRgDIAEoCRIMCgRyb2xlGAQgASgJEhEKCXJvbGVfbmFtZRgFIAEoCRIPCgdpbmhlcml0GAYgASgIEhAKCGdyb3VwX2lkGAcgASgJEhIKCmdyb3VwX25hbWUYCCABKAkiRwoYTGlzdFRlbmFudEdyYW50c1Jlc3BvbnNlEisKBmdyYW50cxgBIAMoCzIbLmhheWF0LmF1dGh6LnYxLk1lbWJlckdyYW50IooBCgRVc2VyEgoKAmlkGAEgASgJEg0KBWVtYWlsGAIgASgJEhYKDmVtYWlsX3ZlcmlmaWVkGAMgASgIEgwKBG5hbWUYBCABKAkSDwoHcGljdHVyZRgFIAEoCRIOCgZsb2NhbGUYBiABKAkSEAoIem9uZWluZm8YByABKAkSDgoGc3RhdHVzGAggASgJIhwKDkdldFVzZXJSZXF1ZXN0EgoKAmlkGAEgASgJIjUKD0dldFVzZXJSZXNwb25zZRIiCgR1c2VyGAEgASgLMhQuaGF5YXQuYXV0aHoudjEuVXNlciIjChRCYXRjaEdldFVzZXJzUmVxdWVzdBILCgNpZHMYASADKAkiPAoVQmF0Y2hHZXRVc2Vyc1Jlc3BvbnNlEiMKBXVzZXJzGAEgAygLMhQuaGF5YXQuYXV0aHoudjEuVXNlciIeCgxXYXRjaFJlcXVlc3QSDgoGY3Vyc29yGAEgASgJIjsKDVdhdGNoUmVzcG9uc2USKgoFZXZlbnQYASABKAsyGy5oYXlhdC5hdXRoei52MS5Qb2xpY3lFdmVudCJvCgtQb2xpY3lFdmVudBIKCgJpZBgBIAEoCRIRCgl0ZW5hbnRfaWQYAiABKAkSCwoDcmV2GAMgASgDEgwKBGtpbmQYBCABKAkSJgoCYXQYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIioKFlB1Ymxpc2hDb250cmFjdFJlcXVlc3QSEAoIbWFuaWZlc3QYASABKAkiTgoXUHVibGlzaENvbnRyYWN0UmVzcG9uc2USDwoHdmVyc2lvbhgBIAEoBRIOCgZzdGF0dXMYAiABKAkSEgoKbmFtZXNwYWNlcxgDIAMoCTLMAwoMQXV0aHpTZXJ2aWNlEkQKBUNoZWNrEhwuaGF5YXQuYXV0aHoudjEuQ2hlY2tSZXF1ZXN0Gh0uaGF5YXQuYXV0aHoudjEuQ2hlY2tSZXNwb25zZRJTCgpCYXRjaENoZWNrEiEuaGF5YXQuYXV0aHoudjEuQmF0Y2hDaGVja1JlcXVlc3QaIi5oYXlhdC5hdXRoei52MS5CYXRjaENoZWNrUmVzcG9uc2USXAoNUGVybWlzc2lvbnNBdBIkLmhheWF0LmF1dGh6LnYxLlBlcm1pc3Npb25zQXRSZXF1ZXN0GiUuaGF5YXQuYXV0aHoudjEuUGVybWlzc2lvbnNBdFJlc3BvbnNlEmIKD0xvb2t1cFJlc291cmNlcxImLmhheWF0LmF1dGh6LnYxLkxvb2t1cFJlc291cmNlc1JlcXVlc3QaJy5oYXlhdC5hdXRoei52MS5Mb29rdXBSZXNvdXJjZXNSZXNwb25zZRJfCg5Mb29rdXBTdWJqZWN0cxIlLmhheWF0LmF1dGh6LnYxLkxvb2t1cFN1YmplY3RzUmVxdWVzdBomLmhheWF0LmF1dGh6LnYxLkxvb2t1cFN1YmplY3RzUmVzcG9uc2UypwIKC1RyZWVTZXJ2aWNlEl8KDlVwc2VydFJlc291cmNlEiUuaGF5YXQuYXV0aHoudjEuVXBzZXJ0UmVzb3VyY2VSZXF1ZXN0GiYuaGF5YXQuYXV0aHoudjEuVXBzZXJ0UmVzb3VyY2VSZXNwb25zZRJfCg5EZWxldGVSZXNvdXJjZRIlLmhheWF0LmF1dGh6LnYxLkRlbGV0ZVJlc291cmNlUmVxdWVzdBomLmhheWF0LmF1dGh6LnYxLkRlbGV0ZVJlc291cmNlUmVzcG9uc2USVgoLR2V0UmVzb3VyY2USIi5oYXlhdC5hdXRoei52MS5HZXRSZXNvdXJjZVJlcXVlc3QaIy5oYXlhdC5hdXRoei52MS5HZXRSZXNvdXJjZVJlc3BvbnNlMtsEChBEaXJlY3RvcnlTZXJ2aWNlEkoKB0dldFVzZXISHi5oYXlhdC5hdXRoei52MS5HZXRVc2VyUmVxdWVzdBofLmhheWF0LmF1dGh6LnYxLkdldFVzZXJSZXNwb25zZRJcCg1CYXRjaEdldFVzZXJzEiQuaGF5YXQuYXV0aHoudjEuQmF0Y2hHZXRVc2Vyc1JlcXVlc3QaJS5oYXlhdC5hdXRoei52MS5CYXRjaEdldFVzZXJzUmVzcG9uc2USYgoPTGlzdFVzZXJUZW5hbnRzEiYuaGF5YXQuYXV0aHoudjEuTGlzdFVzZXJUZW5hbnRzUmVxdWVzdBonLmhheWF0LmF1dGh6LnYxLkxpc3RVc2VyVGVuYW50c1Jlc3BvbnNlEmgKEUxpc3RUZW5hbnRNZW1iZXJzEiguaGF5YXQuYXV0aHoudjEuTGlzdFRlbmFudE1lbWJlcnNSZXF1ZXN0GikuaGF5YXQuYXV0aHoudjEuTGlzdFRlbmFudE1lbWJlcnNSZXNwb25zZRJlChBMaXN0VGVuYW50R3JhbnRzEicuaGF5YXQuYXV0aHoudjEuTGlzdFRlbmFudEdyYW50c1JlcXVlc3QaKC5oYXlhdC5hdXRoei52MS5MaXN0VGVuYW50R3JhbnRzUmVzcG9uc2USaAoRR2V0VXNlckFwcGVhcmFuY2USKC5oYXlhdC5hdXRoei52MS5HZXRVc2VyQXBwZWFyYW5jZVJlcXVlc3QaKS5oYXlhdC5hdXRoei52MS5HZXRVc2VyQXBwZWFyYW5jZVJlc3BvbnNlMlYKDFdhdGNoU2VydmljZRJGCgVXYXRjaBIcLmhheWF0LmF1dGh6LnYxLldhdGNoUmVxdWVzdBodLmhheWF0LmF1dGh6LnYxLldhdGNoUmVzcG9uc2UwATJzCg1TY2hlbWFTZXJ2aWNlEmIKD1B1Ymxpc2hDb250cmFjdBImLmhheWF0LmF1dGh6LnYxLlB1Ymxpc2hDb250cmFjdFJlcXVlc3QaJy5oYXlhdC5hdXRoei52MS5QdWJsaXNoQ29udHJhY3RSZXNwb25zZUI6WjhnaXRodWIuY29tL2FpZGFwZWRpYS9oYXlhdC9nZW4vZ28vaGF5YXQvYXV0aHovdjE7YXV0aHp2MWIGcHJvdG8z", [file_google_protobuf_timestamp]);
+  fileDesc("ChpoYXlhdC9hdXRoei92MS9hdXRoei5wcm90bxIOaGF5YXQuYXV0aHoudjEiQQoLUmVzb3VyY2VSZWYSDAoEdHlwZRgBIAEoCRITCgtleHRlcm5hbF9pZBgCIAEoCRIPCgdub2RlX2lkGAMgASgJIj0KC0NvbnNpc3RlbmN5EhQKDGF0X2xlYXN0X3JldhgBIAEoAxIYChBmdWxseV9jb25zaXN0ZW50GAIgASgIIpcBCgZSZWFzb24SDAoEa2luZBgBIAEoCRIPCgdub2RlX2lkGAIgASgJEhEKCW5vZGVfdHlwZRgDIAEoCRIRCglub2RlX25hbWUYBCABKAkSDAoEcm9sZRgFIAEoCRIWCg5wcmluY2lwYWxfdHlwZRgGIAEoCRIUCgxwcmluY2lwYWxfaWQYByABKAkSDAoEdGV4dBgIIAEoCSKOAQoIUmVzb3VyY2USDwoHbm9kZV9pZBgBIAEoCRIMCgR0eXBlGAIgASgJEhMKC2V4dGVybmFsX2lkGAMgASgJEgwKBG5hbWUYBCABKAkSEQoJdGVuYW50X2lkGAUgASgJEhYKDnBhcmVudF9ub2RlX2lkGAYgASgJEhUKDW93bmVyX3VzZXJfaWQYByABKAkitwEKDENoZWNrUmVxdWVzdBIPCgd1c2VyX2lkGAEgASgJEhIKCnBlcm1pc3Npb24YAiABKAkSLQoIcmVzb3VyY2UYAyABKAsyGy5oYXlhdC5hdXRoei52MS5SZXNvdXJjZVJlZhIwCgtjb25zaXN0ZW5jeRgEIAEoCzIbLmhheWF0LmF1dGh6LnYxLkNvbnNpc3RlbmN5Eg8KB2V4cGxhaW4YBSABKAgSEAoIYWdlbnRfaWQYBiABKAkiaAoNQ2hlY2tSZXNwb25zZRIPCgdhbGxvd2VkGAEgASgIEgsKA3JldhgCIAEoAxIRCgl0ZW5hbnRfaWQYAyABKAkSJgoGcmVhc29uGAQgASgLMhYuaGF5YXQuYXV0aHoudjEuUmVhc29uIkEKEUJhdGNoQ2hlY2tSZXF1ZXN0EiwKBmNoZWNrcxgBIAMoCzIcLmhheWF0LmF1dGh6LnYxLkNoZWNrUmVxdWVzdCJEChJCYXRjaENoZWNrUmVzcG9uc2USLgoHcmVzdWx0cxgBIAMoCzIdLmhheWF0LmF1dGh6LnYxLkNoZWNrUmVzcG9uc2UimgEKFFBlcm1pc3Npb25zQXRSZXF1ZXN0Eg8KB3VzZXJfaWQYASABKAkSLQoIcmVzb3VyY2UYAiABKAsyGy5oYXlhdC5hdXRoei52MS5SZXNvdXJjZVJlZhIwCgtjb25zaXN0ZW5jeRgDIAEoCzIbLmhheWF0LmF1dGh6LnYxLkNvbnNpc3RlbmN5EhAKCGFnZW50X2lkGAQgASgJIkwKFVBlcm1pc3Npb25zQXRSZXNwb25zZRITCgtwZXJtaXNzaW9ucxgBIAMoCRILCgNyZXYYAiABKAMSEQoJdGVuYW50X2lkGAMgASgJIskBChZMb29rdXBSZXNvdXJjZXNSZXF1ZXN0Eg8KB3VzZXJfaWQYASABKAkSEgoKcGVybWlzc2lvbhgCIAEoCRIMCgR0eXBlGAMgASgJEhEKCXRlbmFudF9pZBgEIAEoCRIRCglwYWdlX3NpemUYBSABKAUSEgoKcGFnZV90b2tlbhgGIAEoCRIwCgtjb25zaXN0ZW5jeRgHIAEoCzIbLmhheWF0LmF1dGh6LnYxLkNvbnNpc3RlbmN5EhAKCGFnZW50X2lkGAggASgJIl8KF0xvb2t1cFJlc291cmNlc1Jlc3BvbnNlEisKCXJlc291cmNlcxgBIAMoCzIYLmhheWF0LmF1dGh6LnYxLlJlc291cmNlEhcKD25leHRfcGFnZV90b2tlbhgCIAEoCSKMAQoVTG9va3VwU3ViamVjdHNSZXF1ZXN0EhIKCnBlcm1pc3Npb24YASABKAkSLQoIcmVzb3VyY2UYAiABKAsyGy5oYXlhdC5hdXRoei52MS5SZXNvdXJjZVJlZhIwCgtjb25zaXN0ZW5jeRgDIAEoCzIbLmhheWF0LmF1dGh6LnYxLkNvbnNpc3RlbmN5IlQKB1N1YmplY3QSDwoHdXNlcl9pZBgBIAEoCRImCgZyZWFzb24YAiABKAsyFi5oYXlhdC5hdXRoei52MS5SZWFzb24SEAoIYWdlbnRfaWQYAyABKAkiQwoWTG9va3VwU3ViamVjdHNSZXNwb25zZRIpCghzdWJqZWN0cxgBIAMoCzIXLmhheWF0LmF1dGh6LnYxLlN1YmplY3QijAEKFVVwc2VydFJlc291cmNlUmVxdWVzdBIMCgR0eXBlGAEgASgJEhMKC2V4dGVybmFsX2lkGAIgASgJEgwKBG5hbWUYAyABKAkSKwoGcGFyZW50GAQgASgLMhsuaGF5YXQuYXV0aHoudjEuUmVzb3VyY2VSZWYSFQoNb3duZXJfdXNlcl9pZBgFIAEoCSI6ChVEZWxldGVSZXNvdXJjZVJlcXVlc3QSDAoEdHlwZRgBIAEoCRITCgtleHRlcm5hbF9pZBgCIAEoCSJDChJHZXRSZXNvdXJjZVJlcXVlc3QSLQoIcmVzb3VyY2UYASABKAsyGy5oYXlhdC5hdXRoei52MS5SZXNvdXJjZVJlZiJkChZVcHNlcnRSZXNvdXJjZVJlc3BvbnNlEgsKA3JldhgBIAEoAxIRCgl0ZW5hbnRfaWQYAiABKAkSKgoIcmVzb3VyY2UYAyABKAsyGC5oYXlhdC5hdXRoei52MS5SZXNvdXJjZSI4ChZEZWxldGVSZXNvdXJjZVJlc3BvbnNlEgsKA3JldhgBIAEoAxIRCgl0ZW5hbnRfaWQYAiABKAkiQQoTR2V0UmVzb3VyY2VSZXNwb25zZRIqCghyZXNvdXJjZRgBIAEoCzIYLmhheWF0LmF1dGh6LnYxLlJlc291cmNlIqEECgpBcHBlYXJhbmNlEg4KBnByZXNldBgBIAEoCRIMCgRtb2RlGAIgASgJEg4KBmFjY2VudBgDIAEoCRISCgpiYWNrZ3JvdW5kGAQgASgJEg8KB3N1cmZhY2UYBSABKAkSDAoEdGV4dBgGIAEoCRINCgVtdXRlZBgHIAEoCRIOCgZib3JkZXIYCCABKAkSHQoVc2lkZWJhcl9tYXRjaF9jb250ZW50GAkgASgIEhoKEnNpZGViYXJfYmFja2dyb3VuZBgKIAEoCRIUCgxzaWRlYmFyX3RleHQYCyABKAkSFgoOc2lkZWJhcl9hY3RpdmUYDCABKAkSFgoOc2lkZWJhcl9ib3JkZXIYDSABKAkSDwoHc3VjY2VzcxgOIAEoCRIPCgd3YXJuaW5nGA8gASgJEhMKC2Rlc3RydWN0aXZlGBAgASgJEgwKBGZvbnQYESABKAkSFgoJdGV4dF9zaXplGBIgASgFSACIAQESDwoHZGVuc2l0eRgTIAEoCRITCgZyYWRpdXMYFCABKAVIAYgBARIaCg1zaWRlYmFyX3dpZHRoGBUgASgFSAKIAQESFQoNY29udGVudF93aWR0aBgWIAEoCRITCgthY2NlbnRfdGV4dBgXIAEoCRISCgVzY2FsZRgYIAEoBUgDiAEBQgwKCl90ZXh0X3NpemVCCQoHX3JhZGl1c0IQCg5fc2lkZWJhcl93aWR0aEIICgZfc2NhbGUiKwoYR2V0VXNlckFwcGVhcmFuY2VSZXF1ZXN0Eg8KB3VzZXJfaWQYASABKAkiWAoZR2V0VXNlckFwcGVhcmFuY2VSZXNwb25zZRIuCgphcHBlYXJhbmNlGAEgASgLMhouaGF5YXQuYXV0aHoudjEuQXBwZWFyYW5jZRILCgNvd24YAiABKAgigAEKBlRlbmFudBIKCgJpZBgBIAEoCRIMCgRzbHVnGAIgASgJEgwKBG5hbWUYAyABKAkSFQoNb3duZXJfdXNlcl9pZBgEIAEoCRIPCgdub2RlX2lkGAUgASgJEhQKDG1lbWJlcl9jb3VudBgGIAEoBRIQCghsb2dvX3VybBgHIAEoCSIpChZMaXN0VXNlclRlbmFudHNSZXF1ZXN0Eg8KB3VzZXJfaWQYASABKAkiQgoXTGlzdFVzZXJUZW5hbnRzUmVzcG9uc2USJwoHdGVuYW50cxgBIAMoCzIWLmhheWF0LmF1dGh6LnYxLlRlbmFudCItChhMaXN0VGVuYW50TWVtYmVyc1JlcXVlc3QSEQoJdGVuYW50X2lkGAEgASgJInMKDFRlbmFudE1lbWJlchIiCgR1c2VyGAEgASgLMhQuaGF5YXQuYXV0aHoudjEuVXNlchIQCghpc19vd25lchgCIAEoCBItCglqb2luZWRfYXQYAyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIkoKGUxpc3RUZW5hbnRNZW1iZXJzUmVzcG9uc2USLQoHbWVtYmVycxgBIAMoCzIcLmhheWF0LmF1dGh6LnYxLlRlbmFudE1lbWJlciI+ChdMaXN0VGVuYW50R3JhbnRzUmVxdWVzdBIRCgl0ZW5hbnRfaWQYASABKAkSEAoIdXNlcl9pZHMYAiADKAkirwEKC01lbWJlckdyYW50Eg8KB3VzZXJfaWQYASABKAkSKgoIcmVzb3VyY2UYAiABKAsyGC5oYXlhdC5hdXRoei52MS5SZXNvdXJjZRILCgN2aWEYAyABKAkSDAoEcm9sZRgEIAEoCRIRCglyb2xlX25hbWUYBSABKAkSDwoHaW5oZXJpdBgGIAEoCBIQCghncm91cF9pZBgHIAEoCRISCgpncm91cF9uYW1lGAggASgJIkcKGExpc3RUZW5hbnRHcmFudHNSZXNwb25zZRIrCgZncmFudHMYASADKAsyGy5oYXlhdC5hdXRoei52MS5NZW1iZXJHcmFudCKKAQoEVXNlchIKCgJpZBgBIAEoCRINCgVlbWFpbBgCIAEoCRIWCg5lbWFpbF92ZXJpZmllZBgDIAEoCBIMCgRuYW1lGAQgASgJEg8KB3BpY3R1cmUYBSABKAkSDgoGbG9jYWxlGAYgASgJEhAKCHpvbmVpbmZvGAcgASgJEg4KBnN0YXR1cxgIIAEoCSIcCg5HZXRVc2VyUmVxdWVzdBIKCgJpZBgBIAEoCSI1Cg9HZXRVc2VyUmVzcG9uc2USIgoEdXNlchgBIAEoCzIULmhheWF0LmF1dGh6LnYxLlVzZXIiIwoUQmF0Y2hHZXRVc2Vyc1JlcXVlc3QSCwoDaWRzGAEgAygJIjwKFUJhdGNoR2V0VXNlcnNSZXNwb25zZRIjCgV1c2VycxgBIAMoCzIULmhheWF0LmF1dGh6LnYxLlVzZXIiHgoMV2F0Y2hSZXF1ZXN0Eg4KBmN1cnNvchgBIAEoCSI7Cg1XYXRjaFJlc3BvbnNlEioKBWV2ZW50GAEgASgLMhsuaGF5YXQuYXV0aHoudjEuUG9saWN5RXZlbnQibwoLUG9saWN5RXZlbnQSCgoCaWQYASABKAkSEQoJdGVuYW50X2lkGAIgASgJEgsKA3JldhgDIAEoAxIMCgRraW5kGAQgASgJEiYKAmF0GAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCKpAQoFQWdlbnQSCgoCaWQYASABKAkSEQoJdGVuYW50X2lkGAIgASgJEg4KBmhhbmRsZRgDIAEoCRIMCgRuYW1lGAQgASgJEhcKD3Nwb25zb3JfdXNlcl9pZBgFIAEoCRIOCgZzdGF0dXMYBiABKAkSFQoNc3RhdHVzX3JlYXNvbhgHIAEoCRIQCghzZXJ2aWNlcxgIIAMoCRIRCglncm91cF9pZHMYCSADKAkiIwoPR2V0QWdlbnRSZXF1ZXN0EhAKCGFnZW50X2lkGAEgASgJIjgKEEdldEFnZW50UmVzcG9uc2USJAoFYWdlbnQYASABKAsyFS5oYXlhdC5hdXRoei52MS5BZ2VudCIsChdMaXN0VGVuYW50QWdlbnRzUmVxdWVzdBIRCgl0ZW5hbnRfaWQYASABKAkiQQoYTGlzdFRlbmFudEFnZW50c1Jlc3BvbnNlEiUKBmFnZW50cxgBIAMoCzIVLmhheWF0LmF1dGh6LnYxLkFnZW50IioKFklzc3VlQWdlbnRUb2tlblJlcXVlc3QSEAoIYWdlbnRfaWQYASABKAkiXwoXSXNzdWVBZ2VudFRva2VuUmVzcG9uc2USFAoMYWNjZXNzX3Rva2VuGAEgASgJEi4KCmV4cGlyZXNfYXQYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIioKFlB1Ymxpc2hDb250cmFjdFJlcXVlc3QSEAoIbWFuaWZlc3QYASABKAkiTgoXUHVibGlzaENvbnRyYWN0UmVzcG9uc2USDwoHdmVyc2lvbhgBIAEoBRIOCgZzdGF0dXMYAiABKAkSEgoKbmFtZXNwYWNlcxgDIAMoCSIoChhJbnNwZWN0RW5yb2xsbWVudFJlcXVlc3QSDAoEY29kZRgBIAEoCSLFAQoZSW5zcGVjdEVucm9sbG1lbnRSZXNwb25zZRISCgpzZXJ2aWNlX2lkGAEgASgJEhQKDGRpc3BsYXlfbmFtZRgCIAEoCRIRCglyZWdpc3RlcnMYAyABKAgSFQoNbWFkZV9ieV9lbWFpbBgEIAEoCRIUCgxtYWRlX2J5X25hbWUYBSABKAkSLgoKZXhwaXJlc19hdBgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASDgoGaXNzdWVyGAcgASgJIpQBCg1FbnJvbGxSZXF1ZXN0EgwKBGNvZGUYASABKAkSEAoIbWFuaWZlc3QYAiABKAkSFAoMZGlzcGxheV9uYW1lGAMgASgJEhMKC2Rlc2NyaXB0aW9uGAQgASgJEg8KB2FwcF91cmwYBSABKAkSEgoKYWRtaW5fcm9sZRgGIAEoCRITCgthZG1pbl9lbWFpbBgHIAEoCSLOAQoORW5yb2xsUmVzcG9uc2USEgoKc2VydmljZV9pZBgBIAEoCRIRCgljbGllbnRfaWQYAiABKAkSFQoNY2xpZW50X3NlY3JldBgDIAEoCRIVCg13ZWJfY2xpZW50X2lkGAQgASgJEg4KBmlzc3VlchgFIAEoCRISCgpyZWdpc3RlcmVkGAYgASgIEhgKEGNvbnRyYWN0X3ZlcnNpb24YByABKAUSFwoPY29udHJhY3Rfc3RhdHVzGAggASgJEhAKCHdhcm5pbmdzGAkgAygJMswDCgxBdXRoelNlcnZpY2USRAoFQ2hlY2sSHC5oYXlhdC5hdXRoei52MS5DaGVja1JlcXVlc3QaHS5oYXlhdC5hdXRoei52MS5DaGVja1Jlc3BvbnNlElMKCkJhdGNoQ2hlY2sSIS5oYXlhdC5hdXRoei52MS5CYXRjaENoZWNrUmVxdWVzdBoiLmhheWF0LmF1dGh6LnYxLkJhdGNoQ2hlY2tSZXNwb25zZRJcCg1QZXJtaXNzaW9uc0F0EiQuaGF5YXQuYXV0aHoudjEuUGVybWlzc2lvbnNBdFJlcXVlc3QaJS5oYXlhdC5hdXRoei52MS5QZXJtaXNzaW9uc0F0UmVzcG9uc2USYgoPTG9va3VwUmVzb3VyY2VzEiYuaGF5YXQuYXV0aHoudjEuTG9va3VwUmVzb3VyY2VzUmVxdWVzdBonLmhheWF0LmF1dGh6LnYxLkxvb2t1cFJlc291cmNlc1Jlc3BvbnNlEl8KDkxvb2t1cFN1YmplY3RzEiUuaGF5YXQuYXV0aHoudjEuTG9va3VwU3ViamVjdHNSZXF1ZXN0GiYuaGF5YXQuYXV0aHoudjEuTG9va3VwU3ViamVjdHNSZXNwb25zZTKnAgoLVHJlZVNlcnZpY2USXwoOVXBzZXJ0UmVzb3VyY2USJS5oYXlhdC5hdXRoei52MS5VcHNlcnRSZXNvdXJjZVJlcXVlc3QaJi5oYXlhdC5hdXRoei52MS5VcHNlcnRSZXNvdXJjZVJlc3BvbnNlEl8KDkRlbGV0ZVJlc291cmNlEiUuaGF5YXQuYXV0aHoudjEuRGVsZXRlUmVzb3VyY2VSZXF1ZXN0GiYuaGF5YXQuYXV0aHoudjEuRGVsZXRlUmVzb3VyY2VSZXNwb25zZRJWCgtHZXRSZXNvdXJjZRIiLmhheWF0LmF1dGh6LnYxLkdldFJlc291cmNlUmVxdWVzdBojLmhheWF0LmF1dGh6LnYxLkdldFJlc291cmNlUmVzcG9uc2Uy2wQKEERpcmVjdG9yeVNlcnZpY2USSgoHR2V0VXNlchIeLmhheWF0LmF1dGh6LnYxLkdldFVzZXJSZXF1ZXN0Gh8uaGF5YXQuYXV0aHoudjEuR2V0VXNlclJlc3BvbnNlElwKDUJhdGNoR2V0VXNlcnMSJC5oYXlhdC5hdXRoei52MS5CYXRjaEdldFVzZXJzUmVxdWVzdBolLmhheWF0LmF1dGh6LnYxLkJhdGNoR2V0VXNlcnNSZXNwb25zZRJiCg9MaXN0VXNlclRlbmFudHMSJi5oYXlhdC5hdXRoei52MS5MaXN0VXNlclRlbmFudHNSZXF1ZXN0GicuaGF5YXQuYXV0aHoudjEuTGlzdFVzZXJUZW5hbnRzUmVzcG9uc2USaAoRTGlzdFRlbmFudE1lbWJlcnMSKC5oYXlhdC5hdXRoei52MS5MaXN0VGVuYW50TWVtYmVyc1JlcXVlc3QaKS5oYXlhdC5hdXRoei52MS5MaXN0VGVuYW50TWVtYmVyc1Jlc3BvbnNlEmUKEExpc3RUZW5hbnRHcmFudHMSJy5oYXlhdC5hdXRoei52MS5MaXN0VGVuYW50R3JhbnRzUmVxdWVzdBooLmhheWF0LmF1dGh6LnYxLkxpc3RUZW5hbnRHcmFudHNSZXNwb25zZRJoChFHZXRVc2VyQXBwZWFyYW5jZRIoLmhheWF0LmF1dGh6LnYxLkdldFVzZXJBcHBlYXJhbmNlUmVxdWVzdBopLmhheWF0LmF1dGh6LnYxLkdldFVzZXJBcHBlYXJhbmNlUmVzcG9uc2UyVgoMV2F0Y2hTZXJ2aWNlEkYKBVdhdGNoEhwuaGF5YXQuYXV0aHoudjEuV2F0Y2hSZXF1ZXN0Gh0uaGF5YXQuYXV0aHoudjEuV2F0Y2hSZXNwb25zZTABMqgCCgxBZ2VudFNlcnZpY2USTQoIR2V0QWdlbnQSHy5oYXlhdC5hdXRoei52MS5HZXRBZ2VudFJlcXVlc3QaIC5oYXlhdC5hdXRoei52MS5HZXRBZ2VudFJlc3BvbnNlEmUKEExpc3RUZW5hbnRBZ2VudHMSJy5oYXlhdC5hdXRoei52MS5MaXN0VGVuYW50QWdlbnRzUmVxdWVzdBooLmhheWF0LmF1dGh6LnYxLkxpc3RUZW5hbnRBZ2VudHNSZXNwb25zZRJiCg9Jc3N1ZUFnZW50VG9rZW4SJi5oYXlhdC5hdXRoei52MS5Jc3N1ZUFnZW50VG9rZW5SZXF1ZXN0GicuaGF5YXQuYXV0aHoudjEuSXNzdWVBZ2VudFRva2VuUmVzcG9uc2UycwoNU2NoZW1hU2VydmljZRJiCg9QdWJsaXNoQ29udHJhY3QSJi5oYXlhdC5hdXRoei52MS5QdWJsaXNoQ29udHJhY3RSZXF1ZXN0GicuaGF5YXQuYXV0aHoudjEuUHVibGlzaENvbnRyYWN0UmVzcG9uc2UyxgEKEUVucm9sbG1lbnRTZXJ2aWNlEmgKEUluc3BlY3RFbnJvbGxtZW50EiguaGF5YXQuYXV0aHoudjEuSW5zcGVjdEVucm9sbG1lbnRSZXF1ZXN0GikuaGF5YXQuYXV0aHoudjEuSW5zcGVjdEVucm9sbG1lbnRSZXNwb25zZRJHCgZFbnJvbGwSHS5oYXlhdC5hdXRoei52MS5FbnJvbGxSZXF1ZXN0Gh4uaGF5YXQuYXV0aHoudjEuRW5yb2xsUmVzcG9uc2VCOlo4Z2l0aHViLmNvbS9haWRhcGVkaWEvaGF5YXQvZ2VuL2dvL2hheWF0L2F1dGh6L3YxO2F1dGh6djFiBnByb3RvMw", [file_google_protobuf_timestamp]);
 
 /**
  * Names a node: a service resource by (type, external_id), a tenant by
@@ -212,6 +212,14 @@ export type CheckRequest = Message<"hayat.authz.v1.CheckRequest"> & {
    * @generated from field: bool explain = 5;
    */
   explain: boolean;
+
+  /**
+   * Ask about an agent instead of a person: set agent_id and leave user_id
+   * empty. An agent holds less than a person could: see AgentService.
+   *
+   * @generated from field: string agent_id = 6;
+   */
+  agentId: string;
 };
 
 /**
@@ -310,6 +318,13 @@ export type PermissionsAtRequest = Message<"hayat.authz.v1.PermissionsAtRequest"
    * @generated from field: hayat.authz.v1.Consistency consistency = 3;
    */
   consistency?: Consistency | undefined;
+
+  /**
+   * An agent instead of a person, as in CheckRequest.
+   *
+   * @generated from field: string agent_id = 4;
+   */
+  agentId: string;
 };
 
 /**
@@ -386,6 +401,13 @@ export type LookupResourcesRequest = Message<"hayat.authz.v1.LookupResourcesRequ
    * @generated from field: hayat.authz.v1.Consistency consistency = 7;
    */
   consistency?: Consistency | undefined;
+
+  /**
+   * An agent instead of a person, as in CheckRequest.
+   *
+   * @generated from field: string agent_id = 8;
+   */
+  agentId: string;
 };
 
 /**
@@ -449,6 +471,8 @@ export const LookupSubjectsRequestSchema: GenMessage<LookupSubjectsRequest> = /*
  */
 export type Subject = Message<"hayat.authz.v1.Subject"> & {
   /**
+   * A person's id; empty when the subject is an agent.
+   *
    * @generated from field: string user_id = 1;
    */
   userId: string;
@@ -457,6 +481,13 @@ export type Subject = Message<"hayat.authz.v1.Subject"> & {
    * @generated from field: hayat.authz.v1.Reason reason = 2;
    */
   reason?: Reason | undefined;
+
+  /**
+   * An agent's id; empty when the subject is a person.
+   *
+   * @generated from field: string agent_id = 3;
+   */
+  agentId: string;
 };
 
 /**
@@ -763,6 +794,22 @@ export type Appearance = Message<"hayat.authz.v1.Appearance"> & {
    * @generated from field: string content_width = 22;
    */
   contentWidth: string;
+
+  /**
+   * Text on the accent: buttons and anything else filled with it. Empty is
+   * black or white, whichever reads better on the accent.
+   *
+   * @generated from field: string accent_text = 23;
+   */
+  accentText: string;
+
+  /**
+   * The interface's size as a percent of the app's own text size, 80–120.
+   * It wins over text_size, which only older themes set.
+   *
+   * @generated from field: optional int32 scale = 24;
+   */
+  scale?: number | undefined;
 };
 
 /**
@@ -799,6 +846,14 @@ export type GetUserAppearanceResponse = Message<"hayat.authz.v1.GetUserAppearanc
    * @generated from field: hayat.authz.v1.Appearance appearance = 1;
    */
   appearance?: Appearance | undefined;
+
+  /**
+   * The person gave the calling service a theme of its own; otherwise this is
+   * their account's theme.
+   *
+   * @generated from field: bool own = 2;
+   */
+  own: boolean;
 };
 
 /**
@@ -1258,6 +1313,176 @@ export const PolicyEventSchema: GenMessage<PolicyEvent> = /*@__PURE__*/
   messageDesc(file_hayat_authz_v1_authz, 40);
 
 /**
+ * @generated from message hayat.authz.v1.Agent
+ */
+export type Agent = Message<"hayat.authz.v1.Agent"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: string tenant_id = 2;
+   */
+  tenantId: string;
+
+  /**
+   * @generated from field: string handle = 3;
+   */
+  handle: string;
+
+  /**
+   * @generated from field: string name = 4;
+   */
+  name: string;
+
+  /**
+   * @generated from field: string sponsor_user_id = 5;
+   */
+  sponsorUserId: string;
+
+  /**
+   * active | paused | disabled
+   *
+   * @generated from field: string status = 6;
+   */
+  status: string;
+
+  /**
+   * Why it isn't active: "sponsor_left", or empty when a person paused it.
+   *
+   * @generated from field: string status_reason = 7;
+   */
+  statusReason: string;
+
+  /**
+   * The services (namespaces) it works in.
+   *
+   * @generated from field: repeated string services = 8;
+   */
+  services: string[];
+
+  /**
+   * @generated from field: repeated string group_ids = 9;
+   */
+  groupIds: string[];
+};
+
+/**
+ * Describes the message hayat.authz.v1.Agent.
+ * Use `create(AgentSchema)` to create a new message.
+ */
+export const AgentSchema: GenMessage<Agent> = /*@__PURE__*/
+  messageDesc(file_hayat_authz_v1_authz, 41);
+
+/**
+ * @generated from message hayat.authz.v1.GetAgentRequest
+ */
+export type GetAgentRequest = Message<"hayat.authz.v1.GetAgentRequest"> & {
+  /**
+   * @generated from field: string agent_id = 1;
+   */
+  agentId: string;
+};
+
+/**
+ * Describes the message hayat.authz.v1.GetAgentRequest.
+ * Use `create(GetAgentRequestSchema)` to create a new message.
+ */
+export const GetAgentRequestSchema: GenMessage<GetAgentRequest> = /*@__PURE__*/
+  messageDesc(file_hayat_authz_v1_authz, 42);
+
+/**
+ * @generated from message hayat.authz.v1.GetAgentResponse
+ */
+export type GetAgentResponse = Message<"hayat.authz.v1.GetAgentResponse"> & {
+  /**
+   * @generated from field: hayat.authz.v1.Agent agent = 1;
+   */
+  agent?: Agent | undefined;
+};
+
+/**
+ * Describes the message hayat.authz.v1.GetAgentResponse.
+ * Use `create(GetAgentResponseSchema)` to create a new message.
+ */
+export const GetAgentResponseSchema: GenMessage<GetAgentResponse> = /*@__PURE__*/
+  messageDesc(file_hayat_authz_v1_authz, 43);
+
+/**
+ * @generated from message hayat.authz.v1.ListTenantAgentsRequest
+ */
+export type ListTenantAgentsRequest = Message<"hayat.authz.v1.ListTenantAgentsRequest"> & {
+  /**
+   * @generated from field: string tenant_id = 1;
+   */
+  tenantId: string;
+};
+
+/**
+ * Describes the message hayat.authz.v1.ListTenantAgentsRequest.
+ * Use `create(ListTenantAgentsRequestSchema)` to create a new message.
+ */
+export const ListTenantAgentsRequestSchema: GenMessage<ListTenantAgentsRequest> = /*@__PURE__*/
+  messageDesc(file_hayat_authz_v1_authz, 44);
+
+/**
+ * @generated from message hayat.authz.v1.ListTenantAgentsResponse
+ */
+export type ListTenantAgentsResponse = Message<"hayat.authz.v1.ListTenantAgentsResponse"> & {
+  /**
+   * @generated from field: repeated hayat.authz.v1.Agent agents = 1;
+   */
+  agents: Agent[];
+};
+
+/**
+ * Describes the message hayat.authz.v1.ListTenantAgentsResponse.
+ * Use `create(ListTenantAgentsResponseSchema)` to create a new message.
+ */
+export const ListTenantAgentsResponseSchema: GenMessage<ListTenantAgentsResponse> = /*@__PURE__*/
+  messageDesc(file_hayat_authz_v1_authz, 45);
+
+/**
+ * @generated from message hayat.authz.v1.IssueAgentTokenRequest
+ */
+export type IssueAgentTokenRequest = Message<"hayat.authz.v1.IssueAgentTokenRequest"> & {
+  /**
+   * @generated from field: string agent_id = 1;
+   */
+  agentId: string;
+};
+
+/**
+ * Describes the message hayat.authz.v1.IssueAgentTokenRequest.
+ * Use `create(IssueAgentTokenRequestSchema)` to create a new message.
+ */
+export const IssueAgentTokenRequestSchema: GenMessage<IssueAgentTokenRequest> = /*@__PURE__*/
+  messageDesc(file_hayat_authz_v1_authz, 46);
+
+/**
+ * @generated from message hayat.authz.v1.IssueAgentTokenResponse
+ */
+export type IssueAgentTokenResponse = Message<"hayat.authz.v1.IssueAgentTokenResponse"> & {
+  /**
+   * @generated from field: string access_token = 1;
+   */
+  accessToken: string;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp expires_at = 2;
+   */
+  expiresAt?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message hayat.authz.v1.IssueAgentTokenResponse.
+ * Use `create(IssueAgentTokenResponseSchema)` to create a new message.
+ */
+export const IssueAgentTokenResponseSchema: GenMessage<IssueAgentTokenResponse> = /*@__PURE__*/
+  messageDesc(file_hayat_authz_v1_authz, 47);
+
+/**
  * @generated from message hayat.authz.v1.PublishContractRequest
  */
 export type PublishContractRequest = Message<"hayat.authz.v1.PublishContractRequest"> & {
@@ -1274,7 +1499,7 @@ export type PublishContractRequest = Message<"hayat.authz.v1.PublishContractRequ
  * Use `create(PublishContractRequestSchema)` to create a new message.
  */
 export const PublishContractRequestSchema: GenMessage<PublishContractRequest> = /*@__PURE__*/
-  messageDesc(file_hayat_authz_v1_authz, 41);
+  messageDesc(file_hayat_authz_v1_authz, 48);
 
 /**
  * @generated from message hayat.authz.v1.PublishContractResponse
@@ -1301,7 +1526,211 @@ export type PublishContractResponse = Message<"hayat.authz.v1.PublishContractRes
  * Use `create(PublishContractResponseSchema)` to create a new message.
  */
 export const PublishContractResponseSchema: GenMessage<PublishContractResponse> = /*@__PURE__*/
-  messageDesc(file_hayat_authz_v1_authz, 42);
+  messageDesc(file_hayat_authz_v1_authz, 49);
+
+/**
+ * @generated from message hayat.authz.v1.InspectEnrollmentRequest
+ */
+export type InspectEnrollmentRequest = Message<"hayat.authz.v1.InspectEnrollmentRequest"> & {
+  /**
+   * @generated from field: string code = 1;
+   */
+  code: string;
+};
+
+/**
+ * Describes the message hayat.authz.v1.InspectEnrollmentRequest.
+ * Use `create(InspectEnrollmentRequestSchema)` to create a new message.
+ */
+export const InspectEnrollmentRequestSchema: GenMessage<InspectEnrollmentRequest> = /*@__PURE__*/
+  messageDesc(file_hayat_authz_v1_authz, 50);
+
+/**
+ * @generated from message hayat.authz.v1.InspectEnrollmentResponse
+ */
+export type InspectEnrollmentResponse = Message<"hayat.authz.v1.InspectEnrollmentResponse"> & {
+  /**
+   * @generated from field: string service_id = 1;
+   */
+  serviceId: string;
+
+  /**
+   * The name it registers under (or the service's name when it exists).
+   *
+   * @generated from field: string display_name = 2;
+   */
+  displayName: string;
+
+  /**
+   * Redeeming it registers the service; otherwise it rotates its API secret.
+   *
+   * @generated from field: bool registers = 3;
+   */
+  registers: boolean;
+
+  /**
+   * Who made the code: by default, the admin of a service it registers.
+   *
+   * @generated from field: string made_by_email = 4;
+   */
+  madeByEmail: string;
+
+  /**
+   * @generated from field: string made_by_name = 5;
+   */
+  madeByName: string;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp expires_at = 6;
+   */
+  expiresAt?: Timestamp | undefined;
+
+  /**
+   * @generated from field: string issuer = 7;
+   */
+  issuer: string;
+};
+
+/**
+ * Describes the message hayat.authz.v1.InspectEnrollmentResponse.
+ * Use `create(InspectEnrollmentResponseSchema)` to create a new message.
+ */
+export const InspectEnrollmentResponseSchema: GenMessage<InspectEnrollmentResponse> = /*@__PURE__*/
+  messageDesc(file_hayat_authz_v1_authz, 51);
+
+/**
+ * @generated from message hayat.authz.v1.EnrollRequest
+ */
+export type EnrollRequest = Message<"hayat.authz.v1.EnrollRequest"> & {
+  /**
+   * "hye_…", from the console or `hayat enrollment-code`.
+   *
+   * @generated from field: string code = 1;
+   */
+  code: string;
+
+  /**
+   * The service's contract (YAML or JSON), published when it is newer than
+   * the latest version. Optional.
+   *
+   * @generated from field: string manifest = 2;
+   */
+  manifest: string;
+
+  /**
+   * Used when this registers the service.
+   *
+   * @generated from field: string display_name = 3;
+   */
+  displayName: string;
+
+  /**
+   * @generated from field: string description = 4;
+   */
+  description: string;
+
+  /**
+   * The service's public address. When set, a public sign-in client with
+   * <app_url>/callback as a redirect is made, or kept if one exists.
+   *
+   * @generated from field: string app_url = 5;
+   */
+  appUrl: string;
+
+  /**
+   * A role of the service's own namespace (e.g. "tabletsgo.admin") granted
+   * at the root to whoever made the code (or admin_email), when this
+   * registers the service.
+   *
+   * @generated from field: string admin_role = 6;
+   */
+  adminRole: string;
+
+  /**
+   * Who gets admin_role instead of the code's maker. Someone Hayat doesn't
+   * know yet is invited (an email with a link to choose a password).
+   *
+   * @generated from field: string admin_email = 7;
+   */
+  adminEmail: string;
+};
+
+/**
+ * Describes the message hayat.authz.v1.EnrollRequest.
+ * Use `create(EnrollRequestSchema)` to create a new message.
+ */
+export const EnrollRequestSchema: GenMessage<EnrollRequest> = /*@__PURE__*/
+  messageDesc(file_hayat_authz_v1_authz, 52);
+
+/**
+ * @generated from message hayat.authz.v1.EnrollResponse
+ */
+export type EnrollResponse = Message<"hayat.authz.v1.EnrollResponse"> & {
+  /**
+   * @generated from field: string service_id = 1;
+   */
+  serviceId: string;
+
+  /**
+   * The service's API credential (client credentials grant).
+   *
+   * @generated from field: string client_id = 2;
+   */
+  clientId: string;
+
+  /**
+   * @generated from field: string client_secret = 3;
+   */
+  clientSecret: string;
+
+  /**
+   * The public sign-in client for app_url; empty without one.
+   *
+   * @generated from field: string web_client_id = 4;
+   */
+  webClientId: string;
+
+  /**
+   * Hayat's issuer: where people sign in, and what tokens name.
+   *
+   * @generated from field: string issuer = 5;
+   */
+  issuer: string;
+
+  /**
+   * This call registered the service; otherwise it rotated the secret.
+   *
+   * @generated from field: bool registered = 6;
+   */
+  registered: boolean;
+
+  /**
+   * @generated from field: int32 contract_version = 7;
+   */
+  contractVersion: number;
+
+  /**
+   * "active", "pending" (it waits for other services' owners), or empty when
+   * nothing was published.
+   *
+   * @generated from field: string contract_status = 8;
+   */
+  contractStatus: string;
+
+  /**
+   * What worked but deserves a look (a role not granted, a client turned off).
+   *
+   * @generated from field: repeated string warnings = 9;
+   */
+  warnings: string[];
+};
+
+/**
+ * Describes the message hayat.authz.v1.EnrollResponse.
+ * Use `create(EnrollResponseSchema)` to create a new message.
+ */
+export const EnrollResponseSchema: GenMessage<EnrollResponse> = /*@__PURE__*/
+  messageDesc(file_hayat_authz_v1_authz, 53);
 
 /**
  * @generated from service hayat.authz.v1.AuthzService
@@ -1447,9 +1876,10 @@ export const DirectoryService: GenService<{
     output: typeof ListTenantGrantsResponseSchema;
   },
   /**
-   * How every app looks for a person: one theme per account, chosen in Hayat's
-   * console. Apply it to their session; don't keep a copy, so a change shows
-   * on their next page load.
+   * How the calling service looks for a person: the theme they gave this
+   * service of its own, or else their account's, which every other app
+   * follows. Both are chosen in Hayat's console. Apply it to their session;
+   * don't keep a copy, so a change shows on their next page load.
    *
    * @generated from rpc hayat.authz.v1.DirectoryService.GetUserAppearance
    */
@@ -1480,6 +1910,48 @@ export const WatchService: GenService<{
   serviceDesc(file_hayat_authz_v1_authz, 3);
 
 /**
+ * Agents are members that aren't people: they hold roles and work in
+ * services, but never sign in. Each lives in one tenant and answers to a
+ * person there (its sponsor); if the sponsor leaves, it pauses. A service sees
+ * only the agents that work in it, and may act as one with an agent token.
+ *
+ * @generated from service hayat.authz.v1.AgentService
+ */
+export const AgentService: GenService<{
+  /**
+   * @generated from rpc hayat.authz.v1.AgentService.GetAgent
+   */
+  getAgent: {
+    methodKind: "unary";
+    input: typeof GetAgentRequestSchema;
+    output: typeof GetAgentResponseSchema;
+  },
+  /**
+   * The tenant's agents that work in the calling service.
+   *
+   * @generated from rpc hayat.authz.v1.AgentService.ListTenantAgents
+   */
+  listTenantAgents: {
+    methodKind: "unary";
+    input: typeof ListTenantAgentsRequestSchema;
+    output: typeof ListTenantAgentsResponseSchema;
+  },
+  /**
+   * A short-lived token to act as the agent: sub "agent:<id>", aud the calling
+   * service. Refused unless the agent and its sponsor are active and the agent
+   * works in the calling service. Check every action as the agent (agent_id).
+   *
+   * @generated from rpc hayat.authz.v1.AgentService.IssueAgentToken
+   */
+  issueAgentToken: {
+    methodKind: "unary";
+    input: typeof IssueAgentTokenRequestSchema;
+    output: typeof IssueAgentTokenResponseSchema;
+  },
+}> = /*@__PURE__*/
+  serviceDesc(file_hayat_authz_v1_authz, 4);
+
+/**
  * @generated from service hayat.authz.v1.SchemaService
  */
 export const SchemaService: GenService<{
@@ -1494,5 +1966,38 @@ export const SchemaService: GenService<{
     output: typeof PublishContractResponseSchema;
   },
 }> = /*@__PURE__*/
-  serviceDesc(file_hayat_authz_v1_authz, 4);
+  serviceDesc(file_hayat_authz_v1_authz, 5);
+
+/**
+ * The one service that takes no access token: the enrollment code is the
+ * credential. A service's deployment is given a code an owner made in Hayat's
+ * console, calls Enroll once, and keeps what comes back. A code for a service
+ * Hayat doesn't know registers it; a code for one it knows rotates its API
+ * secret (the old one stops working at once). A code is single use; one that
+ * fails is given back, so the caller can fix its request and retry.
+ *
+ * @generated from service hayat.authz.v1.EnrollmentService
+ */
+export const EnrollmentService: GenService<{
+  /**
+   * What a code would do, without spending it: a setup page shows this before
+   * the person confirms.
+   *
+   * @generated from rpc hayat.authz.v1.EnrollmentService.InspectEnrollment
+   */
+  inspectEnrollment: {
+    methodKind: "unary";
+    input: typeof InspectEnrollmentRequestSchema;
+    output: typeof InspectEnrollmentResponseSchema;
+  },
+  /**
+   * @generated from rpc hayat.authz.v1.EnrollmentService.Enroll
+   */
+  enroll: {
+    methodKind: "unary";
+    input: typeof EnrollRequestSchema;
+    output: typeof EnrollResponseSchema;
+  },
+}> = /*@__PURE__*/
+  serviceDesc(file_hayat_authz_v1_authz, 6);
 

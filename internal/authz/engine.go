@@ -21,6 +21,10 @@
 //  5. Instance admins hold Hayat's own platform permissions everywhere. Never a
 //     service's: administering the instance is not reading its data.
 //  6. Keys the catalog doesn't know are dropped, never honoured.
+//  7. Agents (internal/agents) are subjects too, with less: only inside their
+//     own tenant, only while they and their sponsor are active, never as an
+//     owner, never through a grant to the whole tenant ("everyone" means
+//     people), and never Hayat's own or a people_only permission.
 //
 // Union only, no deny rules: that keeps decisions cacheable and explainable.
 // Results are cached under (global revision, tenant revision, person, node),
@@ -29,6 +33,7 @@ package authz
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -37,6 +42,7 @@ import (
 	"github.com/google/uuid"
 	lru "github.com/hashicorp/golang-lru/v2/expirable"
 
+	"github.com/aidapedia/hayat/internal/agents"
 	"github.com/aidapedia/hayat/internal/catalog"
 	"github.com/aidapedia/hayat/internal/identity"
 	"github.com/aidapedia/hayat/internal/revision"
@@ -115,7 +121,9 @@ type Result struct {
 	Rev       int64 // the tenant's revision the answer was computed at
 	GlobalRev int64
 	Member    bool
-	until     time.Time
+	// Agent: the subject is an agent, not a person.
+	Agent bool
+	until time.Time
 }
 
 func (r *Result) Has(perm string) bool { _, ok := r.Perms[perm]; return ok }
@@ -130,15 +138,43 @@ type Consistency struct {
 }
 
 type Engine struct {
-	store *store.Store
-	cat   *catalog.Service
-	ids   *identity.Service
-	revs  *revision.Reader
-	cache *lru.LRU[string, *Result]
+	store  *store.Store
+	cat    *catalog.Service
+	ids    *identity.Service
+	agents *agents.Service
+	revs   *revision.Reader
+	cache  *lru.LRU[string, *Result]
 }
 
 func New(s *store.Store, cat *catalog.Service, ids *identity.Service, revs *revision.Reader) *Engine {
-	return &Engine{store: s, cat: cat, ids: ids, revs: revs, cache: lru.NewLRU[string, *Result](100_000, nil, 5*time.Minute)}
+	return &Engine{store: s, cat: cat, ids: ids, agents: agents.New(s), revs: revs, cache: lru.NewLRU[string, *Result](100_000, nil, 5*time.Minute)}
+}
+
+// subject is who a decision is about: a person or an agent. Ids never
+// collide (both are UUIDv7), so one id names one of them.
+type subject struct {
+	agent  bool
+	active bool
+	admin  bool
+	tenant uuid.UUID // an agent's one tenant
+}
+
+func (e *Engine) subject(ctx context.Context, id uuid.UUID) (subject, error) {
+	u, err := e.ids.GetUser(ctx, id)
+	if err == nil {
+		return subject{active: u.Status == identity.StatusActive, admin: u.IsAdmin()}, nil
+	}
+	if !errors.Is(err, store.ErrNotFound) {
+		return subject{}, err
+	}
+	a, err := e.agents.Get(ctx, id)
+	if errors.Is(err, store.ErrNotFound) {
+		return subject{}, nil // unknown: nothing
+	}
+	if err != nil {
+		return subject{}, err
+	}
+	return subject{agent: true, active: e.agents.Usable(ctx, a) == nil, tenant: a.TenantID}, nil
 }
 
 // At returns everything userID may do at node.
@@ -174,9 +210,16 @@ func (e *Engine) compute(ctx context.Context, userID uuid.UUID, node tree.Node, 
 	if err != nil {
 		return nil, err
 	}
-	u, err := e.ids.GetUser(ctx, userID)
-	if err != nil || u.Status != identity.StatusActive {
+	who, err := e.subject(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	r.Agent = who.agent
+	if !who.active {
 		return r, nil // unknown or inactive: nothing
+	}
+	if who.agent && (node.TenantID == nil || *node.TenantID != who.tenant) {
+		return r, nil // an agent works only inside its own tenant
 	}
 
 	db := e.store.Pool
@@ -189,7 +232,12 @@ func (e *Engine) compute(ctx context.Context, userID uuid.UUID, node tree.Node, 
 
 	var m tree.Membership
 	if node.TenantID != nil {
-		if m, err = tree.LoadMembership(ctx, db, *node.TenantID, userID); err != nil {
+		if who.agent {
+			m, err = tree.LoadAgentMembership(ctx, db, userID)
+		} else {
+			m, err = tree.LoadMembership(ctx, db, *node.TenantID, userID)
+		}
+		if err != nil {
 			return nil, err
 		}
 		for _, n := range chain {
@@ -253,14 +301,26 @@ func (e *Engine) compute(ctx context.Context, userID uuid.UUID, node tree.Node, 
 	}
 
 	add := func(perm string, why Reason) {
-		if _, held := r.Perms[perm]; !held && snap.Known(perm) {
-			r.Perms[perm] = why
+		if _, held := r.Perms[perm]; held || !snap.Known(perm) {
+			return
+		}
+		if p := snap.Permissions[perm]; who.agent && (p.PeopleOnly || p.Service == catalog.Platform) {
+			return // only people may hold it
+		}
+		r.Perms[perm] = why
+	}
+	// The tenant's own node, as a grant principal, means everyone in it:
+	// people, never agents.
+	everyone := uuid.Nil
+	for _, n := range chain {
+		if n.Type == catalog.TypeTenant {
+			everyone = n.ID
 		}
 	}
 	at := func(n tree.Node) Reason { return Reason{NodeID: n.ID, NodeName: n.Name, NodeType: n.Type} }
 
 	for _, anc := range chain {
-		if anc.OwnerID != nil && *anc.OwnerID == userID {
+		if !who.agent && anc.OwnerID != nil && *anc.OwnerID == userID {
 			why := at(anc)
 			why.Kind = ReasonOwner
 			for p := range snap.Permissions {
@@ -273,8 +333,9 @@ func (e *Engine) compute(ctx context.Context, userID uuid.UUID, node tree.Node, 
 			if g.nodeID != anc.ID || (!here && !g.inherit) {
 				continue
 			}
-			mine := (g.principalType == tree.PrincipalUser && g.principalID == userID) ||
-				(g.principalType == tree.PrincipalGroup && m.In(g.principalID))
+			mine := (g.principalType == tree.PrincipalUser && !who.agent && g.principalID == userID) ||
+				(g.principalType == tree.PrincipalAgent && who.agent && g.principalID == userID) ||
+				(g.principalType == tree.PrincipalGroup && m.In(g.principalID) && !(who.agent && g.principalID == everyone))
 			if !mine {
 				continue
 			}
@@ -309,7 +370,7 @@ func (e *Engine) compute(ctx context.Context, userID uuid.UUID, node tree.Node, 
 		r.Perms = map[string]Reason{}
 	}
 
-	if u.IsAdmin() {
+	if who.admin {
 		for p, perm := range snap.Permissions {
 			if perm.Service == catalog.Platform {
 				add(p, Reason{Kind: ReasonAdmin})
@@ -398,11 +459,25 @@ func (e *Engine) LookupResources(ctx context.Context, userID uuid.UUID, perm, ty
 	// Every group they count in, nested ones included: a grant to Engineering
 	// reaches Payment's people, and what is filed under Engineering may open
 	// to them by placement. At sorts out which candidates really do.
+	who, err := e.subject(ctx, userID)
+	if err != nil || !who.active {
+		return nil, err
+	}
 	scope := uuid.Nil
 	if tenantID != nil {
 		scope = *tenantID
 	}
-	m, err := tree.LoadMembership(ctx, db, scope, userID)
+	var m tree.Membership
+	ptype := tree.PrincipalUser
+	if who.agent {
+		if tenantID != nil && *tenantID != who.tenant {
+			return nil, nil
+		}
+		ptype = tree.PrincipalAgent
+		m, err = tree.LoadAgentMembership(ctx, db, userID)
+	} else {
+		m, err = tree.LoadMembership(ctx, db, scope, userID)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -425,23 +500,23 @@ func (e *Engine) LookupResources(ctx context.Context, userID uuid.UUID, perm, ty
 	}
 	if roles := snap.RolesWith(perm); len(roles) > 0 {
 		if err := collect(`SELECT node_id FROM grants WHERE role_id = ANY($1) AND (expires_at IS NULL OR expires_at > now())
-			AND ((principal_type = 'user' AND principal_id = $2) OR (principal_type = 'group' AND principal_id = ANY($3)))`,
-			roles, userID, groupIDs); err != nil {
+			AND ((principal_type = $4 AND principal_id = $2) OR (principal_type = 'group' AND principal_id = ANY($3)))`,
+			roles, userID, groupIDs, ptype); err != nil {
 			return nil, err
 		}
 	}
-	if err := collect(`SELECT id FROM nodes WHERE owner_id = $1`, userID); err != nil {
-		return nil, err
+	if !who.agent {
+		if err := collect(`SELECT id FROM nodes WHERE owner_id = $1`, userID); err != nil {
+			return nil, err
+		}
 	}
 	if nt := snap.Types[typ]; nt.ViaPlacement && nt.AccessPermission == perm {
 		for _, g := range groupIDs {
 			seeds[g] = true
 		}
 	}
-	if catalog.ServiceOf(perm) == catalog.Platform {
-		if u, err := e.ids.GetUser(ctx, userID); err == nil && u.IsAdmin() {
-			seeds[catalog.RootID] = true
-		}
+	if catalog.ServiceOf(perm) == catalog.Platform && who.admin {
+		seeds[catalog.RootID] = true
 	}
 
 	ids := make([]uuid.UUID, 0, len(seeds))
@@ -506,9 +581,11 @@ func (e *Engine) LookupResources(ctx context.Context, userID uuid.UUID, perm, ty
 	return out, nil
 }
 
-// Subject is a person who holds a permission, and why.
+// Subject is a person (or an agent, when Agent is set) who holds a
+// permission, and why.
 type Subject struct {
 	UserID uuid.UUID
+	Agent  bool
 	Reason Reason
 }
 
@@ -537,7 +614,28 @@ func (e *Engine) LookupSubjects(ctx context.Context, perm string, node tree.Node
 	if err := collect(`SELECT owner_id FROM nodes WHERE region = ANY($1) AND id = ANY($2) AND owner_id IS NOT NULL`, regions, chainIDs); err != nil {
 		return nil, err
 	}
-	if err := collect(`SELECT principal_id FROM grants WHERE region = ANY($1) AND node_id = ANY($2) AND principal_type = 'user'`, regions, chainIDs); err != nil {
+	if err := collect(`SELECT principal_id FROM grants WHERE region = ANY($1) AND node_id = ANY($2) AND principal_type IN ('user', 'agent')`, regions, chainIDs); err != nil {
+		return nil, err
+	}
+	// Agents on the rosters of groups granted here, or nested under them.
+	if err := collect(`SELECT m.agent_id FROM grants g
+		JOIN nodes p ON p.region = g.region AND p.id = g.principal_id AND p.type = 'hayat/group'
+		JOIN nodes n ON n.region = p.region AND n.type = 'hayat/group' AND n.path LIKE p.path || '%'
+		JOIN agent_groups m ON m.region = n.region AND m.group_id = n.id
+		WHERE g.region = ANY($1) AND g.node_id = ANY($2) AND g.principal_type = 'group'`, regions, chainIDs); err != nil {
+		return nil, err
+	}
+	// ...and on the groups above it, or nested under the nearest one (placement).
+	if err := collect(`SELECT m.agent_id FROM agent_groups m JOIN nodes n ON n.region = m.region AND n.id = m.group_id
+		WHERE n.id = ANY($1) AND n.type = 'hayat/group'`, chainIDs); err != nil {
+		return nil, err
+	}
+	if err := collect(`WITH nearest AS (
+			SELECT region, tenant_id, path FROM nodes WHERE region = ANY($1) AND id = ANY($2) AND id <> $3 AND type = 'hayat/group'
+			ORDER BY depth DESC LIMIT 1)
+		SELECT m.agent_id FROM nearest p
+		JOIN nodes n ON n.region = p.region AND n.tenant_id = p.tenant_id AND n.type = 'hayat/group' AND n.path LIKE p.path || '%'
+		JOIN agent_groups m ON m.region = n.region AND m.group_id = n.id`, regions, chainIDs, node.ID); err != nil {
 		return nil, err
 	}
 	// Grants to groups reach their rosters and the rosters of every group
@@ -570,12 +668,12 @@ func (e *Engine) LookupSubjects(ctx context.Context, perm string, node tree.Node
 	}
 	var out []Subject
 	for id := range candidates {
-		ok, why, _, err := e.Check(ctx, id, perm, node, c)
+		ok, why, r, err := e.Check(ctx, id, perm, node, c)
 		if err != nil {
 			return nil, err
 		}
 		if ok {
-			out = append(out, Subject{UserID: id, Reason: why})
+			out = append(out, Subject{UserID: id, Agent: r.Agent, Reason: why})
 		}
 	}
 	slices.SortFunc(out, func(a, b Subject) int { return strings.Compare(a.UserID.String(), b.UserID.String()) })

@@ -1235,7 +1235,13 @@ type Appearance struct {
 	// Sidebar width in pixels, 200–320.
 	SidebarWidth *int32 `protobuf:"varint,21,opt,name=sidebar_width,json=sidebarWidth,proto3,oneof" json:"sidebar_width,omitempty"`
 	// narrow | default | full
-	ContentWidth  string `protobuf:"bytes,22,opt,name=content_width,json=contentWidth,proto3" json:"content_width,omitempty"`
+	ContentWidth string `protobuf:"bytes,22,opt,name=content_width,json=contentWidth,proto3" json:"content_width,omitempty"`
+	// Text on the accent: buttons and anything else filled with it. Empty is
+	// black or white, whichever reads better on the accent.
+	AccentText string `protobuf:"bytes,23,opt,name=accent_text,json=accentText,proto3" json:"accent_text,omitempty"`
+	// The interface's size as a percent of the app's own text size, 80–120.
+	// It wins over text_size, which only older themes set.
+	Scale         *int32 `protobuf:"varint,24,opt,name=scale,proto3,oneof" json:"scale,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1424,6 +1430,20 @@ func (x *Appearance) GetContentWidth() string {
 	return ""
 }
 
+func (x *Appearance) GetAccentText() string {
+	if x != nil {
+		return x.AccentText
+	}
+	return ""
+}
+
+func (x *Appearance) GetScale() int32 {
+	if x != nil && x.Scale != nil {
+		return *x.Scale
+	}
+	return 0
+}
+
 type GetMyAppearanceRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -1462,8 +1482,11 @@ func (*GetMyAppearanceRequest) Descriptor() ([]byte, []int) {
 
 type GetMyAppearanceResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Absent when the caller never chose a theme.
-	Appearance    *Appearance `protobuf:"bytes,1,opt,name=appearance,proto3" json:"appearance,omitempty"`
+	// The account's theme. Absent when the caller never chose one.
+	Appearance *Appearance `protobuf:"bytes,1,opt,name=appearance,proto3" json:"appearance,omitempty"`
+	// Every app the caller can theme: Hayat's console ("hayat") first, then
+	// each registered service.
+	Apps          []*AppAppearance `protobuf:"bytes,2,rep,name=apps,proto3" json:"apps,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1505,6 +1528,198 @@ func (x *GetMyAppearanceResponse) GetAppearance() *Appearance {
 	return nil
 }
 
+func (x *GetMyAppearanceResponse) GetApps() []*AppAppearance {
+	if x != nil {
+		return x.Apps
+	}
+	return nil
+}
+
+// One app's theme for the caller.
+type AppAppearance struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// "hayat" for this console, otherwise the service's id.
+	App     string `protobuf:"bytes,1,opt,name=app,proto3" json:"app,omitempty"`
+	Name    string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	LogoUrl string `protobuf:"bytes,3,opt,name=logo_url,json=logoUrl,proto3" json:"logo_url,omitempty"`
+	// It has a theme of its own; otherwise it follows the account's.
+	Own bool `protobuf:"varint,4,opt,name=own,proto3" json:"own,omitempty"`
+	// Its own theme, when `own`. Absent there means the app's own defaults.
+	Appearance    *Appearance `protobuf:"bytes,5,opt,name=appearance,proto3" json:"appearance,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AppAppearance) Reset() {
+	*x = AppAppearance{}
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AppAppearance) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AppAppearance) ProtoMessage() {}
+
+func (x *AppAppearance) ProtoReflect() protoreflect.Message {
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AppAppearance.ProtoReflect.Descriptor instead.
+func (*AppAppearance) Descriptor() ([]byte, []int) {
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *AppAppearance) GetApp() string {
+	if x != nil {
+		return x.App
+	}
+	return ""
+}
+
+func (x *AppAppearance) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *AppAppearance) GetLogoUrl() string {
+	if x != nil {
+		return x.LogoUrl
+	}
+	return ""
+}
+
+func (x *AppAppearance) GetOwn() bool {
+	if x != nil {
+		return x.Own
+	}
+	return false
+}
+
+func (x *AppAppearance) GetAppearance() *Appearance {
+	if x != nil {
+		return x.Appearance
+	}
+	return nil
+}
+
+type SetMyAppAppearanceRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	App   string                 `protobuf:"bytes,1,opt,name=app,proto3" json:"app,omitempty"`
+	// False sends the app back to the account's theme; `appearance` is ignored.
+	Own           bool        `protobuf:"varint,2,opt,name=own,proto3" json:"own,omitempty"`
+	Appearance    *Appearance `protobuf:"bytes,3,opt,name=appearance,proto3" json:"appearance,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetMyAppAppearanceRequest) Reset() {
+	*x = SetMyAppAppearanceRequest{}
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetMyAppAppearanceRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetMyAppAppearanceRequest) ProtoMessage() {}
+
+func (x *SetMyAppAppearanceRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetMyAppAppearanceRequest.ProtoReflect.Descriptor instead.
+func (*SetMyAppAppearanceRequest) Descriptor() ([]byte, []int) {
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *SetMyAppAppearanceRequest) GetApp() string {
+	if x != nil {
+		return x.App
+	}
+	return ""
+}
+
+func (x *SetMyAppAppearanceRequest) GetOwn() bool {
+	if x != nil {
+		return x.Own
+	}
+	return false
+}
+
+func (x *SetMyAppAppearanceRequest) GetAppearance() *Appearance {
+	if x != nil {
+		return x.Appearance
+	}
+	return nil
+}
+
+type SetMyAppAppearanceResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	App           *AppAppearance         `protobuf:"bytes,1,opt,name=app,proto3" json:"app,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetMyAppAppearanceResponse) Reset() {
+	*x = SetMyAppAppearanceResponse{}
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetMyAppAppearanceResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetMyAppAppearanceResponse) ProtoMessage() {}
+
+func (x *SetMyAppAppearanceResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetMyAppAppearanceResponse.ProtoReflect.Descriptor instead.
+func (*SetMyAppAppearanceResponse) Descriptor() ([]byte, []int) {
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *SetMyAppAppearanceResponse) GetApp() *AppAppearance {
+	if x != nil {
+		return x.App
+	}
+	return nil
+}
+
 type SetMyAppearanceRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Absent (or setting nothing) goes back to every app's defaults.
@@ -1515,7 +1730,7 @@ type SetMyAppearanceRequest struct {
 
 func (x *SetMyAppearanceRequest) Reset() {
 	*x = SetMyAppearanceRequest{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[19]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1527,7 +1742,7 @@ func (x *SetMyAppearanceRequest) String() string {
 func (*SetMyAppearanceRequest) ProtoMessage() {}
 
 func (x *SetMyAppearanceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[19]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1540,7 +1755,7 @@ func (x *SetMyAppearanceRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetMyAppearanceRequest.ProtoReflect.Descriptor instead.
 func (*SetMyAppearanceRequest) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{19}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *SetMyAppearanceRequest) GetAppearance() *Appearance {
@@ -1559,7 +1774,7 @@ type SetMyAppearanceResponse struct {
 
 func (x *SetMyAppearanceResponse) Reset() {
 	*x = SetMyAppearanceResponse{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[20]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1571,7 +1786,7 @@ func (x *SetMyAppearanceResponse) String() string {
 func (*SetMyAppearanceResponse) ProtoMessage() {}
 
 func (x *SetMyAppearanceResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[20]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1584,7 +1799,7 @@ func (x *SetMyAppearanceResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetMyAppearanceResponse.ProtoReflect.Descriptor instead.
 func (*SetMyAppearanceResponse) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{20}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *SetMyAppearanceResponse) GetAppearance() *Appearance {
@@ -1602,7 +1817,7 @@ type GetMeRequest struct {
 
 func (x *GetMeRequest) Reset() {
 	*x = GetMeRequest{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[21]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1614,7 +1829,7 @@ func (x *GetMeRequest) String() string {
 func (*GetMeRequest) ProtoMessage() {}
 
 func (x *GetMeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[21]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1627,7 +1842,7 @@ func (x *GetMeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetMeRequest.ProtoReflect.Descriptor instead.
 func (*GetMeRequest) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{21}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{24}
 }
 
 type GetMeResponse struct {
@@ -1640,7 +1855,7 @@ type GetMeResponse struct {
 
 func (x *GetMeResponse) Reset() {
 	*x = GetMeResponse{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[22]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1652,7 +1867,7 @@ func (x *GetMeResponse) String() string {
 func (*GetMeResponse) ProtoMessage() {}
 
 func (x *GetMeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[22]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1665,7 +1880,7 @@ func (x *GetMeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetMeResponse.ProtoReflect.Descriptor instead.
 func (*GetMeResponse) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{22}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *GetMeResponse) GetUser() *User {
@@ -1694,7 +1909,7 @@ type UpdateMeRequest struct {
 
 func (x *UpdateMeRequest) Reset() {
 	*x = UpdateMeRequest{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[23]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1706,7 +1921,7 @@ func (x *UpdateMeRequest) String() string {
 func (*UpdateMeRequest) ProtoMessage() {}
 
 func (x *UpdateMeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[23]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1719,7 +1934,7 @@ func (x *UpdateMeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateMeRequest.ProtoReflect.Descriptor instead.
 func (*UpdateMeRequest) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{23}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *UpdateMeRequest) GetName() string {
@@ -1759,7 +1974,7 @@ type UpdateMeResponse struct {
 
 func (x *UpdateMeResponse) Reset() {
 	*x = UpdateMeResponse{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[24]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1771,7 +1986,7 @@ func (x *UpdateMeResponse) String() string {
 func (*UpdateMeResponse) ProtoMessage() {}
 
 func (x *UpdateMeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[24]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1784,7 +1999,7 @@ func (x *UpdateMeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateMeResponse.ProtoReflect.Descriptor instead.
 func (*UpdateMeResponse) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{24}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *UpdateMeResponse) GetUser() *User {
@@ -1804,7 +2019,7 @@ type ChangePasswordRequest struct {
 
 func (x *ChangePasswordRequest) Reset() {
 	*x = ChangePasswordRequest{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[25]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1816,7 +2031,7 @@ func (x *ChangePasswordRequest) String() string {
 func (*ChangePasswordRequest) ProtoMessage() {}
 
 func (x *ChangePasswordRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[25]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1829,7 +2044,7 @@ func (x *ChangePasswordRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChangePasswordRequest.ProtoReflect.Descriptor instead.
 func (*ChangePasswordRequest) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{25}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *ChangePasswordRequest) GetCurrentPassword() string {
@@ -1854,7 +2069,7 @@ type ChangePasswordResponse struct {
 
 func (x *ChangePasswordResponse) Reset() {
 	*x = ChangePasswordResponse{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[26]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1866,7 +2081,7 @@ func (x *ChangePasswordResponse) String() string {
 func (*ChangePasswordResponse) ProtoMessage() {}
 
 func (x *ChangePasswordResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[26]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1879,7 +2094,7 @@ func (x *ChangePasswordResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChangePasswordResponse.ProtoReflect.Descriptor instead.
 func (*ChangePasswordResponse) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{26}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{29}
 }
 
 type ListMySessionsRequest struct {
@@ -1890,7 +2105,7 @@ type ListMySessionsRequest struct {
 
 func (x *ListMySessionsRequest) Reset() {
 	*x = ListMySessionsRequest{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[27]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1902,7 +2117,7 @@ func (x *ListMySessionsRequest) String() string {
 func (*ListMySessionsRequest) ProtoMessage() {}
 
 func (x *ListMySessionsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[27]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1915,7 +2130,7 @@ func (x *ListMySessionsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListMySessionsRequest.ProtoReflect.Descriptor instead.
 func (*ListMySessionsRequest) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{27}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{30}
 }
 
 type ListMySessionsResponse struct {
@@ -1927,7 +2142,7 @@ type ListMySessionsResponse struct {
 
 func (x *ListMySessionsResponse) Reset() {
 	*x = ListMySessionsResponse{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[28]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1939,7 +2154,7 @@ func (x *ListMySessionsResponse) String() string {
 func (*ListMySessionsResponse) ProtoMessage() {}
 
 func (x *ListMySessionsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[28]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1952,7 +2167,7 @@ func (x *ListMySessionsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListMySessionsResponse.ProtoReflect.Descriptor instead.
 func (*ListMySessionsResponse) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{28}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *ListMySessionsResponse) GetSessions() []*Session {
@@ -1971,7 +2186,7 @@ type RevokeMySessionRequest struct {
 
 func (x *RevokeMySessionRequest) Reset() {
 	*x = RevokeMySessionRequest{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[29]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1983,7 +2198,7 @@ func (x *RevokeMySessionRequest) String() string {
 func (*RevokeMySessionRequest) ProtoMessage() {}
 
 func (x *RevokeMySessionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[29]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1996,7 +2211,7 @@ func (x *RevokeMySessionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RevokeMySessionRequest.ProtoReflect.Descriptor instead.
 func (*RevokeMySessionRequest) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{29}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *RevokeMySessionRequest) GetSessionId() string {
@@ -2014,7 +2229,7 @@ type RevokeMySessionResponse struct {
 
 func (x *RevokeMySessionResponse) Reset() {
 	*x = RevokeMySessionResponse{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[30]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2026,7 +2241,7 @@ func (x *RevokeMySessionResponse) String() string {
 func (*RevokeMySessionResponse) ProtoMessage() {}
 
 func (x *RevokeMySessionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[30]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2039,7 +2254,7 @@ func (x *RevokeMySessionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RevokeMySessionResponse.ProtoReflect.Descriptor instead.
 func (*RevokeMySessionResponse) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{30}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{33}
 }
 
 type GetOverviewRequest struct {
@@ -2050,7 +2265,7 @@ type GetOverviewRequest struct {
 
 func (x *GetOverviewRequest) Reset() {
 	*x = GetOverviewRequest{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[31]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2062,7 +2277,7 @@ func (x *GetOverviewRequest) String() string {
 func (*GetOverviewRequest) ProtoMessage() {}
 
 func (x *GetOverviewRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[31]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2075,7 +2290,7 @@ func (x *GetOverviewRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetOverviewRequest.ProtoReflect.Descriptor instead.
 func (*GetOverviewRequest) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{31}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{34}
 }
 
 type GetOverviewResponse struct {
@@ -2095,7 +2310,7 @@ type GetOverviewResponse struct {
 
 func (x *GetOverviewResponse) Reset() {
 	*x = GetOverviewResponse{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[32]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2107,7 +2322,7 @@ func (x *GetOverviewResponse) String() string {
 func (*GetOverviewResponse) ProtoMessage() {}
 
 func (x *GetOverviewResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[32]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2120,7 +2335,7 @@ func (x *GetOverviewResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetOverviewResponse.ProtoReflect.Descriptor instead.
 func (*GetOverviewResponse) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{32}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *GetOverviewResponse) GetUsers() int32 {
@@ -2197,7 +2412,7 @@ type ListUsersRequest struct {
 
 func (x *ListUsersRequest) Reset() {
 	*x = ListUsersRequest{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[33]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2209,7 +2424,7 @@ func (x *ListUsersRequest) String() string {
 func (*ListUsersRequest) ProtoMessage() {}
 
 func (x *ListUsersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[33]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2222,7 +2437,7 @@ func (x *ListUsersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListUsersRequest.ProtoReflect.Descriptor instead.
 func (*ListUsersRequest) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{33}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *ListUsersRequest) GetQuery() string {
@@ -2256,7 +2471,7 @@ type ListUsersResponse struct {
 
 func (x *ListUsersResponse) Reset() {
 	*x = ListUsersResponse{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[34]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2268,7 +2483,7 @@ func (x *ListUsersResponse) String() string {
 func (*ListUsersResponse) ProtoMessage() {}
 
 func (x *ListUsersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[34]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2281,7 +2496,7 @@ func (x *ListUsersResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListUsersResponse.ProtoReflect.Descriptor instead.
 func (*ListUsersResponse) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{34}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *ListUsersResponse) GetUsers() []*User {
@@ -2307,7 +2522,7 @@ type GetUserRequest struct {
 
 func (x *GetUserRequest) Reset() {
 	*x = GetUserRequest{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[35]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2319,7 +2534,7 @@ func (x *GetUserRequest) String() string {
 func (*GetUserRequest) ProtoMessage() {}
 
 func (x *GetUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[35]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2332,7 +2547,7 @@ func (x *GetUserRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUserRequest.ProtoReflect.Descriptor instead.
 func (*GetUserRequest) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{35}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *GetUserRequest) GetId() string {
@@ -2355,7 +2570,7 @@ type GetUserResponse struct {
 
 func (x *GetUserResponse) Reset() {
 	*x = GetUserResponse{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[36]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2367,7 +2582,7 @@ func (x *GetUserResponse) String() string {
 func (*GetUserResponse) ProtoMessage() {}
 
 func (x *GetUserResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[36]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2380,7 +2595,7 @@ func (x *GetUserResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUserResponse.ProtoReflect.Descriptor instead.
 func (*GetUserResponse) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{36}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *GetUserResponse) GetUser() *User {
@@ -2421,7 +2636,7 @@ type InviteUserRequest struct {
 
 func (x *InviteUserRequest) Reset() {
 	*x = InviteUserRequest{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[37]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2433,7 +2648,7 @@ func (x *InviteUserRequest) String() string {
 func (*InviteUserRequest) ProtoMessage() {}
 
 func (x *InviteUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[37]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2446,7 +2661,7 @@ func (x *InviteUserRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InviteUserRequest.ProtoReflect.Descriptor instead.
 func (*InviteUserRequest) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{37}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{40}
 }
 
 func (x *InviteUserRequest) GetEmail() string {
@@ -2473,7 +2688,7 @@ type InviteUserResponse struct {
 
 func (x *InviteUserResponse) Reset() {
 	*x = InviteUserResponse{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[38]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[41]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2485,7 +2700,7 @@ func (x *InviteUserResponse) String() string {
 func (*InviteUserResponse) ProtoMessage() {}
 
 func (x *InviteUserResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[38]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[41]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2498,7 +2713,7 @@ func (x *InviteUserResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InviteUserResponse.ProtoReflect.Descriptor instead.
 func (*InviteUserResponse) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{38}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{41}
 }
 
 func (x *InviteUserResponse) GetUser() *User {
@@ -2528,7 +2743,7 @@ type UpdateUserRequest struct {
 
 func (x *UpdateUserRequest) Reset() {
 	*x = UpdateUserRequest{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[39]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[42]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2540,7 +2755,7 @@ func (x *UpdateUserRequest) String() string {
 func (*UpdateUserRequest) ProtoMessage() {}
 
 func (x *UpdateUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[39]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[42]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2553,7 +2768,7 @@ func (x *UpdateUserRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateUserRequest.ProtoReflect.Descriptor instead.
 func (*UpdateUserRequest) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{39}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{42}
 }
 
 func (x *UpdateUserRequest) GetId() string {
@@ -2600,7 +2815,7 @@ type UpdateUserResponse struct {
 
 func (x *UpdateUserResponse) Reset() {
 	*x = UpdateUserResponse{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[40]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[43]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2612,7 +2827,7 @@ func (x *UpdateUserResponse) String() string {
 func (*UpdateUserResponse) ProtoMessage() {}
 
 func (x *UpdateUserResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[40]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[43]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2625,7 +2840,7 @@ func (x *UpdateUserResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateUserResponse.ProtoReflect.Descriptor instead.
 func (*UpdateUserResponse) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{40}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{43}
 }
 
 func (x *UpdateUserResponse) GetUser() *User {
@@ -2645,7 +2860,7 @@ type SetUserDisabledRequest struct {
 
 func (x *SetUserDisabledRequest) Reset() {
 	*x = SetUserDisabledRequest{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[41]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[44]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2657,7 +2872,7 @@ func (x *SetUserDisabledRequest) String() string {
 func (*SetUserDisabledRequest) ProtoMessage() {}
 
 func (x *SetUserDisabledRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[41]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[44]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2670,7 +2885,7 @@ func (x *SetUserDisabledRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetUserDisabledRequest.ProtoReflect.Descriptor instead.
 func (*SetUserDisabledRequest) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{41}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{44}
 }
 
 func (x *SetUserDisabledRequest) GetId() string {
@@ -2696,7 +2911,7 @@ type SetUserDisabledResponse struct {
 
 func (x *SetUserDisabledResponse) Reset() {
 	*x = SetUserDisabledResponse{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[42]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[45]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2708,7 +2923,7 @@ func (x *SetUserDisabledResponse) String() string {
 func (*SetUserDisabledResponse) ProtoMessage() {}
 
 func (x *SetUserDisabledResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[42]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[45]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2721,7 +2936,7 @@ func (x *SetUserDisabledResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetUserDisabledResponse.ProtoReflect.Descriptor instead.
 func (*SetUserDisabledResponse) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{42}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{45}
 }
 
 func (x *SetUserDisabledResponse) GetUser() *User {
@@ -2741,7 +2956,7 @@ type SetUserAdminRequest struct {
 
 func (x *SetUserAdminRequest) Reset() {
 	*x = SetUserAdminRequest{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[43]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[46]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2753,7 +2968,7 @@ func (x *SetUserAdminRequest) String() string {
 func (*SetUserAdminRequest) ProtoMessage() {}
 
 func (x *SetUserAdminRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[43]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[46]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2766,7 +2981,7 @@ func (x *SetUserAdminRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetUserAdminRequest.ProtoReflect.Descriptor instead.
 func (*SetUserAdminRequest) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{43}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{46}
 }
 
 func (x *SetUserAdminRequest) GetId() string {
@@ -2792,7 +3007,7 @@ type SetUserAdminResponse struct {
 
 func (x *SetUserAdminResponse) Reset() {
 	*x = SetUserAdminResponse{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[44]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[47]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2804,7 +3019,7 @@ func (x *SetUserAdminResponse) String() string {
 func (*SetUserAdminResponse) ProtoMessage() {}
 
 func (x *SetUserAdminResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[44]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[47]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2817,7 +3032,7 @@ func (x *SetUserAdminResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetUserAdminResponse.ProtoReflect.Descriptor instead.
 func (*SetUserAdminResponse) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{44}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{47}
 }
 
 func (x *SetUserAdminResponse) GetUser() *User {
@@ -2836,7 +3051,7 @@ type ResendVerificationRequest struct {
 
 func (x *ResendVerificationRequest) Reset() {
 	*x = ResendVerificationRequest{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[45]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[48]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2848,7 +3063,7 @@ func (x *ResendVerificationRequest) String() string {
 func (*ResendVerificationRequest) ProtoMessage() {}
 
 func (x *ResendVerificationRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[45]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[48]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2861,7 +3076,7 @@ func (x *ResendVerificationRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResendVerificationRequest.ProtoReflect.Descriptor instead.
 func (*ResendVerificationRequest) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{45}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{48}
 }
 
 func (x *ResendVerificationRequest) GetId() string {
@@ -2879,7 +3094,7 @@ type ResendVerificationResponse struct {
 
 func (x *ResendVerificationResponse) Reset() {
 	*x = ResendVerificationResponse{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[46]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[49]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2891,7 +3106,7 @@ func (x *ResendVerificationResponse) String() string {
 func (*ResendVerificationResponse) ProtoMessage() {}
 
 func (x *ResendVerificationResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[46]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[49]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2904,7 +3119,7 @@ func (x *ResendVerificationResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResendVerificationResponse.ProtoReflect.Descriptor instead.
 func (*ResendVerificationResponse) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{46}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{49}
 }
 
 type RevokeUserSessionsRequest struct {
@@ -2917,7 +3132,7 @@ type RevokeUserSessionsRequest struct {
 
 func (x *RevokeUserSessionsRequest) Reset() {
 	*x = RevokeUserSessionsRequest{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[47]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[50]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2929,7 +3144,7 @@ func (x *RevokeUserSessionsRequest) String() string {
 func (*RevokeUserSessionsRequest) ProtoMessage() {}
 
 func (x *RevokeUserSessionsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[47]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[50]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2942,7 +3157,7 @@ func (x *RevokeUserSessionsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RevokeUserSessionsRequest.ProtoReflect.Descriptor instead.
 func (*RevokeUserSessionsRequest) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{47}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{50}
 }
 
 func (x *RevokeUserSessionsRequest) GetId() string {
@@ -2967,7 +3182,7 @@ type RevokeUserSessionsResponse struct {
 
 func (x *RevokeUserSessionsResponse) Reset() {
 	*x = RevokeUserSessionsResponse{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[48]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[51]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2979,7 +3194,7 @@ func (x *RevokeUserSessionsResponse) String() string {
 func (*RevokeUserSessionsResponse) ProtoMessage() {}
 
 func (x *RevokeUserSessionsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[48]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[51]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2992,7 +3207,7 @@ func (x *RevokeUserSessionsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RevokeUserSessionsResponse.ProtoReflect.Descriptor instead.
 func (*RevokeUserSessionsResponse) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{48}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{51}
 }
 
 type ResetUserFactorsRequest struct {
@@ -3004,7 +3219,7 @@ type ResetUserFactorsRequest struct {
 
 func (x *ResetUserFactorsRequest) Reset() {
 	*x = ResetUserFactorsRequest{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[49]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[52]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3016,7 +3231,7 @@ func (x *ResetUserFactorsRequest) String() string {
 func (*ResetUserFactorsRequest) ProtoMessage() {}
 
 func (x *ResetUserFactorsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[49]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[52]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3029,7 +3244,7 @@ func (x *ResetUserFactorsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResetUserFactorsRequest.ProtoReflect.Descriptor instead.
 func (*ResetUserFactorsRequest) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{49}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{52}
 }
 
 func (x *ResetUserFactorsRequest) GetId() string {
@@ -3047,7 +3262,7 @@ type ResetUserFactorsResponse struct {
 
 func (x *ResetUserFactorsResponse) Reset() {
 	*x = ResetUserFactorsResponse{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[50]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[53]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3059,7 +3274,7 @@ func (x *ResetUserFactorsResponse) String() string {
 func (*ResetUserFactorsResponse) ProtoMessage() {}
 
 func (x *ResetUserFactorsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[50]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[53]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3072,7 +3287,7 @@ func (x *ResetUserFactorsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResetUserFactorsResponse.ProtoReflect.Descriptor instead.
 func (*ResetUserFactorsResponse) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{50}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{53}
 }
 
 type SetTenantRequireMFARequest struct {
@@ -3085,7 +3300,7 @@ type SetTenantRequireMFARequest struct {
 
 func (x *SetTenantRequireMFARequest) Reset() {
 	*x = SetTenantRequireMFARequest{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[51]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[54]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3097,7 +3312,7 @@ func (x *SetTenantRequireMFARequest) String() string {
 func (*SetTenantRequireMFARequest) ProtoMessage() {}
 
 func (x *SetTenantRequireMFARequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[51]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[54]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3110,7 +3325,7 @@ func (x *SetTenantRequireMFARequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetTenantRequireMFARequest.ProtoReflect.Descriptor instead.
 func (*SetTenantRequireMFARequest) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{51}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{54}
 }
 
 func (x *SetTenantRequireMFARequest) GetId() string {
@@ -3136,7 +3351,7 @@ type SetTenantRequireMFAResponse struct {
 
 func (x *SetTenantRequireMFAResponse) Reset() {
 	*x = SetTenantRequireMFAResponse{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[52]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[55]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3148,7 +3363,7 @@ func (x *SetTenantRequireMFAResponse) String() string {
 func (*SetTenantRequireMFAResponse) ProtoMessage() {}
 
 func (x *SetTenantRequireMFAResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[52]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[55]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3161,7 +3376,7 @@ func (x *SetTenantRequireMFAResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetTenantRequireMFAResponse.ProtoReflect.Descriptor instead.
 func (*SetTenantRequireMFAResponse) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{52}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{55}
 }
 
 func (x *SetTenantRequireMFAResponse) GetTenant() *Tenant {
@@ -3182,7 +3397,7 @@ type ListTenantsRequest struct {
 
 func (x *ListTenantsRequest) Reset() {
 	*x = ListTenantsRequest{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[53]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[56]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3194,7 +3409,7 @@ func (x *ListTenantsRequest) String() string {
 func (*ListTenantsRequest) ProtoMessage() {}
 
 func (x *ListTenantsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[53]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[56]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3207,7 +3422,7 @@ func (x *ListTenantsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListTenantsRequest.ProtoReflect.Descriptor instead.
 func (*ListTenantsRequest) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{53}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{56}
 }
 
 func (x *ListTenantsRequest) GetQuery() string {
@@ -3241,7 +3456,7 @@ type ListTenantsResponse struct {
 
 func (x *ListTenantsResponse) Reset() {
 	*x = ListTenantsResponse{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[54]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[57]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3253,7 +3468,7 @@ func (x *ListTenantsResponse) String() string {
 func (*ListTenantsResponse) ProtoMessage() {}
 
 func (x *ListTenantsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[54]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[57]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3266,7 +3481,7 @@ func (x *ListTenantsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListTenantsResponse.ProtoReflect.Descriptor instead.
 func (*ListTenantsResponse) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{54}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{57}
 }
 
 func (x *ListTenantsResponse) GetTenants() []*Tenant {
@@ -3292,7 +3507,7 @@ type GetTenantRequest struct {
 
 func (x *GetTenantRequest) Reset() {
 	*x = GetTenantRequest{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[55]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[58]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3304,7 +3519,7 @@ func (x *GetTenantRequest) String() string {
 func (*GetTenantRequest) ProtoMessage() {}
 
 func (x *GetTenantRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[55]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[58]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3317,7 +3532,7 @@ func (x *GetTenantRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTenantRequest.ProtoReflect.Descriptor instead.
 func (*GetTenantRequest) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{55}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{58}
 }
 
 func (x *GetTenantRequest) GetId() string {
@@ -3339,7 +3554,7 @@ type GetTenantResponse struct {
 
 func (x *GetTenantResponse) Reset() {
 	*x = GetTenantResponse{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[56]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[59]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3351,7 +3566,7 @@ func (x *GetTenantResponse) String() string {
 func (*GetTenantResponse) ProtoMessage() {}
 
 func (x *GetTenantResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[56]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[59]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3364,7 +3579,7 @@ func (x *GetTenantResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTenantResponse.ProtoReflect.Descriptor instead.
 func (*GetTenantResponse) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{56}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{59}
 }
 
 func (x *GetTenantResponse) GetTenant() *Tenant {
@@ -3392,7 +3607,7 @@ type ListMembersRequest struct {
 
 func (x *ListMembersRequest) Reset() {
 	*x = ListMembersRequest{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[57]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[60]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3404,7 +3619,7 @@ func (x *ListMembersRequest) String() string {
 func (*ListMembersRequest) ProtoMessage() {}
 
 func (x *ListMembersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[57]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[60]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3417,7 +3632,7 @@ func (x *ListMembersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListMembersRequest.ProtoReflect.Descriptor instead.
 func (*ListMembersRequest) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{57}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{60}
 }
 
 func (x *ListMembersRequest) GetTenantId() string {
@@ -3451,7 +3666,7 @@ type ListMembersResponse struct {
 
 func (x *ListMembersResponse) Reset() {
 	*x = ListMembersResponse{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[58]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[61]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3463,7 +3678,7 @@ func (x *ListMembersResponse) String() string {
 func (*ListMembersResponse) ProtoMessage() {}
 
 func (x *ListMembersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[58]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[61]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3476,7 +3691,7 @@ func (x *ListMembersResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListMembersResponse.ProtoReflect.Descriptor instead.
 func (*ListMembersResponse) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{58}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{61}
 }
 
 func (x *ListMembersResponse) GetMembers() []*Member {
@@ -3507,7 +3722,7 @@ type CreateTenantRequest struct {
 
 func (x *CreateTenantRequest) Reset() {
 	*x = CreateTenantRequest{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[59]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[62]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3519,7 +3734,7 @@ func (x *CreateTenantRequest) String() string {
 func (*CreateTenantRequest) ProtoMessage() {}
 
 func (x *CreateTenantRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[59]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[62]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3532,7 +3747,7 @@ func (x *CreateTenantRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateTenantRequest.ProtoReflect.Descriptor instead.
 func (*CreateTenantRequest) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{59}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{62}
 }
 
 func (x *CreateTenantRequest) GetName() string {
@@ -3572,7 +3787,7 @@ type CreateTenantResponse struct {
 
 func (x *CreateTenantResponse) Reset() {
 	*x = CreateTenantResponse{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[60]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[63]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3584,7 +3799,7 @@ func (x *CreateTenantResponse) String() string {
 func (*CreateTenantResponse) ProtoMessage() {}
 
 func (x *CreateTenantResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[60]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[63]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3597,7 +3812,7 @@ func (x *CreateTenantResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateTenantResponse.ProtoReflect.Descriptor instead.
 func (*CreateTenantResponse) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{60}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{63}
 }
 
 func (x *CreateTenantResponse) GetTenant() *Tenant {
@@ -3617,7 +3832,7 @@ type RenameTenantRequest struct {
 
 func (x *RenameTenantRequest) Reset() {
 	*x = RenameTenantRequest{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[61]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[64]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3629,7 +3844,7 @@ func (x *RenameTenantRequest) String() string {
 func (*RenameTenantRequest) ProtoMessage() {}
 
 func (x *RenameTenantRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[61]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[64]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3642,7 +3857,7 @@ func (x *RenameTenantRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RenameTenantRequest.ProtoReflect.Descriptor instead.
 func (*RenameTenantRequest) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{61}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{64}
 }
 
 func (x *RenameTenantRequest) GetId() string {
@@ -3668,7 +3883,7 @@ type RenameTenantResponse struct {
 
 func (x *RenameTenantResponse) Reset() {
 	*x = RenameTenantResponse{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[62]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[65]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3680,7 +3895,7 @@ func (x *RenameTenantResponse) String() string {
 func (*RenameTenantResponse) ProtoMessage() {}
 
 func (x *RenameTenantResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[62]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[65]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3693,7 +3908,7 @@ func (x *RenameTenantResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RenameTenantResponse.ProtoReflect.Descriptor instead.
 func (*RenameTenantResponse) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{62}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{65}
 }
 
 func (x *RenameTenantResponse) GetTenant() *Tenant {
@@ -3713,7 +3928,7 @@ type SetTenantLogoRequest struct {
 
 func (x *SetTenantLogoRequest) Reset() {
 	*x = SetTenantLogoRequest{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[63]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[66]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3725,7 +3940,7 @@ func (x *SetTenantLogoRequest) String() string {
 func (*SetTenantLogoRequest) ProtoMessage() {}
 
 func (x *SetTenantLogoRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[63]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[66]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3738,7 +3953,7 @@ func (x *SetTenantLogoRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetTenantLogoRequest.ProtoReflect.Descriptor instead.
 func (*SetTenantLogoRequest) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{63}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{66}
 }
 
 func (x *SetTenantLogoRequest) GetId() string {
@@ -3764,7 +3979,7 @@ type SetTenantLogoResponse struct {
 
 func (x *SetTenantLogoResponse) Reset() {
 	*x = SetTenantLogoResponse{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[64]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[67]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3776,7 +3991,7 @@ func (x *SetTenantLogoResponse) String() string {
 func (*SetTenantLogoResponse) ProtoMessage() {}
 
 func (x *SetTenantLogoResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[64]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[67]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3789,7 +4004,7 @@ func (x *SetTenantLogoResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetTenantLogoResponse.ProtoReflect.Descriptor instead.
 func (*SetTenantLogoResponse) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{64}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{67}
 }
 
 func (x *SetTenantLogoResponse) GetTenant() *Tenant {
@@ -3808,7 +4023,7 @@ type DeleteTenantRequest struct {
 
 func (x *DeleteTenantRequest) Reset() {
 	*x = DeleteTenantRequest{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[65]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[68]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3820,7 +4035,7 @@ func (x *DeleteTenantRequest) String() string {
 func (*DeleteTenantRequest) ProtoMessage() {}
 
 func (x *DeleteTenantRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[65]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[68]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3833,7 +4048,7 @@ func (x *DeleteTenantRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteTenantRequest.ProtoReflect.Descriptor instead.
 func (*DeleteTenantRequest) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{65}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{68}
 }
 
 func (x *DeleteTenantRequest) GetId() string {
@@ -3851,7 +4066,7 @@ type DeleteTenantResponse struct {
 
 func (x *DeleteTenantResponse) Reset() {
 	*x = DeleteTenantResponse{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[66]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[69]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3863,7 +4078,7 @@ func (x *DeleteTenantResponse) String() string {
 func (*DeleteTenantResponse) ProtoMessage() {}
 
 func (x *DeleteTenantResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[66]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[69]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3876,7 +4091,7 @@ func (x *DeleteTenantResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteTenantResponse.ProtoReflect.Descriptor instead.
 func (*DeleteTenantResponse) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{66}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{69}
 }
 
 type AddMemberRequest struct {
@@ -3891,7 +4106,7 @@ type AddMemberRequest struct {
 
 func (x *AddMemberRequest) Reset() {
 	*x = AddMemberRequest{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[67]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[70]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3903,7 +4118,7 @@ func (x *AddMemberRequest) String() string {
 func (*AddMemberRequest) ProtoMessage() {}
 
 func (x *AddMemberRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[67]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[70]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3916,7 +4131,7 @@ func (x *AddMemberRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddMemberRequest.ProtoReflect.Descriptor instead.
 func (*AddMemberRequest) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{67}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{70}
 }
 
 func (x *AddMemberRequest) GetTenantId() string {
@@ -3958,7 +4173,7 @@ type AddMemberResponse struct {
 
 func (x *AddMemberResponse) Reset() {
 	*x = AddMemberResponse{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[68]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[71]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3970,7 +4185,7 @@ func (x *AddMemberResponse) String() string {
 func (*AddMemberResponse) ProtoMessage() {}
 
 func (x *AddMemberResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[68]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[71]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3983,7 +4198,7 @@ func (x *AddMemberResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddMemberResponse.ProtoReflect.Descriptor instead.
 func (*AddMemberResponse) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{68}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{71}
 }
 
 func (x *AddMemberResponse) GetMember() *Member {
@@ -4010,7 +4225,7 @@ type RemoveMemberRequest struct {
 
 func (x *RemoveMemberRequest) Reset() {
 	*x = RemoveMemberRequest{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[69]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[72]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4022,7 +4237,7 @@ func (x *RemoveMemberRequest) String() string {
 func (*RemoveMemberRequest) ProtoMessage() {}
 
 func (x *RemoveMemberRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[69]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[72]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4035,7 +4250,7 @@ func (x *RemoveMemberRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveMemberRequest.ProtoReflect.Descriptor instead.
 func (*RemoveMemberRequest) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{69}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{72}
 }
 
 func (x *RemoveMemberRequest) GetTenantId() string {
@@ -4060,7 +4275,7 @@ type RemoveMemberResponse struct {
 
 func (x *RemoveMemberResponse) Reset() {
 	*x = RemoveMemberResponse{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[70]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[73]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4072,7 +4287,7 @@ func (x *RemoveMemberResponse) String() string {
 func (*RemoveMemberResponse) ProtoMessage() {}
 
 func (x *RemoveMemberResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[70]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[73]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4085,7 +4300,7 @@ func (x *RemoveMemberResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveMemberResponse.ProtoReflect.Descriptor instead.
 func (*RemoveMemberResponse) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{70}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{73}
 }
 
 type TransferOwnershipRequest struct {
@@ -4098,7 +4313,7 @@ type TransferOwnershipRequest struct {
 
 func (x *TransferOwnershipRequest) Reset() {
 	*x = TransferOwnershipRequest{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[71]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[74]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4110,7 +4325,7 @@ func (x *TransferOwnershipRequest) String() string {
 func (*TransferOwnershipRequest) ProtoMessage() {}
 
 func (x *TransferOwnershipRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[71]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[74]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4123,7 +4338,7 @@ func (x *TransferOwnershipRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TransferOwnershipRequest.ProtoReflect.Descriptor instead.
 func (*TransferOwnershipRequest) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{71}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{74}
 }
 
 func (x *TransferOwnershipRequest) GetTenantId() string {
@@ -4149,7 +4364,7 @@ type TransferOwnershipResponse struct {
 
 func (x *TransferOwnershipResponse) Reset() {
 	*x = TransferOwnershipResponse{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[72]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[75]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4161,7 +4376,7 @@ func (x *TransferOwnershipResponse) String() string {
 func (*TransferOwnershipResponse) ProtoMessage() {}
 
 func (x *TransferOwnershipResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[72]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[75]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4174,7 +4389,7 @@ func (x *TransferOwnershipResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TransferOwnershipResponse.ProtoReflect.Descriptor instead.
 func (*TransferOwnershipResponse) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{72}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{75}
 }
 
 func (x *TransferOwnershipResponse) GetTenant() *Tenant {
@@ -4192,7 +4407,7 @@ type ListSigningKeysRequest struct {
 
 func (x *ListSigningKeysRequest) Reset() {
 	*x = ListSigningKeysRequest{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[73]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[76]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4204,7 +4419,7 @@ func (x *ListSigningKeysRequest) String() string {
 func (*ListSigningKeysRequest) ProtoMessage() {}
 
 func (x *ListSigningKeysRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[73]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[76]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4217,7 +4432,7 @@ func (x *ListSigningKeysRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListSigningKeysRequest.ProtoReflect.Descriptor instead.
 func (*ListSigningKeysRequest) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{73}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{76}
 }
 
 type ListSigningKeysResponse struct {
@@ -4229,7 +4444,7 @@ type ListSigningKeysResponse struct {
 
 func (x *ListSigningKeysResponse) Reset() {
 	*x = ListSigningKeysResponse{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[74]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[77]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4241,7 +4456,7 @@ func (x *ListSigningKeysResponse) String() string {
 func (*ListSigningKeysResponse) ProtoMessage() {}
 
 func (x *ListSigningKeysResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[74]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[77]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4254,7 +4469,7 @@ func (x *ListSigningKeysResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListSigningKeysResponse.ProtoReflect.Descriptor instead.
 func (*ListSigningKeysResponse) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{74}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{77}
 }
 
 func (x *ListSigningKeysResponse) GetKeys() []*SigningKey {
@@ -4272,7 +4487,7 @@ type RotateSigningKeysRequest struct {
 
 func (x *RotateSigningKeysRequest) Reset() {
 	*x = RotateSigningKeysRequest{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[75]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[78]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4284,7 +4499,7 @@ func (x *RotateSigningKeysRequest) String() string {
 func (*RotateSigningKeysRequest) ProtoMessage() {}
 
 func (x *RotateSigningKeysRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[75]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[78]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4297,7 +4512,7 @@ func (x *RotateSigningKeysRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RotateSigningKeysRequest.ProtoReflect.Descriptor instead.
 func (*RotateSigningKeysRequest) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{75}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{78}
 }
 
 type RotateSigningKeysResponse struct {
@@ -4309,7 +4524,7 @@ type RotateSigningKeysResponse struct {
 
 func (x *RotateSigningKeysResponse) Reset() {
 	*x = RotateSigningKeysResponse{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[76]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[79]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4321,7 +4536,7 @@ func (x *RotateSigningKeysResponse) String() string {
 func (*RotateSigningKeysResponse) ProtoMessage() {}
 
 func (x *RotateSigningKeysResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[76]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[79]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4334,7 +4549,7 @@ func (x *RotateSigningKeysResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RotateSigningKeysResponse.ProtoReflect.Descriptor instead.
 func (*RotateSigningKeysResponse) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{76}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{79}
 }
 
 func (x *RotateSigningKeysResponse) GetKeys() []*SigningKey {
@@ -4354,7 +4569,7 @@ type ListAuditEventsRequest struct {
 
 func (x *ListAuditEventsRequest) Reset() {
 	*x = ListAuditEventsRequest{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[77]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[80]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4366,7 +4581,7 @@ func (x *ListAuditEventsRequest) String() string {
 func (*ListAuditEventsRequest) ProtoMessage() {}
 
 func (x *ListAuditEventsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[77]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[80]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4379,7 +4594,7 @@ func (x *ListAuditEventsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListAuditEventsRequest.ProtoReflect.Descriptor instead.
 func (*ListAuditEventsRequest) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{77}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{80}
 }
 
 func (x *ListAuditEventsRequest) GetPageSize() int32 {
@@ -4406,7 +4621,7 @@ type ListAuditEventsResponse struct {
 
 func (x *ListAuditEventsResponse) Reset() {
 	*x = ListAuditEventsResponse{}
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[78]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[81]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4418,7 +4633,7 @@ func (x *ListAuditEventsResponse) String() string {
 func (*ListAuditEventsResponse) ProtoMessage() {}
 
 func (x *ListAuditEventsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hayat_admin_v1_admin_proto_msgTypes[78]
+	mi := &file_hayat_admin_v1_admin_proto_msgTypes[81]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4431,7 +4646,7 @@ func (x *ListAuditEventsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListAuditEventsResponse.ProtoReflect.Descriptor instead.
 func (*ListAuditEventsResponse) Descriptor() ([]byte, []int) {
-	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{78}
+	return file_hayat_admin_v1_admin_proto_rawDescGZIP(), []int{81}
 }
 
 func (x *ListAuditEventsResponse) GetEvents() []*AuditEvent {
@@ -4566,7 +4781,7 @@ const file_hayat_admin_v1_admin_proto_rawDesc = "" +
 	"\x12SetMyAvatarRequest\x12\x12\n" +
 	"\x04data\x18\x01 \x01(\fR\x04data\"?\n" +
 	"\x13SetMyAvatarResponse\x12(\n" +
-	"\x04user\x18\x01 \x01(\v2\x14.hayat.admin.v1.UserR\x04user\"\xdd\x05\n" +
+	"\x04user\x18\x01 \x01(\v2\x14.hayat.admin.v1.UserR\x04user\"\xa3\x06\n" +
 	"\n" +
 	"Appearance\x12\x16\n" +
 	"\x06preset\x18\x01 \x01(\tR\x06preset\x12\x12\n" +
@@ -4593,16 +4808,37 @@ const file_hayat_admin_v1_admin_proto_rawDesc = "" +
 	"\adensity\x18\x13 \x01(\tR\adensity\x12\x1b\n" +
 	"\x06radius\x18\x14 \x01(\x05H\x01R\x06radius\x88\x01\x01\x12(\n" +
 	"\rsidebar_width\x18\x15 \x01(\x05H\x02R\fsidebarWidth\x88\x01\x01\x12#\n" +
-	"\rcontent_width\x18\x16 \x01(\tR\fcontentWidthB\f\n" +
+	"\rcontent_width\x18\x16 \x01(\tR\fcontentWidth\x12\x1f\n" +
+	"\vaccent_text\x18\x17 \x01(\tR\n" +
+	"accentText\x12\x19\n" +
+	"\x05scale\x18\x18 \x01(\x05H\x03R\x05scale\x88\x01\x01B\f\n" +
 	"\n" +
 	"_text_sizeB\t\n" +
 	"\a_radiusB\x10\n" +
-	"\x0e_sidebar_width\"\x18\n" +
-	"\x16GetMyAppearanceRequest\"U\n" +
+	"\x0e_sidebar_widthB\b\n" +
+	"\x06_scale\"\x18\n" +
+	"\x16GetMyAppearanceRequest\"\x88\x01\n" +
 	"\x17GetMyAppearanceResponse\x12:\n" +
 	"\n" +
 	"appearance\x18\x01 \x01(\v2\x1a.hayat.admin.v1.AppearanceR\n" +
-	"appearance\"T\n" +
+	"appearance\x121\n" +
+	"\x04apps\x18\x02 \x03(\v2\x1d.hayat.admin.v1.AppAppearanceR\x04apps\"\x9e\x01\n" +
+	"\rAppAppearance\x12\x10\n" +
+	"\x03app\x18\x01 \x01(\tR\x03app\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x19\n" +
+	"\blogo_url\x18\x03 \x01(\tR\alogoUrl\x12\x10\n" +
+	"\x03own\x18\x04 \x01(\bR\x03own\x12:\n" +
+	"\n" +
+	"appearance\x18\x05 \x01(\v2\x1a.hayat.admin.v1.AppearanceR\n" +
+	"appearance\"{\n" +
+	"\x19SetMyAppAppearanceRequest\x12\x10\n" +
+	"\x03app\x18\x01 \x01(\tR\x03app\x12\x10\n" +
+	"\x03own\x18\x02 \x01(\bR\x03own\x12:\n" +
+	"\n" +
+	"appearance\x18\x03 \x01(\v2\x1a.hayat.admin.v1.AppearanceR\n" +
+	"appearance\"M\n" +
+	"\x1aSetMyAppAppearanceResponse\x12/\n" +
+	"\x03app\x18\x01 \x01(\v2\x1d.hayat.admin.v1.AppAppearanceR\x03app\"T\n" +
 	"\x16SetMyAppearanceRequest\x12:\n" +
 	"\n" +
 	"appearance\x18\x01 \x01(\v2\x1a.hayat.admin.v1.AppearanceR\n" +
@@ -4771,7 +5007,7 @@ const file_hayat_admin_v1_admin_proto_rawDesc = "" +
 	"page_token\x18\x02 \x01(\tR\tpageToken\"u\n" +
 	"\x17ListAuditEventsResponse\x122\n" +
 	"\x06events\x18\x01 \x03(\v2\x1a.hayat.admin.v1.AuditEventR\x06events\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken2\xa6\b\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken2\x93\t\n" +
 	"\x0eAccountService\x12D\n" +
 	"\x05GetMe\x12\x1c.hayat.admin.v1.GetMeRequest\x1a\x1d.hayat.admin.v1.GetMeResponse\x12M\n" +
 	"\bUpdateMe\x12\x1f.hayat.admin.v1.UpdateMeRequest\x1a .hayat.admin.v1.UpdateMeResponse\x12_\n" +
@@ -4779,7 +5015,8 @@ const file_hayat_admin_v1_admin_proto_rawDesc = "" +
 	"\x0eListMySessions\x12%.hayat.admin.v1.ListMySessionsRequest\x1a&.hayat.admin.v1.ListMySessionsResponse\x12b\n" +
 	"\x0fRevokeMySession\x12&.hayat.admin.v1.RevokeMySessionRequest\x1a'.hayat.admin.v1.RevokeMySessionResponse\x12b\n" +
 	"\x0fGetMyAppearance\x12&.hayat.admin.v1.GetMyAppearanceRequest\x1a'.hayat.admin.v1.GetMyAppearanceResponse\x12b\n" +
-	"\x0fSetMyAppearance\x12&.hayat.admin.v1.SetMyAppearanceRequest\x1a'.hayat.admin.v1.SetMyAppearanceResponse\x12V\n" +
+	"\x0fSetMyAppearance\x12&.hayat.admin.v1.SetMyAppearanceRequest\x1a'.hayat.admin.v1.SetMyAppearanceResponse\x12k\n" +
+	"\x12SetMyAppAppearance\x12).hayat.admin.v1.SetMyAppAppearanceRequest\x1a*.hayat.admin.v1.SetMyAppAppearanceResponse\x12V\n" +
 	"\vSetMyAvatar\x12\".hayat.admin.v1.SetMyAvatarRequest\x1a#.hayat.admin.v1.SetMyAvatarResponse\x12\\\n" +
 	"\rGetMySecurity\x12$.hayat.admin.v1.GetMySecurityRequest\x1a%.hayat.admin.v1.GetMySecurityResponse\x12_\n" +
 	"\x0eRemoveMyFactor\x12%.hayat.admin.v1.RemoveMyFactorRequest\x1a&.hayat.admin.v1.RemoveMyFactorResponse\x12z\n" +
@@ -4829,7 +5066,7 @@ func file_hayat_admin_v1_admin_proto_rawDescGZIP() []byte {
 	return file_hayat_admin_v1_admin_proto_rawDescData
 }
 
-var file_hayat_admin_v1_admin_proto_msgTypes = make([]protoimpl.MessageInfo, 79)
+var file_hayat_admin_v1_admin_proto_msgTypes = make([]protoimpl.MessageInfo, 82)
 var file_hayat_admin_v1_admin_proto_goTypes = []any{
 	(*User)(nil),                            // 0: hayat.admin.v1.User
 	(*Session)(nil),                         // 1: hayat.admin.v1.Session
@@ -4850,192 +5087,201 @@ var file_hayat_admin_v1_admin_proto_goTypes = []any{
 	(*Appearance)(nil),                      // 16: hayat.admin.v1.Appearance
 	(*GetMyAppearanceRequest)(nil),          // 17: hayat.admin.v1.GetMyAppearanceRequest
 	(*GetMyAppearanceResponse)(nil),         // 18: hayat.admin.v1.GetMyAppearanceResponse
-	(*SetMyAppearanceRequest)(nil),          // 19: hayat.admin.v1.SetMyAppearanceRequest
-	(*SetMyAppearanceResponse)(nil),         // 20: hayat.admin.v1.SetMyAppearanceResponse
-	(*GetMeRequest)(nil),                    // 21: hayat.admin.v1.GetMeRequest
-	(*GetMeResponse)(nil),                   // 22: hayat.admin.v1.GetMeResponse
-	(*UpdateMeRequest)(nil),                 // 23: hayat.admin.v1.UpdateMeRequest
-	(*UpdateMeResponse)(nil),                // 24: hayat.admin.v1.UpdateMeResponse
-	(*ChangePasswordRequest)(nil),           // 25: hayat.admin.v1.ChangePasswordRequest
-	(*ChangePasswordResponse)(nil),          // 26: hayat.admin.v1.ChangePasswordResponse
-	(*ListMySessionsRequest)(nil),           // 27: hayat.admin.v1.ListMySessionsRequest
-	(*ListMySessionsResponse)(nil),          // 28: hayat.admin.v1.ListMySessionsResponse
-	(*RevokeMySessionRequest)(nil),          // 29: hayat.admin.v1.RevokeMySessionRequest
-	(*RevokeMySessionResponse)(nil),         // 30: hayat.admin.v1.RevokeMySessionResponse
-	(*GetOverviewRequest)(nil),              // 31: hayat.admin.v1.GetOverviewRequest
-	(*GetOverviewResponse)(nil),             // 32: hayat.admin.v1.GetOverviewResponse
-	(*ListUsersRequest)(nil),                // 33: hayat.admin.v1.ListUsersRequest
-	(*ListUsersResponse)(nil),               // 34: hayat.admin.v1.ListUsersResponse
-	(*GetUserRequest)(nil),                  // 35: hayat.admin.v1.GetUserRequest
-	(*GetUserResponse)(nil),                 // 36: hayat.admin.v1.GetUserResponse
-	(*InviteUserRequest)(nil),               // 37: hayat.admin.v1.InviteUserRequest
-	(*InviteUserResponse)(nil),              // 38: hayat.admin.v1.InviteUserResponse
-	(*UpdateUserRequest)(nil),               // 39: hayat.admin.v1.UpdateUserRequest
-	(*UpdateUserResponse)(nil),              // 40: hayat.admin.v1.UpdateUserResponse
-	(*SetUserDisabledRequest)(nil),          // 41: hayat.admin.v1.SetUserDisabledRequest
-	(*SetUserDisabledResponse)(nil),         // 42: hayat.admin.v1.SetUserDisabledResponse
-	(*SetUserAdminRequest)(nil),             // 43: hayat.admin.v1.SetUserAdminRequest
-	(*SetUserAdminResponse)(nil),            // 44: hayat.admin.v1.SetUserAdminResponse
-	(*ResendVerificationRequest)(nil),       // 45: hayat.admin.v1.ResendVerificationRequest
-	(*ResendVerificationResponse)(nil),      // 46: hayat.admin.v1.ResendVerificationResponse
-	(*RevokeUserSessionsRequest)(nil),       // 47: hayat.admin.v1.RevokeUserSessionsRequest
-	(*RevokeUserSessionsResponse)(nil),      // 48: hayat.admin.v1.RevokeUserSessionsResponse
-	(*ResetUserFactorsRequest)(nil),         // 49: hayat.admin.v1.ResetUserFactorsRequest
-	(*ResetUserFactorsResponse)(nil),        // 50: hayat.admin.v1.ResetUserFactorsResponse
-	(*SetTenantRequireMFARequest)(nil),      // 51: hayat.admin.v1.SetTenantRequireMFARequest
-	(*SetTenantRequireMFAResponse)(nil),     // 52: hayat.admin.v1.SetTenantRequireMFAResponse
-	(*ListTenantsRequest)(nil),              // 53: hayat.admin.v1.ListTenantsRequest
-	(*ListTenantsResponse)(nil),             // 54: hayat.admin.v1.ListTenantsResponse
-	(*GetTenantRequest)(nil),                // 55: hayat.admin.v1.GetTenantRequest
-	(*GetTenantResponse)(nil),               // 56: hayat.admin.v1.GetTenantResponse
-	(*ListMembersRequest)(nil),              // 57: hayat.admin.v1.ListMembersRequest
-	(*ListMembersResponse)(nil),             // 58: hayat.admin.v1.ListMembersResponse
-	(*CreateTenantRequest)(nil),             // 59: hayat.admin.v1.CreateTenantRequest
-	(*CreateTenantResponse)(nil),            // 60: hayat.admin.v1.CreateTenantResponse
-	(*RenameTenantRequest)(nil),             // 61: hayat.admin.v1.RenameTenantRequest
-	(*RenameTenantResponse)(nil),            // 62: hayat.admin.v1.RenameTenantResponse
-	(*SetTenantLogoRequest)(nil),            // 63: hayat.admin.v1.SetTenantLogoRequest
-	(*SetTenantLogoResponse)(nil),           // 64: hayat.admin.v1.SetTenantLogoResponse
-	(*DeleteTenantRequest)(nil),             // 65: hayat.admin.v1.DeleteTenantRequest
-	(*DeleteTenantResponse)(nil),            // 66: hayat.admin.v1.DeleteTenantResponse
-	(*AddMemberRequest)(nil),                // 67: hayat.admin.v1.AddMemberRequest
-	(*AddMemberResponse)(nil),               // 68: hayat.admin.v1.AddMemberResponse
-	(*RemoveMemberRequest)(nil),             // 69: hayat.admin.v1.RemoveMemberRequest
-	(*RemoveMemberResponse)(nil),            // 70: hayat.admin.v1.RemoveMemberResponse
-	(*TransferOwnershipRequest)(nil),        // 71: hayat.admin.v1.TransferOwnershipRequest
-	(*TransferOwnershipResponse)(nil),       // 72: hayat.admin.v1.TransferOwnershipResponse
-	(*ListSigningKeysRequest)(nil),          // 73: hayat.admin.v1.ListSigningKeysRequest
-	(*ListSigningKeysResponse)(nil),         // 74: hayat.admin.v1.ListSigningKeysResponse
-	(*RotateSigningKeysRequest)(nil),        // 75: hayat.admin.v1.RotateSigningKeysRequest
-	(*RotateSigningKeysResponse)(nil),       // 76: hayat.admin.v1.RotateSigningKeysResponse
-	(*ListAuditEventsRequest)(nil),          // 77: hayat.admin.v1.ListAuditEventsRequest
-	(*ListAuditEventsResponse)(nil),         // 78: hayat.admin.v1.ListAuditEventsResponse
-	(*timestamppb.Timestamp)(nil),           // 79: google.protobuf.Timestamp
+	(*AppAppearance)(nil),                   // 19: hayat.admin.v1.AppAppearance
+	(*SetMyAppAppearanceRequest)(nil),       // 20: hayat.admin.v1.SetMyAppAppearanceRequest
+	(*SetMyAppAppearanceResponse)(nil),      // 21: hayat.admin.v1.SetMyAppAppearanceResponse
+	(*SetMyAppearanceRequest)(nil),          // 22: hayat.admin.v1.SetMyAppearanceRequest
+	(*SetMyAppearanceResponse)(nil),         // 23: hayat.admin.v1.SetMyAppearanceResponse
+	(*GetMeRequest)(nil),                    // 24: hayat.admin.v1.GetMeRequest
+	(*GetMeResponse)(nil),                   // 25: hayat.admin.v1.GetMeResponse
+	(*UpdateMeRequest)(nil),                 // 26: hayat.admin.v1.UpdateMeRequest
+	(*UpdateMeResponse)(nil),                // 27: hayat.admin.v1.UpdateMeResponse
+	(*ChangePasswordRequest)(nil),           // 28: hayat.admin.v1.ChangePasswordRequest
+	(*ChangePasswordResponse)(nil),          // 29: hayat.admin.v1.ChangePasswordResponse
+	(*ListMySessionsRequest)(nil),           // 30: hayat.admin.v1.ListMySessionsRequest
+	(*ListMySessionsResponse)(nil),          // 31: hayat.admin.v1.ListMySessionsResponse
+	(*RevokeMySessionRequest)(nil),          // 32: hayat.admin.v1.RevokeMySessionRequest
+	(*RevokeMySessionResponse)(nil),         // 33: hayat.admin.v1.RevokeMySessionResponse
+	(*GetOverviewRequest)(nil),              // 34: hayat.admin.v1.GetOverviewRequest
+	(*GetOverviewResponse)(nil),             // 35: hayat.admin.v1.GetOverviewResponse
+	(*ListUsersRequest)(nil),                // 36: hayat.admin.v1.ListUsersRequest
+	(*ListUsersResponse)(nil),               // 37: hayat.admin.v1.ListUsersResponse
+	(*GetUserRequest)(nil),                  // 38: hayat.admin.v1.GetUserRequest
+	(*GetUserResponse)(nil),                 // 39: hayat.admin.v1.GetUserResponse
+	(*InviteUserRequest)(nil),               // 40: hayat.admin.v1.InviteUserRequest
+	(*InviteUserResponse)(nil),              // 41: hayat.admin.v1.InviteUserResponse
+	(*UpdateUserRequest)(nil),               // 42: hayat.admin.v1.UpdateUserRequest
+	(*UpdateUserResponse)(nil),              // 43: hayat.admin.v1.UpdateUserResponse
+	(*SetUserDisabledRequest)(nil),          // 44: hayat.admin.v1.SetUserDisabledRequest
+	(*SetUserDisabledResponse)(nil),         // 45: hayat.admin.v1.SetUserDisabledResponse
+	(*SetUserAdminRequest)(nil),             // 46: hayat.admin.v1.SetUserAdminRequest
+	(*SetUserAdminResponse)(nil),            // 47: hayat.admin.v1.SetUserAdminResponse
+	(*ResendVerificationRequest)(nil),       // 48: hayat.admin.v1.ResendVerificationRequest
+	(*ResendVerificationResponse)(nil),      // 49: hayat.admin.v1.ResendVerificationResponse
+	(*RevokeUserSessionsRequest)(nil),       // 50: hayat.admin.v1.RevokeUserSessionsRequest
+	(*RevokeUserSessionsResponse)(nil),      // 51: hayat.admin.v1.RevokeUserSessionsResponse
+	(*ResetUserFactorsRequest)(nil),         // 52: hayat.admin.v1.ResetUserFactorsRequest
+	(*ResetUserFactorsResponse)(nil),        // 53: hayat.admin.v1.ResetUserFactorsResponse
+	(*SetTenantRequireMFARequest)(nil),      // 54: hayat.admin.v1.SetTenantRequireMFARequest
+	(*SetTenantRequireMFAResponse)(nil),     // 55: hayat.admin.v1.SetTenantRequireMFAResponse
+	(*ListTenantsRequest)(nil),              // 56: hayat.admin.v1.ListTenantsRequest
+	(*ListTenantsResponse)(nil),             // 57: hayat.admin.v1.ListTenantsResponse
+	(*GetTenantRequest)(nil),                // 58: hayat.admin.v1.GetTenantRequest
+	(*GetTenantResponse)(nil),               // 59: hayat.admin.v1.GetTenantResponse
+	(*ListMembersRequest)(nil),              // 60: hayat.admin.v1.ListMembersRequest
+	(*ListMembersResponse)(nil),             // 61: hayat.admin.v1.ListMembersResponse
+	(*CreateTenantRequest)(nil),             // 62: hayat.admin.v1.CreateTenantRequest
+	(*CreateTenantResponse)(nil),            // 63: hayat.admin.v1.CreateTenantResponse
+	(*RenameTenantRequest)(nil),             // 64: hayat.admin.v1.RenameTenantRequest
+	(*RenameTenantResponse)(nil),            // 65: hayat.admin.v1.RenameTenantResponse
+	(*SetTenantLogoRequest)(nil),            // 66: hayat.admin.v1.SetTenantLogoRequest
+	(*SetTenantLogoResponse)(nil),           // 67: hayat.admin.v1.SetTenantLogoResponse
+	(*DeleteTenantRequest)(nil),             // 68: hayat.admin.v1.DeleteTenantRequest
+	(*DeleteTenantResponse)(nil),            // 69: hayat.admin.v1.DeleteTenantResponse
+	(*AddMemberRequest)(nil),                // 70: hayat.admin.v1.AddMemberRequest
+	(*AddMemberResponse)(nil),               // 71: hayat.admin.v1.AddMemberResponse
+	(*RemoveMemberRequest)(nil),             // 72: hayat.admin.v1.RemoveMemberRequest
+	(*RemoveMemberResponse)(nil),            // 73: hayat.admin.v1.RemoveMemberResponse
+	(*TransferOwnershipRequest)(nil),        // 74: hayat.admin.v1.TransferOwnershipRequest
+	(*TransferOwnershipResponse)(nil),       // 75: hayat.admin.v1.TransferOwnershipResponse
+	(*ListSigningKeysRequest)(nil),          // 76: hayat.admin.v1.ListSigningKeysRequest
+	(*ListSigningKeysResponse)(nil),         // 77: hayat.admin.v1.ListSigningKeysResponse
+	(*RotateSigningKeysRequest)(nil),        // 78: hayat.admin.v1.RotateSigningKeysRequest
+	(*RotateSigningKeysResponse)(nil),       // 79: hayat.admin.v1.RotateSigningKeysResponse
+	(*ListAuditEventsRequest)(nil),          // 80: hayat.admin.v1.ListAuditEventsRequest
+	(*ListAuditEventsResponse)(nil),         // 81: hayat.admin.v1.ListAuditEventsResponse
+	(*timestamppb.Timestamp)(nil),           // 82: google.protobuf.Timestamp
 }
 var file_hayat_admin_v1_admin_proto_depIdxs = []int32{
-	79, // 0: hayat.admin.v1.User.created_at:type_name -> google.protobuf.Timestamp
-	79, // 1: hayat.admin.v1.User.updated_at:type_name -> google.protobuf.Timestamp
-	79, // 2: hayat.admin.v1.Session.auth_time:type_name -> google.protobuf.Timestamp
-	79, // 3: hayat.admin.v1.Session.last_seen_at:type_name -> google.protobuf.Timestamp
-	79, // 4: hayat.admin.v1.Session.expires_at:type_name -> google.protobuf.Timestamp
-	79, // 5: hayat.admin.v1.Tenant.created_at:type_name -> google.protobuf.Timestamp
-	79, // 6: hayat.admin.v1.Tenant.updated_at:type_name -> google.protobuf.Timestamp
+	82, // 0: hayat.admin.v1.User.created_at:type_name -> google.protobuf.Timestamp
+	82, // 1: hayat.admin.v1.User.updated_at:type_name -> google.protobuf.Timestamp
+	82, // 2: hayat.admin.v1.Session.auth_time:type_name -> google.protobuf.Timestamp
+	82, // 3: hayat.admin.v1.Session.last_seen_at:type_name -> google.protobuf.Timestamp
+	82, // 4: hayat.admin.v1.Session.expires_at:type_name -> google.protobuf.Timestamp
+	82, // 5: hayat.admin.v1.Tenant.created_at:type_name -> google.protobuf.Timestamp
+	82, // 6: hayat.admin.v1.Tenant.updated_at:type_name -> google.protobuf.Timestamp
 	0,  // 7: hayat.admin.v1.Member.user:type_name -> hayat.admin.v1.User
-	79, // 8: hayat.admin.v1.Member.joined_at:type_name -> google.protobuf.Timestamp
-	79, // 9: hayat.admin.v1.Client.created_at:type_name -> google.protobuf.Timestamp
-	79, // 10: hayat.admin.v1.Client.updated_at:type_name -> google.protobuf.Timestamp
-	79, // 11: hayat.admin.v1.SigningKey.created_at:type_name -> google.protobuf.Timestamp
-	79, // 12: hayat.admin.v1.SigningKey.activated_at:type_name -> google.protobuf.Timestamp
-	79, // 13: hayat.admin.v1.SigningKey.retired_at:type_name -> google.protobuf.Timestamp
-	79, // 14: hayat.admin.v1.AuditEvent.at:type_name -> google.protobuf.Timestamp
-	79, // 15: hayat.admin.v1.Factor.created_at:type_name -> google.protobuf.Timestamp
-	79, // 16: hayat.admin.v1.Factor.last_used_at:type_name -> google.protobuf.Timestamp
+	82, // 8: hayat.admin.v1.Member.joined_at:type_name -> google.protobuf.Timestamp
+	82, // 9: hayat.admin.v1.Client.created_at:type_name -> google.protobuf.Timestamp
+	82, // 10: hayat.admin.v1.Client.updated_at:type_name -> google.protobuf.Timestamp
+	82, // 11: hayat.admin.v1.SigningKey.created_at:type_name -> google.protobuf.Timestamp
+	82, // 12: hayat.admin.v1.SigningKey.activated_at:type_name -> google.protobuf.Timestamp
+	82, // 13: hayat.admin.v1.SigningKey.retired_at:type_name -> google.protobuf.Timestamp
+	82, // 14: hayat.admin.v1.AuditEvent.at:type_name -> google.protobuf.Timestamp
+	82, // 15: hayat.admin.v1.Factor.created_at:type_name -> google.protobuf.Timestamp
+	82, // 16: hayat.admin.v1.Factor.last_used_at:type_name -> google.protobuf.Timestamp
 	7,  // 17: hayat.admin.v1.GetMySecurityResponse.factors:type_name -> hayat.admin.v1.Factor
 	0,  // 18: hayat.admin.v1.SetMyAvatarResponse.user:type_name -> hayat.admin.v1.User
 	16, // 19: hayat.admin.v1.GetMyAppearanceResponse.appearance:type_name -> hayat.admin.v1.Appearance
-	16, // 20: hayat.admin.v1.SetMyAppearanceRequest.appearance:type_name -> hayat.admin.v1.Appearance
-	16, // 21: hayat.admin.v1.SetMyAppearanceResponse.appearance:type_name -> hayat.admin.v1.Appearance
-	0,  // 22: hayat.admin.v1.GetMeResponse.user:type_name -> hayat.admin.v1.User
-	2,  // 23: hayat.admin.v1.GetMeResponse.tenants:type_name -> hayat.admin.v1.Tenant
-	0,  // 24: hayat.admin.v1.UpdateMeResponse.user:type_name -> hayat.admin.v1.User
-	1,  // 25: hayat.admin.v1.ListMySessionsResponse.sessions:type_name -> hayat.admin.v1.Session
-	6,  // 26: hayat.admin.v1.GetOverviewResponse.recent:type_name -> hayat.admin.v1.AuditEvent
-	0,  // 27: hayat.admin.v1.ListUsersResponse.users:type_name -> hayat.admin.v1.User
-	0,  // 28: hayat.admin.v1.GetUserResponse.user:type_name -> hayat.admin.v1.User
-	2,  // 29: hayat.admin.v1.GetUserResponse.tenants:type_name -> hayat.admin.v1.Tenant
-	1,  // 30: hayat.admin.v1.GetUserResponse.sessions:type_name -> hayat.admin.v1.Session
-	7,  // 31: hayat.admin.v1.GetUserResponse.factors:type_name -> hayat.admin.v1.Factor
-	0,  // 32: hayat.admin.v1.InviteUserResponse.user:type_name -> hayat.admin.v1.User
-	0,  // 33: hayat.admin.v1.UpdateUserResponse.user:type_name -> hayat.admin.v1.User
-	0,  // 34: hayat.admin.v1.SetUserDisabledResponse.user:type_name -> hayat.admin.v1.User
-	0,  // 35: hayat.admin.v1.SetUserAdminResponse.user:type_name -> hayat.admin.v1.User
-	2,  // 36: hayat.admin.v1.SetTenantRequireMFAResponse.tenant:type_name -> hayat.admin.v1.Tenant
-	2,  // 37: hayat.admin.v1.ListTenantsResponse.tenants:type_name -> hayat.admin.v1.Tenant
-	2,  // 38: hayat.admin.v1.GetTenantResponse.tenant:type_name -> hayat.admin.v1.Tenant
-	3,  // 39: hayat.admin.v1.ListMembersResponse.members:type_name -> hayat.admin.v1.Member
-	2,  // 40: hayat.admin.v1.CreateTenantResponse.tenant:type_name -> hayat.admin.v1.Tenant
-	2,  // 41: hayat.admin.v1.RenameTenantResponse.tenant:type_name -> hayat.admin.v1.Tenant
-	2,  // 42: hayat.admin.v1.SetTenantLogoResponse.tenant:type_name -> hayat.admin.v1.Tenant
-	3,  // 43: hayat.admin.v1.AddMemberResponse.member:type_name -> hayat.admin.v1.Member
-	2,  // 44: hayat.admin.v1.TransferOwnershipResponse.tenant:type_name -> hayat.admin.v1.Tenant
-	5,  // 45: hayat.admin.v1.ListSigningKeysResponse.keys:type_name -> hayat.admin.v1.SigningKey
-	5,  // 46: hayat.admin.v1.RotateSigningKeysResponse.keys:type_name -> hayat.admin.v1.SigningKey
-	6,  // 47: hayat.admin.v1.ListAuditEventsResponse.events:type_name -> hayat.admin.v1.AuditEvent
-	21, // 48: hayat.admin.v1.AccountService.GetMe:input_type -> hayat.admin.v1.GetMeRequest
-	23, // 49: hayat.admin.v1.AccountService.UpdateMe:input_type -> hayat.admin.v1.UpdateMeRequest
-	25, // 50: hayat.admin.v1.AccountService.ChangePassword:input_type -> hayat.admin.v1.ChangePasswordRequest
-	27, // 51: hayat.admin.v1.AccountService.ListMySessions:input_type -> hayat.admin.v1.ListMySessionsRequest
-	29, // 52: hayat.admin.v1.AccountService.RevokeMySession:input_type -> hayat.admin.v1.RevokeMySessionRequest
-	17, // 53: hayat.admin.v1.AccountService.GetMyAppearance:input_type -> hayat.admin.v1.GetMyAppearanceRequest
-	19, // 54: hayat.admin.v1.AccountService.SetMyAppearance:input_type -> hayat.admin.v1.SetMyAppearanceRequest
-	14, // 55: hayat.admin.v1.AccountService.SetMyAvatar:input_type -> hayat.admin.v1.SetMyAvatarRequest
-	8,  // 56: hayat.admin.v1.AccountService.GetMySecurity:input_type -> hayat.admin.v1.GetMySecurityRequest
-	10, // 57: hayat.admin.v1.AccountService.RemoveMyFactor:input_type -> hayat.admin.v1.RemoveMyFactorRequest
-	12, // 58: hayat.admin.v1.AccountService.RegenerateRecoveryCodes:input_type -> hayat.admin.v1.RegenerateRecoveryCodesRequest
-	31, // 59: hayat.admin.v1.OverviewService.GetOverview:input_type -> hayat.admin.v1.GetOverviewRequest
-	33, // 60: hayat.admin.v1.UserService.ListUsers:input_type -> hayat.admin.v1.ListUsersRequest
-	35, // 61: hayat.admin.v1.UserService.GetUser:input_type -> hayat.admin.v1.GetUserRequest
-	37, // 62: hayat.admin.v1.UserService.InviteUser:input_type -> hayat.admin.v1.InviteUserRequest
-	39, // 63: hayat.admin.v1.UserService.UpdateUser:input_type -> hayat.admin.v1.UpdateUserRequest
-	41, // 64: hayat.admin.v1.UserService.SetUserDisabled:input_type -> hayat.admin.v1.SetUserDisabledRequest
-	43, // 65: hayat.admin.v1.UserService.SetUserAdmin:input_type -> hayat.admin.v1.SetUserAdminRequest
-	45, // 66: hayat.admin.v1.UserService.ResendVerification:input_type -> hayat.admin.v1.ResendVerificationRequest
-	47, // 67: hayat.admin.v1.UserService.RevokeUserSessions:input_type -> hayat.admin.v1.RevokeUserSessionsRequest
-	49, // 68: hayat.admin.v1.UserService.ResetUserFactors:input_type -> hayat.admin.v1.ResetUserFactorsRequest
-	53, // 69: hayat.admin.v1.TenantService.ListTenants:input_type -> hayat.admin.v1.ListTenantsRequest
-	55, // 70: hayat.admin.v1.TenantService.GetTenant:input_type -> hayat.admin.v1.GetTenantRequest
-	57, // 71: hayat.admin.v1.TenantService.ListMembers:input_type -> hayat.admin.v1.ListMembersRequest
-	59, // 72: hayat.admin.v1.TenantService.CreateTenant:input_type -> hayat.admin.v1.CreateTenantRequest
-	61, // 73: hayat.admin.v1.TenantService.RenameTenant:input_type -> hayat.admin.v1.RenameTenantRequest
-	63, // 74: hayat.admin.v1.TenantService.SetTenantLogo:input_type -> hayat.admin.v1.SetTenantLogoRequest
-	65, // 75: hayat.admin.v1.TenantService.DeleteTenant:input_type -> hayat.admin.v1.DeleteTenantRequest
-	67, // 76: hayat.admin.v1.TenantService.AddMember:input_type -> hayat.admin.v1.AddMemberRequest
-	69, // 77: hayat.admin.v1.TenantService.RemoveMember:input_type -> hayat.admin.v1.RemoveMemberRequest
-	71, // 78: hayat.admin.v1.TenantService.TransferOwnership:input_type -> hayat.admin.v1.TransferOwnershipRequest
-	51, // 79: hayat.admin.v1.TenantService.SetTenantRequireMFA:input_type -> hayat.admin.v1.SetTenantRequireMFARequest
-	73, // 80: hayat.admin.v1.KeyService.ListSigningKeys:input_type -> hayat.admin.v1.ListSigningKeysRequest
-	75, // 81: hayat.admin.v1.KeyService.RotateSigningKeys:input_type -> hayat.admin.v1.RotateSigningKeysRequest
-	77, // 82: hayat.admin.v1.AuditService.ListAuditEvents:input_type -> hayat.admin.v1.ListAuditEventsRequest
-	22, // 83: hayat.admin.v1.AccountService.GetMe:output_type -> hayat.admin.v1.GetMeResponse
-	24, // 84: hayat.admin.v1.AccountService.UpdateMe:output_type -> hayat.admin.v1.UpdateMeResponse
-	26, // 85: hayat.admin.v1.AccountService.ChangePassword:output_type -> hayat.admin.v1.ChangePasswordResponse
-	28, // 86: hayat.admin.v1.AccountService.ListMySessions:output_type -> hayat.admin.v1.ListMySessionsResponse
-	30, // 87: hayat.admin.v1.AccountService.RevokeMySession:output_type -> hayat.admin.v1.RevokeMySessionResponse
-	18, // 88: hayat.admin.v1.AccountService.GetMyAppearance:output_type -> hayat.admin.v1.GetMyAppearanceResponse
-	20, // 89: hayat.admin.v1.AccountService.SetMyAppearance:output_type -> hayat.admin.v1.SetMyAppearanceResponse
-	15, // 90: hayat.admin.v1.AccountService.SetMyAvatar:output_type -> hayat.admin.v1.SetMyAvatarResponse
-	9,  // 91: hayat.admin.v1.AccountService.GetMySecurity:output_type -> hayat.admin.v1.GetMySecurityResponse
-	11, // 92: hayat.admin.v1.AccountService.RemoveMyFactor:output_type -> hayat.admin.v1.RemoveMyFactorResponse
-	13, // 93: hayat.admin.v1.AccountService.RegenerateRecoveryCodes:output_type -> hayat.admin.v1.RegenerateRecoveryCodesResponse
-	32, // 94: hayat.admin.v1.OverviewService.GetOverview:output_type -> hayat.admin.v1.GetOverviewResponse
-	34, // 95: hayat.admin.v1.UserService.ListUsers:output_type -> hayat.admin.v1.ListUsersResponse
-	36, // 96: hayat.admin.v1.UserService.GetUser:output_type -> hayat.admin.v1.GetUserResponse
-	38, // 97: hayat.admin.v1.UserService.InviteUser:output_type -> hayat.admin.v1.InviteUserResponse
-	40, // 98: hayat.admin.v1.UserService.UpdateUser:output_type -> hayat.admin.v1.UpdateUserResponse
-	42, // 99: hayat.admin.v1.UserService.SetUserDisabled:output_type -> hayat.admin.v1.SetUserDisabledResponse
-	44, // 100: hayat.admin.v1.UserService.SetUserAdmin:output_type -> hayat.admin.v1.SetUserAdminResponse
-	46, // 101: hayat.admin.v1.UserService.ResendVerification:output_type -> hayat.admin.v1.ResendVerificationResponse
-	48, // 102: hayat.admin.v1.UserService.RevokeUserSessions:output_type -> hayat.admin.v1.RevokeUserSessionsResponse
-	50, // 103: hayat.admin.v1.UserService.ResetUserFactors:output_type -> hayat.admin.v1.ResetUserFactorsResponse
-	54, // 104: hayat.admin.v1.TenantService.ListTenants:output_type -> hayat.admin.v1.ListTenantsResponse
-	56, // 105: hayat.admin.v1.TenantService.GetTenant:output_type -> hayat.admin.v1.GetTenantResponse
-	58, // 106: hayat.admin.v1.TenantService.ListMembers:output_type -> hayat.admin.v1.ListMembersResponse
-	60, // 107: hayat.admin.v1.TenantService.CreateTenant:output_type -> hayat.admin.v1.CreateTenantResponse
-	62, // 108: hayat.admin.v1.TenantService.RenameTenant:output_type -> hayat.admin.v1.RenameTenantResponse
-	64, // 109: hayat.admin.v1.TenantService.SetTenantLogo:output_type -> hayat.admin.v1.SetTenantLogoResponse
-	66, // 110: hayat.admin.v1.TenantService.DeleteTenant:output_type -> hayat.admin.v1.DeleteTenantResponse
-	68, // 111: hayat.admin.v1.TenantService.AddMember:output_type -> hayat.admin.v1.AddMemberResponse
-	70, // 112: hayat.admin.v1.TenantService.RemoveMember:output_type -> hayat.admin.v1.RemoveMemberResponse
-	72, // 113: hayat.admin.v1.TenantService.TransferOwnership:output_type -> hayat.admin.v1.TransferOwnershipResponse
-	52, // 114: hayat.admin.v1.TenantService.SetTenantRequireMFA:output_type -> hayat.admin.v1.SetTenantRequireMFAResponse
-	74, // 115: hayat.admin.v1.KeyService.ListSigningKeys:output_type -> hayat.admin.v1.ListSigningKeysResponse
-	76, // 116: hayat.admin.v1.KeyService.RotateSigningKeys:output_type -> hayat.admin.v1.RotateSigningKeysResponse
-	78, // 117: hayat.admin.v1.AuditService.ListAuditEvents:output_type -> hayat.admin.v1.ListAuditEventsResponse
-	83, // [83:118] is the sub-list for method output_type
-	48, // [48:83] is the sub-list for method input_type
-	48, // [48:48] is the sub-list for extension type_name
-	48, // [48:48] is the sub-list for extension extendee
-	0,  // [0:48] is the sub-list for field type_name
+	19, // 20: hayat.admin.v1.GetMyAppearanceResponse.apps:type_name -> hayat.admin.v1.AppAppearance
+	16, // 21: hayat.admin.v1.AppAppearance.appearance:type_name -> hayat.admin.v1.Appearance
+	16, // 22: hayat.admin.v1.SetMyAppAppearanceRequest.appearance:type_name -> hayat.admin.v1.Appearance
+	19, // 23: hayat.admin.v1.SetMyAppAppearanceResponse.app:type_name -> hayat.admin.v1.AppAppearance
+	16, // 24: hayat.admin.v1.SetMyAppearanceRequest.appearance:type_name -> hayat.admin.v1.Appearance
+	16, // 25: hayat.admin.v1.SetMyAppearanceResponse.appearance:type_name -> hayat.admin.v1.Appearance
+	0,  // 26: hayat.admin.v1.GetMeResponse.user:type_name -> hayat.admin.v1.User
+	2,  // 27: hayat.admin.v1.GetMeResponse.tenants:type_name -> hayat.admin.v1.Tenant
+	0,  // 28: hayat.admin.v1.UpdateMeResponse.user:type_name -> hayat.admin.v1.User
+	1,  // 29: hayat.admin.v1.ListMySessionsResponse.sessions:type_name -> hayat.admin.v1.Session
+	6,  // 30: hayat.admin.v1.GetOverviewResponse.recent:type_name -> hayat.admin.v1.AuditEvent
+	0,  // 31: hayat.admin.v1.ListUsersResponse.users:type_name -> hayat.admin.v1.User
+	0,  // 32: hayat.admin.v1.GetUserResponse.user:type_name -> hayat.admin.v1.User
+	2,  // 33: hayat.admin.v1.GetUserResponse.tenants:type_name -> hayat.admin.v1.Tenant
+	1,  // 34: hayat.admin.v1.GetUserResponse.sessions:type_name -> hayat.admin.v1.Session
+	7,  // 35: hayat.admin.v1.GetUserResponse.factors:type_name -> hayat.admin.v1.Factor
+	0,  // 36: hayat.admin.v1.InviteUserResponse.user:type_name -> hayat.admin.v1.User
+	0,  // 37: hayat.admin.v1.UpdateUserResponse.user:type_name -> hayat.admin.v1.User
+	0,  // 38: hayat.admin.v1.SetUserDisabledResponse.user:type_name -> hayat.admin.v1.User
+	0,  // 39: hayat.admin.v1.SetUserAdminResponse.user:type_name -> hayat.admin.v1.User
+	2,  // 40: hayat.admin.v1.SetTenantRequireMFAResponse.tenant:type_name -> hayat.admin.v1.Tenant
+	2,  // 41: hayat.admin.v1.ListTenantsResponse.tenants:type_name -> hayat.admin.v1.Tenant
+	2,  // 42: hayat.admin.v1.GetTenantResponse.tenant:type_name -> hayat.admin.v1.Tenant
+	3,  // 43: hayat.admin.v1.ListMembersResponse.members:type_name -> hayat.admin.v1.Member
+	2,  // 44: hayat.admin.v1.CreateTenantResponse.tenant:type_name -> hayat.admin.v1.Tenant
+	2,  // 45: hayat.admin.v1.RenameTenantResponse.tenant:type_name -> hayat.admin.v1.Tenant
+	2,  // 46: hayat.admin.v1.SetTenantLogoResponse.tenant:type_name -> hayat.admin.v1.Tenant
+	3,  // 47: hayat.admin.v1.AddMemberResponse.member:type_name -> hayat.admin.v1.Member
+	2,  // 48: hayat.admin.v1.TransferOwnershipResponse.tenant:type_name -> hayat.admin.v1.Tenant
+	5,  // 49: hayat.admin.v1.ListSigningKeysResponse.keys:type_name -> hayat.admin.v1.SigningKey
+	5,  // 50: hayat.admin.v1.RotateSigningKeysResponse.keys:type_name -> hayat.admin.v1.SigningKey
+	6,  // 51: hayat.admin.v1.ListAuditEventsResponse.events:type_name -> hayat.admin.v1.AuditEvent
+	24, // 52: hayat.admin.v1.AccountService.GetMe:input_type -> hayat.admin.v1.GetMeRequest
+	26, // 53: hayat.admin.v1.AccountService.UpdateMe:input_type -> hayat.admin.v1.UpdateMeRequest
+	28, // 54: hayat.admin.v1.AccountService.ChangePassword:input_type -> hayat.admin.v1.ChangePasswordRequest
+	30, // 55: hayat.admin.v1.AccountService.ListMySessions:input_type -> hayat.admin.v1.ListMySessionsRequest
+	32, // 56: hayat.admin.v1.AccountService.RevokeMySession:input_type -> hayat.admin.v1.RevokeMySessionRequest
+	17, // 57: hayat.admin.v1.AccountService.GetMyAppearance:input_type -> hayat.admin.v1.GetMyAppearanceRequest
+	22, // 58: hayat.admin.v1.AccountService.SetMyAppearance:input_type -> hayat.admin.v1.SetMyAppearanceRequest
+	20, // 59: hayat.admin.v1.AccountService.SetMyAppAppearance:input_type -> hayat.admin.v1.SetMyAppAppearanceRequest
+	14, // 60: hayat.admin.v1.AccountService.SetMyAvatar:input_type -> hayat.admin.v1.SetMyAvatarRequest
+	8,  // 61: hayat.admin.v1.AccountService.GetMySecurity:input_type -> hayat.admin.v1.GetMySecurityRequest
+	10, // 62: hayat.admin.v1.AccountService.RemoveMyFactor:input_type -> hayat.admin.v1.RemoveMyFactorRequest
+	12, // 63: hayat.admin.v1.AccountService.RegenerateRecoveryCodes:input_type -> hayat.admin.v1.RegenerateRecoveryCodesRequest
+	34, // 64: hayat.admin.v1.OverviewService.GetOverview:input_type -> hayat.admin.v1.GetOverviewRequest
+	36, // 65: hayat.admin.v1.UserService.ListUsers:input_type -> hayat.admin.v1.ListUsersRequest
+	38, // 66: hayat.admin.v1.UserService.GetUser:input_type -> hayat.admin.v1.GetUserRequest
+	40, // 67: hayat.admin.v1.UserService.InviteUser:input_type -> hayat.admin.v1.InviteUserRequest
+	42, // 68: hayat.admin.v1.UserService.UpdateUser:input_type -> hayat.admin.v1.UpdateUserRequest
+	44, // 69: hayat.admin.v1.UserService.SetUserDisabled:input_type -> hayat.admin.v1.SetUserDisabledRequest
+	46, // 70: hayat.admin.v1.UserService.SetUserAdmin:input_type -> hayat.admin.v1.SetUserAdminRequest
+	48, // 71: hayat.admin.v1.UserService.ResendVerification:input_type -> hayat.admin.v1.ResendVerificationRequest
+	50, // 72: hayat.admin.v1.UserService.RevokeUserSessions:input_type -> hayat.admin.v1.RevokeUserSessionsRequest
+	52, // 73: hayat.admin.v1.UserService.ResetUserFactors:input_type -> hayat.admin.v1.ResetUserFactorsRequest
+	56, // 74: hayat.admin.v1.TenantService.ListTenants:input_type -> hayat.admin.v1.ListTenantsRequest
+	58, // 75: hayat.admin.v1.TenantService.GetTenant:input_type -> hayat.admin.v1.GetTenantRequest
+	60, // 76: hayat.admin.v1.TenantService.ListMembers:input_type -> hayat.admin.v1.ListMembersRequest
+	62, // 77: hayat.admin.v1.TenantService.CreateTenant:input_type -> hayat.admin.v1.CreateTenantRequest
+	64, // 78: hayat.admin.v1.TenantService.RenameTenant:input_type -> hayat.admin.v1.RenameTenantRequest
+	66, // 79: hayat.admin.v1.TenantService.SetTenantLogo:input_type -> hayat.admin.v1.SetTenantLogoRequest
+	68, // 80: hayat.admin.v1.TenantService.DeleteTenant:input_type -> hayat.admin.v1.DeleteTenantRequest
+	70, // 81: hayat.admin.v1.TenantService.AddMember:input_type -> hayat.admin.v1.AddMemberRequest
+	72, // 82: hayat.admin.v1.TenantService.RemoveMember:input_type -> hayat.admin.v1.RemoveMemberRequest
+	74, // 83: hayat.admin.v1.TenantService.TransferOwnership:input_type -> hayat.admin.v1.TransferOwnershipRequest
+	54, // 84: hayat.admin.v1.TenantService.SetTenantRequireMFA:input_type -> hayat.admin.v1.SetTenantRequireMFARequest
+	76, // 85: hayat.admin.v1.KeyService.ListSigningKeys:input_type -> hayat.admin.v1.ListSigningKeysRequest
+	78, // 86: hayat.admin.v1.KeyService.RotateSigningKeys:input_type -> hayat.admin.v1.RotateSigningKeysRequest
+	80, // 87: hayat.admin.v1.AuditService.ListAuditEvents:input_type -> hayat.admin.v1.ListAuditEventsRequest
+	25, // 88: hayat.admin.v1.AccountService.GetMe:output_type -> hayat.admin.v1.GetMeResponse
+	27, // 89: hayat.admin.v1.AccountService.UpdateMe:output_type -> hayat.admin.v1.UpdateMeResponse
+	29, // 90: hayat.admin.v1.AccountService.ChangePassword:output_type -> hayat.admin.v1.ChangePasswordResponse
+	31, // 91: hayat.admin.v1.AccountService.ListMySessions:output_type -> hayat.admin.v1.ListMySessionsResponse
+	33, // 92: hayat.admin.v1.AccountService.RevokeMySession:output_type -> hayat.admin.v1.RevokeMySessionResponse
+	18, // 93: hayat.admin.v1.AccountService.GetMyAppearance:output_type -> hayat.admin.v1.GetMyAppearanceResponse
+	23, // 94: hayat.admin.v1.AccountService.SetMyAppearance:output_type -> hayat.admin.v1.SetMyAppearanceResponse
+	21, // 95: hayat.admin.v1.AccountService.SetMyAppAppearance:output_type -> hayat.admin.v1.SetMyAppAppearanceResponse
+	15, // 96: hayat.admin.v1.AccountService.SetMyAvatar:output_type -> hayat.admin.v1.SetMyAvatarResponse
+	9,  // 97: hayat.admin.v1.AccountService.GetMySecurity:output_type -> hayat.admin.v1.GetMySecurityResponse
+	11, // 98: hayat.admin.v1.AccountService.RemoveMyFactor:output_type -> hayat.admin.v1.RemoveMyFactorResponse
+	13, // 99: hayat.admin.v1.AccountService.RegenerateRecoveryCodes:output_type -> hayat.admin.v1.RegenerateRecoveryCodesResponse
+	35, // 100: hayat.admin.v1.OverviewService.GetOverview:output_type -> hayat.admin.v1.GetOverviewResponse
+	37, // 101: hayat.admin.v1.UserService.ListUsers:output_type -> hayat.admin.v1.ListUsersResponse
+	39, // 102: hayat.admin.v1.UserService.GetUser:output_type -> hayat.admin.v1.GetUserResponse
+	41, // 103: hayat.admin.v1.UserService.InviteUser:output_type -> hayat.admin.v1.InviteUserResponse
+	43, // 104: hayat.admin.v1.UserService.UpdateUser:output_type -> hayat.admin.v1.UpdateUserResponse
+	45, // 105: hayat.admin.v1.UserService.SetUserDisabled:output_type -> hayat.admin.v1.SetUserDisabledResponse
+	47, // 106: hayat.admin.v1.UserService.SetUserAdmin:output_type -> hayat.admin.v1.SetUserAdminResponse
+	49, // 107: hayat.admin.v1.UserService.ResendVerification:output_type -> hayat.admin.v1.ResendVerificationResponse
+	51, // 108: hayat.admin.v1.UserService.RevokeUserSessions:output_type -> hayat.admin.v1.RevokeUserSessionsResponse
+	53, // 109: hayat.admin.v1.UserService.ResetUserFactors:output_type -> hayat.admin.v1.ResetUserFactorsResponse
+	57, // 110: hayat.admin.v1.TenantService.ListTenants:output_type -> hayat.admin.v1.ListTenantsResponse
+	59, // 111: hayat.admin.v1.TenantService.GetTenant:output_type -> hayat.admin.v1.GetTenantResponse
+	61, // 112: hayat.admin.v1.TenantService.ListMembers:output_type -> hayat.admin.v1.ListMembersResponse
+	63, // 113: hayat.admin.v1.TenantService.CreateTenant:output_type -> hayat.admin.v1.CreateTenantResponse
+	65, // 114: hayat.admin.v1.TenantService.RenameTenant:output_type -> hayat.admin.v1.RenameTenantResponse
+	67, // 115: hayat.admin.v1.TenantService.SetTenantLogo:output_type -> hayat.admin.v1.SetTenantLogoResponse
+	69, // 116: hayat.admin.v1.TenantService.DeleteTenant:output_type -> hayat.admin.v1.DeleteTenantResponse
+	71, // 117: hayat.admin.v1.TenantService.AddMember:output_type -> hayat.admin.v1.AddMemberResponse
+	73, // 118: hayat.admin.v1.TenantService.RemoveMember:output_type -> hayat.admin.v1.RemoveMemberResponse
+	75, // 119: hayat.admin.v1.TenantService.TransferOwnership:output_type -> hayat.admin.v1.TransferOwnershipResponse
+	55, // 120: hayat.admin.v1.TenantService.SetTenantRequireMFA:output_type -> hayat.admin.v1.SetTenantRequireMFAResponse
+	77, // 121: hayat.admin.v1.KeyService.ListSigningKeys:output_type -> hayat.admin.v1.ListSigningKeysResponse
+	79, // 122: hayat.admin.v1.KeyService.RotateSigningKeys:output_type -> hayat.admin.v1.RotateSigningKeysResponse
+	81, // 123: hayat.admin.v1.AuditService.ListAuditEvents:output_type -> hayat.admin.v1.ListAuditEventsResponse
+	88, // [88:124] is the sub-list for method output_type
+	52, // [52:88] is the sub-list for method input_type
+	52, // [52:52] is the sub-list for extension type_name
+	52, // [52:52] is the sub-list for extension extendee
+	0,  // [0:52] is the sub-list for field type_name
 }
 
 func init() { file_hayat_admin_v1_admin_proto_init() }
@@ -5050,7 +5296,7 @@ func file_hayat_admin_v1_admin_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_hayat_admin_v1_admin_proto_rawDesc), len(file_hayat_admin_v1_admin_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   79,
+			NumMessages:   82,
 			NumExtensions: 0,
 			NumServices:   6,
 		},

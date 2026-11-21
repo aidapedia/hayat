@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 
 	adminv1 "github.com/aidapedia/hayat/gen/go/hayat/admin/v1"
+	"github.com/aidapedia/hayat/internal/agents"
 	"github.com/aidapedia/hayat/internal/authz"
 	"github.com/aidapedia/hayat/internal/catalog"
 	"github.com/aidapedia/hayat/internal/identity"
@@ -145,6 +146,10 @@ func (s *Server) toGrants(ctx context.Context, grants []tree.Grant) ([]*adminv1.
 		if g.PrincipalType == tree.PrincipalUser {
 			u := byID[g.PrincipalID]
 			pg.PrincipalName, pg.PrincipalEmail = u.Name, u.Email
+		} else if g.PrincipalType == tree.PrincipalAgent {
+			if a, err := agents.New(s.store).Get(ctx, g.PrincipalID); err == nil {
+				pg.PrincipalName = a.Name + " (@" + a.Handle + ")"
+			}
 		} else if n, err := s.tree.Get(ctx, g.PrincipalID); err == nil {
 			pg.PrincipalName = n.Name
 			if n.Type == catalog.TypeTenant {

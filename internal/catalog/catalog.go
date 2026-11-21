@@ -36,6 +36,8 @@ type Permission struct {
 	// Label is the short name people read ("Manage members"); may be empty.
 	Label       string
 	Description string
+	// PeopleOnly: never held by an agent, and never in a role granted to one.
+	PeopleOnly bool
 }
 
 type Role struct {
@@ -188,13 +190,13 @@ func load(ctx context.Context, db store.DB, rev int64) (*Snapshot, error) {
 	}
 	rows.Close()
 
-	rows, err = db.Query(ctx, `SELECT key, service_id, scope, label, description FROM permissions`)
+	rows, err = db.Query(ctx, `SELECT key, service_id, scope, label, description, people_only FROM permissions`)
 	if err != nil {
 		return nil, err
 	}
 	for rows.Next() {
 		var p Permission
-		if err := rows.Scan(&p.Key, &p.Service, &p.Scope, &p.Label, &p.Description); err != nil {
+		if err := rows.Scan(&p.Key, &p.Service, &p.Scope, &p.Label, &p.Description, &p.PeopleOnly); err != nil {
 			rows.Close()
 			return nil, err
 		}

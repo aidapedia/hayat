@@ -67,8 +67,8 @@ func (c *Client) VerifyAccessToken(ctx context.Context, raw, audience string) (*
 	switch {
 	case claims.Issuer != c.keys.issuer, claims.Expiry < now, claims.NotBefore > now+60:
 		return nil, ErrInvalidToken
-	case strings.HasPrefix(claims.Subject, "client:"):
-		return nil, ErrInvalidToken // a service's token, not a person's
+	case strings.HasPrefix(claims.Subject, "client:"), strings.HasPrefix(claims.Subject, "agent:"):
+		return nil, ErrInvalidToken // a service's or an agent's token, not a person's
 	case audience != "" && claims.ClientID != audience && !slices.Contains(claims.Audience, audience):
 		return nil, ErrInvalidToken
 	}

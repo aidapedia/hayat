@@ -112,6 +112,15 @@ const (
 	// RegistryServiceSetServiceClientDisabledProcedure is the fully-qualified name of the
 	// RegistryService's SetServiceClientDisabled RPC.
 	RegistryServiceSetServiceClientDisabledProcedure = "/hayat.admin.v1.RegistryService/SetServiceClientDisabled"
+	// RegistryServiceCreateEnrollmentProcedure is the fully-qualified name of the RegistryService's
+	// CreateEnrollment RPC.
+	RegistryServiceCreateEnrollmentProcedure = "/hayat.admin.v1.RegistryService/CreateEnrollment"
+	// RegistryServiceListEnrollmentsProcedure is the fully-qualified name of the RegistryService's
+	// ListEnrollments RPC.
+	RegistryServiceListEnrollmentsProcedure = "/hayat.admin.v1.RegistryService/ListEnrollments"
+	// RegistryServiceRevokeEnrollmentProcedure is the fully-qualified name of the RegistryService's
+	// RevokeEnrollment RPC.
+	RegistryServiceRevokeEnrollmentProcedure = "/hayat.admin.v1.RegistryService/RevokeEnrollment"
 	// TreeAdminServiceGetTenantTreeProcedure is the fully-qualified name of the TreeAdminService's
 	// GetTenantTree RPC.
 	TreeAdminServiceGetTenantTreeProcedure = "/hayat.admin.v1.TreeAdminService/GetTenantTree"
@@ -382,6 +391,18 @@ type RegistryServiceClient interface {
 	UpdateServiceClient(context.Context, *connect.Request[v1.UpdateServiceClientRequest]) (*connect.Response[v1.UpdateServiceClientResponse], error)
 	RotateServiceClientSecret(context.Context, *connect.Request[v1.RotateServiceClientSecretRequest]) (*connect.Response[v1.RotateServiceClientSecretResponse], error)
 	SetServiceClientDisabled(context.Context, *connect.Request[v1.SetServiceClientDisabledRequest]) (*connect.Response[v1.SetServiceClientDisabledResponse], error)
+	// Enrollment codes: a one-time code a service's deployment redeems on the
+	// api role (EnrollmentService.Enroll) for its credentials, so nobody copies
+	// a secret. The code is returned here once. Making one revokes the service's
+	// other open code. For a service that exists, its owners make them (and
+	// redeeming rotates its API secret); for a name not registered yet, instance
+	// admins do (and redeeming registers it, owned by whoever made the code).
+	CreateEnrollment(context.Context, *connect.Request[v1.CreateEnrollmentRequest]) (*connect.Response[v1.CreateEnrollmentResponse], error)
+	// A service's codes, newest first. With no service_id: the codes for
+	// services not registered yet (instance admins).
+	ListEnrollments(context.Context, *connect.Request[v1.ListEnrollmentsRequest]) (*connect.Response[v1.ListEnrollmentsResponse], error)
+	// Turns an unused code off.
+	RevokeEnrollment(context.Context, *connect.Request[v1.RevokeEnrollmentRequest]) (*connect.Response[v1.RevokeEnrollmentResponse], error)
 }
 
 // NewRegistryServiceClient constructs a client for the hayat.admin.v1.RegistryService service. By
@@ -497,6 +518,24 @@ func NewRegistryServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			connect.WithSchema(registryServiceMethods.ByName("SetServiceClientDisabled")),
 			connect.WithClientOptions(opts...),
 		),
+		createEnrollment: connect.NewClient[v1.CreateEnrollmentRequest, v1.CreateEnrollmentResponse](
+			httpClient,
+			baseURL+RegistryServiceCreateEnrollmentProcedure,
+			connect.WithSchema(registryServiceMethods.ByName("CreateEnrollment")),
+			connect.WithClientOptions(opts...),
+		),
+		listEnrollments: connect.NewClient[v1.ListEnrollmentsRequest, v1.ListEnrollmentsResponse](
+			httpClient,
+			baseURL+RegistryServiceListEnrollmentsProcedure,
+			connect.WithSchema(registryServiceMethods.ByName("ListEnrollments")),
+			connect.WithClientOptions(opts...),
+		),
+		revokeEnrollment: connect.NewClient[v1.RevokeEnrollmentRequest, v1.RevokeEnrollmentResponse](
+			httpClient,
+			baseURL+RegistryServiceRevokeEnrollmentProcedure,
+			connect.WithSchema(registryServiceMethods.ByName("RevokeEnrollment")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -519,6 +558,9 @@ type registryServiceClient struct {
 	updateServiceClient       *connect.Client[v1.UpdateServiceClientRequest, v1.UpdateServiceClientResponse]
 	rotateServiceClientSecret *connect.Client[v1.RotateServiceClientSecretRequest, v1.RotateServiceClientSecretResponse]
 	setServiceClientDisabled  *connect.Client[v1.SetServiceClientDisabledRequest, v1.SetServiceClientDisabledResponse]
+	createEnrollment          *connect.Client[v1.CreateEnrollmentRequest, v1.CreateEnrollmentResponse]
+	listEnrollments           *connect.Client[v1.ListEnrollmentsRequest, v1.ListEnrollmentsResponse]
+	revokeEnrollment          *connect.Client[v1.RevokeEnrollmentRequest, v1.RevokeEnrollmentResponse]
 }
 
 // ListServices calls hayat.admin.v1.RegistryService.ListServices.
@@ -606,6 +648,21 @@ func (c *registryServiceClient) SetServiceClientDisabled(ctx context.Context, re
 	return c.setServiceClientDisabled.CallUnary(ctx, req)
 }
 
+// CreateEnrollment calls hayat.admin.v1.RegistryService.CreateEnrollment.
+func (c *registryServiceClient) CreateEnrollment(ctx context.Context, req *connect.Request[v1.CreateEnrollmentRequest]) (*connect.Response[v1.CreateEnrollmentResponse], error) {
+	return c.createEnrollment.CallUnary(ctx, req)
+}
+
+// ListEnrollments calls hayat.admin.v1.RegistryService.ListEnrollments.
+func (c *registryServiceClient) ListEnrollments(ctx context.Context, req *connect.Request[v1.ListEnrollmentsRequest]) (*connect.Response[v1.ListEnrollmentsResponse], error) {
+	return c.listEnrollments.CallUnary(ctx, req)
+}
+
+// RevokeEnrollment calls hayat.admin.v1.RegistryService.RevokeEnrollment.
+func (c *registryServiceClient) RevokeEnrollment(ctx context.Context, req *connect.Request[v1.RevokeEnrollmentRequest]) (*connect.Response[v1.RevokeEnrollmentResponse], error) {
+	return c.revokeEnrollment.CallUnary(ctx, req)
+}
+
 // RegistryServiceHandler is an implementation of the hayat.admin.v1.RegistryService service.
 type RegistryServiceHandler interface {
 	ListServices(context.Context, *connect.Request[v1.ListServicesRequest]) (*connect.Response[v1.ListServicesResponse], error)
@@ -633,6 +690,18 @@ type RegistryServiceHandler interface {
 	UpdateServiceClient(context.Context, *connect.Request[v1.UpdateServiceClientRequest]) (*connect.Response[v1.UpdateServiceClientResponse], error)
 	RotateServiceClientSecret(context.Context, *connect.Request[v1.RotateServiceClientSecretRequest]) (*connect.Response[v1.RotateServiceClientSecretResponse], error)
 	SetServiceClientDisabled(context.Context, *connect.Request[v1.SetServiceClientDisabledRequest]) (*connect.Response[v1.SetServiceClientDisabledResponse], error)
+	// Enrollment codes: a one-time code a service's deployment redeems on the
+	// api role (EnrollmentService.Enroll) for its credentials, so nobody copies
+	// a secret. The code is returned here once. Making one revokes the service's
+	// other open code. For a service that exists, its owners make them (and
+	// redeeming rotates its API secret); for a name not registered yet, instance
+	// admins do (and redeeming registers it, owned by whoever made the code).
+	CreateEnrollment(context.Context, *connect.Request[v1.CreateEnrollmentRequest]) (*connect.Response[v1.CreateEnrollmentResponse], error)
+	// A service's codes, newest first. With no service_id: the codes for
+	// services not registered yet (instance admins).
+	ListEnrollments(context.Context, *connect.Request[v1.ListEnrollmentsRequest]) (*connect.Response[v1.ListEnrollmentsResponse], error)
+	// Turns an unused code off.
+	RevokeEnrollment(context.Context, *connect.Request[v1.RevokeEnrollmentRequest]) (*connect.Response[v1.RevokeEnrollmentResponse], error)
 }
 
 // NewRegistryServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -744,6 +813,24 @@ func NewRegistryServiceHandler(svc RegistryServiceHandler, opts ...connect.Handl
 		connect.WithSchema(registryServiceMethods.ByName("SetServiceClientDisabled")),
 		connect.WithHandlerOptions(opts...),
 	)
+	registryServiceCreateEnrollmentHandler := connect.NewUnaryHandler(
+		RegistryServiceCreateEnrollmentProcedure,
+		svc.CreateEnrollment,
+		connect.WithSchema(registryServiceMethods.ByName("CreateEnrollment")),
+		connect.WithHandlerOptions(opts...),
+	)
+	registryServiceListEnrollmentsHandler := connect.NewUnaryHandler(
+		RegistryServiceListEnrollmentsProcedure,
+		svc.ListEnrollments,
+		connect.WithSchema(registryServiceMethods.ByName("ListEnrollments")),
+		connect.WithHandlerOptions(opts...),
+	)
+	registryServiceRevokeEnrollmentHandler := connect.NewUnaryHandler(
+		RegistryServiceRevokeEnrollmentProcedure,
+		svc.RevokeEnrollment,
+		connect.WithSchema(registryServiceMethods.ByName("RevokeEnrollment")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/hayat.admin.v1.RegistryService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case RegistryServiceListServicesProcedure:
@@ -780,6 +867,12 @@ func NewRegistryServiceHandler(svc RegistryServiceHandler, opts ...connect.Handl
 			registryServiceRotateServiceClientSecretHandler.ServeHTTP(w, r)
 		case RegistryServiceSetServiceClientDisabledProcedure:
 			registryServiceSetServiceClientDisabledHandler.ServeHTTP(w, r)
+		case RegistryServiceCreateEnrollmentProcedure:
+			registryServiceCreateEnrollmentHandler.ServeHTTP(w, r)
+		case RegistryServiceListEnrollmentsProcedure:
+			registryServiceListEnrollmentsHandler.ServeHTTP(w, r)
+		case RegistryServiceRevokeEnrollmentProcedure:
+			registryServiceRevokeEnrollmentHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -855,6 +948,18 @@ func (UnimplementedRegistryServiceHandler) RotateServiceClientSecret(context.Con
 
 func (UnimplementedRegistryServiceHandler) SetServiceClientDisabled(context.Context, *connect.Request[v1.SetServiceClientDisabledRequest]) (*connect.Response[v1.SetServiceClientDisabledResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.RegistryService.SetServiceClientDisabled is not implemented"))
+}
+
+func (UnimplementedRegistryServiceHandler) CreateEnrollment(context.Context, *connect.Request[v1.CreateEnrollmentRequest]) (*connect.Response[v1.CreateEnrollmentResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.RegistryService.CreateEnrollment is not implemented"))
+}
+
+func (UnimplementedRegistryServiceHandler) ListEnrollments(context.Context, *connect.Request[v1.ListEnrollmentsRequest]) (*connect.Response[v1.ListEnrollmentsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.RegistryService.ListEnrollments is not implemented"))
+}
+
+func (UnimplementedRegistryServiceHandler) RevokeEnrollment(context.Context, *connect.Request[v1.RevokeEnrollmentRequest]) (*connect.Response[v1.RevokeEnrollmentResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.admin.v1.RegistryService.RevokeEnrollment is not implemented"))
 }
 
 // TreeAdminServiceClient is a client for the hayat.admin.v1.TreeAdminService service.

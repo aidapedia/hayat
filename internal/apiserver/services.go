@@ -77,7 +77,7 @@ func toReason(r authz.Reason) *authzv1.Reason {
 type authzService struct{ s *Server }
 
 func (a *authzService) check(ctx context.Context, req *authzv1.CheckRequest) (*authzv1.CheckResponse, error) {
-	user, err := parseUser(req.UserId)
+	user, err := parseSubject(req.UserId, req.AgentId)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +125,7 @@ func (a *authzService) BatchCheck(ctx context.Context, req *connect.Request[auth
 }
 
 func (a *authzService) PermissionsAt(ctx context.Context, req *connect.Request[authzv1.PermissionsAtRequest]) (*connect.Response[authzv1.PermissionsAtResponse], error) {
-	user, err := parseUser(req.Msg.UserId)
+	user, err := parseSubject(req.Msg.UserId, req.Msg.AgentId)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +146,7 @@ func (a *authzService) PermissionsAt(ctx context.Context, req *connect.Request[a
 
 func (a *authzService) LookupResources(ctx context.Context, req *connect.Request[authzv1.LookupResourcesRequest]) (*connect.Response[authzv1.LookupResourcesResponse], error) {
 	m := req.Msg
-	user, err := parseUser(m.UserId)
+	user, err := parseSubject(m.UserId, m.AgentId)
 	if err != nil {
 		return nil, err
 	}
@@ -192,6 +192,10 @@ func (a *authzService) LookupSubjects(ctx context.Context, req *connect.Request[
 	}
 	resp := &authzv1.LookupSubjectsResponse{}
 	for _, sub := range subjects {
+		if sub.Agent {
+			resp.Subjects = append(resp.Subjects, &authzv1.Subject{AgentId: sub.UserID.String(), Reason: toReason(sub.Reason)})
+			continue
+		}
 		resp.Subjects = append(resp.Subjects, &authzv1.Subject{UserId: sub.UserID.String(), Reason: toReason(sub.Reason)})
 	}
 	return connect.NewResponse(resp), nil
@@ -294,23 +298,24 @@ func (d *directoryService) BatchGetUsers(ctx context.Context, req *connect.Reque
 
 // GetUserAppearance answers fresh every time: a service applies it to the
 // person's session and keeps no copy, so a change in Hayat's console shows on
-// their next page load.
+// their next page load. Each service gets the theme the person gave it of its
+// own, or else the account's.
 func (d *directoryService) GetUserAppearance(ctx context.Context, req *connect.Request[authzv1.GetUserAppearanceRequest]) (*connect.Response[authzv1.GetUserAppearanceResponse], error) {
 	id, err := parseUser(req.Msg.UserId)
 	if err != nil {
 		return nil, err
 	}
-	a, err := d.s.ids.Appearance(ctx, id)
+	a, own, err := d.s.ids.AppearanceFor(ctx, id, callerService(ctx).ID)
 	if err != nil {
 		return nil, d.s.fail(err)
 	}
-	resp := &authzv1.GetUserAppearanceResponse{}
+	resp := &authzv1.GetUserAppearanceResponse{Own: own}
 	if a != nil {
 		resp.Appearance = &authzv1.Appearance{
-			Preset: a.Preset, Mode: a.Mode, Accent: a.Accent, Background: a.Background, Surface: a.Surface, Text: a.Text,
-			Muted: a.Muted, Border: a.Border, SidebarMatchContent: a.SidebarMatchContent, SidebarBackground: a.SidebarBackground,
+			Preset: a.Preset, Mode: a.Mode, Accent: a.Accent, AccentText: a.AccentText, Background: a.Background, Surface: a.Surface,
+			Text: a.Text, Muted: a.Muted, Border: a.Border, SidebarMatchContent: a.SidebarMatchContent, SidebarBackground: a.SidebarBackground,
 			SidebarText: a.SidebarText, SidebarActive: a.SidebarActive, SidebarBorder: a.SidebarBorder, Success: a.Success,
-			Warning: a.Warning, Destructive: a.Destructive, Font: a.Font, TextSize: a.TextSize, Density: a.Density,
+			Warning: a.Warning, Destructive: a.Destructive, Font: a.Font, TextSize: a.TextSize, Scale: a.Scale, Density: a.Density,
 			Radius: a.Radius, SidebarWidth: a.SidebarWidth, ContentWidth: a.ContentWidth,
 		}
 	}

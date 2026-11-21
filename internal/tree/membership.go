@@ -76,7 +76,24 @@ func LoadMembership(ctx context.Context, db store.DB, tenantID, userID uuid.UUID
 		q += ` AND m.tenant_id = $2`
 		args = append(args, tenantID)
 	}
-	rows, err := db.Query(ctx, q+` ORDER BY n.depth, n.path`, args...)
+	return membershipFrom(ctx, db, q+` ORDER BY n.depth, n.path`, args...)
+}
+
+// LoadAgentMembership is LoadMembership for an agent: its tenant's roster
+// (implied by the agent row: an agent lives in exactly one tenant) and the
+// groups in agent_groups. group_members is people only.
+func LoadAgentMembership(ctx context.Context, db store.DB, agentID uuid.UUID) (Membership, error) {
+	return membershipFrom(ctx, db, `SELECT id, type, path FROM (
+			SELECT n.id, n.type, n.path, n.depth FROM agents a JOIN nodes n ON n.region = a.region AND n.tenant_id = a.tenant_id AND n.type = 'hayat/tenant'
+			WHERE a.id = $1
+			UNION ALL
+			SELECT n.id, n.type, n.path, n.depth FROM agent_groups m JOIN nodes n ON n.region = m.region AND n.id = m.group_id
+			WHERE m.agent_id = $1
+		) x ORDER BY depth, path`, agentID)
+}
+
+func membershipFrom(ctx context.Context, db store.DB, q string, args ...any) (Membership, error) {
+	rows, err := db.Query(ctx, q, args...)
 	if err != nil {
 		return Membership{}, err
 	}

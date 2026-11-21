@@ -221,6 +221,19 @@ service RegistryService {
   rpc UpdateServiceClient(UpdateServiceClientRequest) returns (UpdateServiceClientResponse);
   rpc RotateServiceClientSecret(RotateServiceClientSecretRequest) returns (RotateServiceClientSecretResponse);
   rpc SetServiceClientDisabled(SetServiceClientDisabledRequest) returns (SetServiceClientDisabledResponse);
+
+  // Enrollment codes: a one-time code a service's deployment redeems on the
+  // api role (EnrollmentService.Enroll) for its credentials, so nobody copies
+  // a secret. The code is returned here once. Making one revokes the service's
+  // other open code. For a service that exists, its owners make them (and
+  // redeeming rotates its API secret); for a name not registered yet, instance
+  // admins do (and redeeming registers it, owned by whoever made the code).
+  rpc CreateEnrollment(CreateEnrollmentRequest) returns (CreateEnrollmentResponse);
+  // A service's codes, newest first. With no service_id: the codes for
+  // services not registered yet (instance admins).
+  rpc ListEnrollments(ListEnrollmentsRequest) returns (ListEnrollmentsResponse);
+  // Turns an unused code off.
+  rpc RevokeEnrollment(RevokeEnrollmentRequest) returns (RevokeEnrollmentResponse);
 }
 
 message ListServicesRequest {}
@@ -376,6 +389,52 @@ message SetServiceClientDisabledRequest {
 }
 message SetServiceClientDisabledResponse {
   Client client = 1;
+}
+
+// An enrollment code, never the code itself.
+message Enrollment {
+  string id = 1;
+  string service_id = 2;
+  // The name a new service registers under.
+  string display_name = 3;
+  User created_by = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp expires_at = 6;
+  google.protobuf.Timestamp used_at = 7;
+  google.protobuf.Timestamp revoked_at = 8;
+  // open | used | expired | revoked
+  string status = 9;
+  // Redeeming it registered the service (otherwise it rotated the secret).
+  bool registered = 10;
+  // The sign-in client redeeming it made or kept, if the service gave an address.
+  string web_client_id = 11;
+}
+
+message CreateEnrollmentRequest {
+  string service_id = 1;
+  // For a service not registered yet: the name it registers under.
+  string display_name = 2;
+  // How long the code lasts: 300 to 604800 seconds; 0 means a day.
+  int32 ttl_seconds = 3;
+}
+message CreateEnrollmentResponse {
+  Enrollment enrollment = 1;
+  // Shown once. Starts with "hye_".
+  string code = 2;
+}
+
+message ListEnrollmentsRequest {
+  string service_id = 1;
+}
+message ListEnrollmentsResponse {
+  repeated Enrollment enrollments = 1;
+}
+
+message RevokeEnrollmentRequest {
+  string id = 1;
+}
+message RevokeEnrollmentResponse {
+  Enrollment enrollment = 1;
 }
 
 // ---------- The tree ----------

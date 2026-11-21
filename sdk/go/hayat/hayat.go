@@ -51,6 +51,7 @@ type Client struct {
 	Tree      authzv1connect.TreeServiceClient
 	Directory authzv1connect.DirectoryServiceClient
 	Schema    authzv1connect.SchemaServiceClient
+	Agents    authzv1connect.AgentServiceClient
 	watch     authzv1connect.WatchServiceClient
 
 	cfg   Config
@@ -110,6 +111,7 @@ func New(ctx context.Context, cfg Config) (*Client, error) {
 		Tree:      authzv1connect.NewTreeServiceClient(authed, api),
 		Directory: authzv1connect.NewDirectoryServiceClient(authed, api),
 		Schema:    authzv1connect.NewSchemaServiceClient(authed, api),
+		Agents:    authzv1connect.NewAgentServiceClient(authed, api),
 		watch:     authzv1connect.NewWatchServiceClient(authed, api),
 		cfg:       cfg,
 		cache:     newCache(cfg.CacheTTL),

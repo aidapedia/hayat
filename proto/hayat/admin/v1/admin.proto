@@ -107,10 +107,13 @@ service AccountService {
   rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordResponse);
   rpc ListMySessions(ListMySessionsRequest) returns (ListMySessionsResponse);
   rpc RevokeMySession(RevokeMySessionRequest) returns (RevokeMySessionResponse);
-  // How every app looks for the caller: one theme per account, which every
-  // service reads through DirectoryService.GetUserAppearance.
+  // How every app looks for the caller: the account's theme, which every app
+  // follows, and any app given a theme of its own. A service reads the one
+  // that applies to it through DirectoryService.GetUserAppearance.
   rpc GetMyAppearance(GetMyAppearanceRequest) returns (GetMyAppearanceResponse);
   rpc SetMyAppearance(SetMyAppearanceRequest) returns (SetMyAppearanceResponse);
+  // Give one app a theme of its own, or send it back to the account's.
+  rpc SetMyAppAppearance(SetMyAppAppearanceRequest) returns (SetMyAppAppearanceResponse);
   // The caller's picture: PNG, JPEG or WebP up to 5 MB, cropped square and
   // resized. Empty data removes it. It becomes the OIDC `picture` claim.
   rpc SetMyAvatar(SetMyAvatarRequest) returns (SetMyAvatarResponse);
@@ -209,12 +212,43 @@ message Appearance {
   optional int32 sidebar_width = 21;
   // narrow | default | full
   string content_width = 22;
+  // Text on the accent: buttons and anything else filled with it. Empty is
+  // black or white, whichever reads better on the accent.
+  string accent_text = 23;
+  // The interface's size as a percent of the app's own text size, 80–120.
+  // It wins over text_size, which only older themes set.
+  optional int32 scale = 24;
 }
 
 message GetMyAppearanceRequest {}
 message GetMyAppearanceResponse {
-  // Absent when the caller never chose a theme.
+  // The account's theme. Absent when the caller never chose one.
   Appearance appearance = 1;
+  // Every app the caller can theme: Hayat's console ("hayat") first, then
+  // each registered service.
+  repeated AppAppearance apps = 2;
+}
+
+// One app's theme for the caller.
+message AppAppearance {
+  // "hayat" for this console, otherwise the service's id.
+  string app = 1;
+  string name = 2;
+  string logo_url = 3;
+  // It has a theme of its own; otherwise it follows the account's.
+  bool own = 4;
+  // Its own theme, when `own`. Absent there means the app's own defaults.
+  Appearance appearance = 5;
+}
+
+message SetMyAppAppearanceRequest {
+  string app = 1;
+  // False sends the app back to the account's theme; `appearance` is ignored.
+  bool own = 2;
+  Appearance appearance = 3;
+}
+message SetMyAppAppearanceResponse {
+  AppAppearance app = 1;
 }
 
 message SetMyAppearanceRequest {

@@ -33,11 +33,12 @@ Contributing: [CONTRIBUTING.md](CONTRIBUTING.md)
 - **Accounts**: sign-up where the password is chosen from the emailed link,
   password reset, sessions with single sign-on across every application, and a
   first-admin setup page guarded by a token printed in the log.
-- **Appearance**: one theme per account — colors (accent, content, sidebar,
-  status), text size, density, corners, sidebar and content width, font —
-  edited at Account → Appearance and read by every service
-  (`DirectoryService.GetUserAppearance`), so every app looks the same for that
-  person. Anything left on Default stays each app's own.
+- **Appearance**: a theme per account — colors (accent, button text, content,
+  sidebar, status), UI scale, density, corners, sidebar and page width, font —
+  that every app follows, and optionally a theme of its own for any one app.
+  Both are edited at Account → Appearance; each service reads the one that
+  applies to it (`DirectoryService.GetUserAppearance`). Anything left on
+  Default stays each app's own.
 - **Tenants**: organisations shared by every service, with members and an owner.
 
 **Phase 2, authorization**
@@ -213,8 +214,22 @@ Every OAuth client belongs to a service (see below).
 
 ## Plug a service in
 
-1. **Register it** (instance admin): console → **Services → Register service**.
-   You get a namespace (`billing`), API credentials, and a first owner.
+1. **Register it** (instance admin), one of two ways:
+   - **Enroll it** — console → **Services → Enroll service** (or
+     `hayat enrollment-code --service billing`) makes a one-time code. The
+     service redeems it on the api role (`EnrollmentService.Enroll`, the one call
+     that needs no access token) — typically from its own first-run setup page —
+     and gets back its API credentials and, for a web app, a sign-in client for
+     its address. It can send its contract and an admin role to grant, so one
+     paste sets it up. Nobody copies a secret. Whoever made the code owns the
+     service. A code is single use, lasts 5 minutes to 7 days (a day by default),
+     can be revoked, and making another revokes the last. Later, an owner's code
+     (the service's **Enrollment** tab) re-enrolls it: that rotates its API
+     secret, and the old one stops working at once.
+   - **Register manually** — console → **Services → Register manually** shows
+     the API credentials once, to copy into the service's configuration.
+
+   Either way you get a namespace (`billing`), API credentials, and a first owner.
 2. **Publish its contract**, from CI with the SDK or in the console:
 
    ```yaml

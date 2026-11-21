@@ -6,6 +6,8 @@
 //	hayat rotate-keys                        rotate the signing keys now
 //	hayat seed                               dev data and sign-in accounts (HAYAT_DEV only)
 //	hayat import --file b.json [--app-url u] load another system's people and access (tabletsgo)
+//	hayat enrollment-code --service s [--name n] [--by email] [--ttl 24h]
+//	                                         a one-time code a service redeems for its credentials
 //	hayat version
 package main
 
@@ -20,6 +22,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/aidapedia/hayat/internal/adminserver"
 	"github.com/aidapedia/hayat/internal/app"
@@ -45,7 +48,7 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: hayat <serve|migrate|setup-link|rotate-keys|seed|import|version> [flags]")
+	fmt.Fprintln(os.Stderr, "usage: hayat <serve|migrate|setup-link|rotate-keys|seed|import|enrollment-code|version> [flags]")
 }
 
 func run(ctx context.Context, cmd string, args []string, log *slog.Logger) error {
@@ -154,6 +157,29 @@ func run(ctx context.Context, cmd string, args []string, log *slog.Logger) error
 			fmt.Println("Result written to " + *out)
 		}
 		return importErr
+
+	case "enrollment-code":
+		fs := flag.NewFlagSet("enrollment-code", flag.ExitOnError)
+		service := fs.String("service", "", "the service's namespace, e.g. tabletsgo (required)")
+		name := fs.String("name", "", "the name a new service registers under")
+		by := fs.String("by", "", "whose code it is (default: the first instance admin); a new service's owner and admin")
+		ttl := fs.Duration("ttl", 24*time.Hour, "how long the code lasts (5m to 168h)")
+		_ = fs.Parse(args)
+		if *service == "" {
+			return errors.New("enrollment-code needs --service")
+		}
+		a, err := app.New(cfg, s, log)
+		if err != nil {
+			return err
+		}
+		e, code, maker, err := a.MintEnrollmentCode(ctx, *service, *name, *by, *ttl)
+		if err != nil {
+			return err
+		}
+		fmt.Println(code)
+		fmt.Fprintf(os.Stderr, "Enrollment code for %q, made by %s, valid until %s. Any earlier open code for it is revoked.\n",
+			e.ServiceID, maker.Email, e.ExpiresAt.Format(time.RFC3339))
+		return nil
 
 	case "rotate-keys":
 		a, err := app.New(cfg, s, log)

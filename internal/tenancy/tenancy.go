@@ -39,6 +39,7 @@ var (
 	ErrBadSlug     = errs.New("a slug is 2–48 lowercase letters, digits and dashes, starting with a letter")
 	ErrNotEmpty    = errs.New("this tenant still has resources filed under it; move or delete them first")
 	ErrOwner       = errs.New("the owner can't be removed; transfer ownership first")
+	ErrHasAgents   = errs.New("this tenant still has agents; remove them first")
 	ErrNotMember   = errs.New("the new owner must already be a member")
 	ErrNameMissing = errs.New("give the tenant a name")
 )
@@ -335,6 +336,13 @@ func (s *Service) Delete(ctx context.Context, id uuid.UUID, actor string) error 
 		if children > 0 {
 			return ErrNotEmpty
 		}
+		var agents int
+		if err := tx.QueryRow(ctx, `SELECT count(*) FROM agent_refs WHERE tenant_id = $1`, id).Scan(&agents); err != nil {
+			return err
+		}
+		if agents > 0 {
+			return ErrHasAgents
+		}
 		for _, q := range []string{
 			`DELETE FROM group_members WHERE region = $1 AND group_id = $2`,
 			`DELETE FROM grants WHERE region = $1 AND (node_id = $2 OR principal_id = $2)`,
@@ -483,6 +491,12 @@ func (s *Service) RemoveMember(ctx context.Context, tenantID, userID uuid.UUID, 
 		}
 		if _, err := tx.Exec(ctx, `DELETE FROM grants WHERE region = $1 AND tenant_id = $2 AND principal_type = 'user' AND principal_id = $3`,
 			t.Region, tenantID, userID); err != nil {
+			return err
+		}
+		// Every agent answers to someone in its tenant: the ones they sponsored
+		// stop until an owner names a new sponsor.
+		if _, err := tx.Exec(ctx, `UPDATE agents SET status = 'paused', status_reason = 'sponsor_left', updated_at = now()
+			WHERE region = $1 AND tenant_id = $2 AND sponsor_user_id = $3 AND status = 'active'`, t.Region, tenantID, userID); err != nil {
 			return err
 		}
 		if err := bump(ctx, tx, t.Region, tenantID); err != nil {

@@ -71,3 +71,64 @@ func TestAppearanceRefusesWhatNoAppCanDraw(t *testing.T) {
 		}
 	}
 }
+
+func TestAppFollowsTheAccountUntilGivenItsOwnTheme(t *testing.T) {
+	svc, _ := newService(t)
+	ctx := context.Background()
+	u, err := svc.CreateAdmin(ctx, "apps@example.com", "Apps", "a-long-password")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.SetAppearance(ctx, u.ID, &identity.Appearance{Mode: "dark", Accent: "#3fae86"}, "test"); err != nil {
+		t.Fatal(err)
+	}
+
+	if a, own, err := svc.AppearanceFor(ctx, u.ID, "tabletsgo"); err != nil || own || a == nil || a.Accent != "#3fae86" {
+		t.Fatalf("an app follows the account until given its own, got %+v, own=%v, %v", a, own, err)
+	}
+
+	saved, err := svc.SetAppAppearance(ctx, u.ID, "tabletsgo", &identity.Appearance{Preset: "tg-dark", Accent: "#6FCF6A", AccentText: "#FFFFFF", Scale: i32(90)}, true, "test")
+	if err != nil || saved.AccentText != "#ffffff" || *saved.Scale != 90 {
+		t.Fatalf("an app's own theme is checked like the account's, got %+v, %v", saved, err)
+	}
+	if a, own, _ := svc.AppearanceFor(ctx, u.ID, "tabletsgo"); !own || a.Accent != "#6fcf6a" {
+		t.Fatalf("the app now shows its own, got %+v, own=%v", a, own)
+	}
+	if a, own, _ := svc.AppearanceFor(ctx, u.ID, "hayat"); own || a.Accent != "#3fae86" {
+		t.Fatalf("other apps still follow the account, got %+v, own=%v", a, own)
+	}
+
+	// Its own theme setting nothing is the app's defaults, not the account's.
+	if _, err := svc.SetAppAppearance(ctx, u.ID, "hayat", &identity.Appearance{}, true, "test"); err != nil {
+		t.Fatal(err)
+	}
+	if a, own, _ := svc.AppearanceFor(ctx, u.ID, "hayat"); !own || a != nil {
+		t.Fatalf("an empty own theme is the app's defaults, got %+v, own=%v", a, own)
+	}
+	_, apps, _ := svc.Appearances(ctx, u.ID)
+	if len(apps) != 2 {
+		t.Fatalf("two apps have their own, got %+v", apps)
+	}
+
+	// Back to following.
+	for _, app := range []string{"tabletsgo", "hayat"} {
+		if _, err := svc.SetAppAppearance(ctx, u.ID, app, nil, false, "test"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if a, own, _ := svc.AppearanceFor(ctx, u.ID, "tabletsgo"); own || a.Accent != "#3fae86" {
+		t.Fatalf("following again shows the account's, got %+v, own=%v", a, own)
+	}
+	if _, apps, _ := svc.Appearances(ctx, u.ID); len(apps) != 0 {
+		t.Fatalf("nothing left of its own, got %+v", apps)
+	}
+
+	for name, a := range map[string]*identity.Appearance{"scale": {Scale: i32(150)}, "accent text": {AccentText: "white"}} {
+		if _, err := svc.SetAppAppearance(ctx, u.ID, "tabletsgo", a, true, "test"); err == nil {
+			t.Errorf("%s: accepted %+v", name, a)
+		}
+	}
+	if _, err := svc.SetAppAppearance(ctx, u.ID, "Not An App", nil, true, "test"); err == nil {
+		t.Error("an app name that can't be a service was accepted")
+	}
+}

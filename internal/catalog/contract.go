@@ -64,6 +64,9 @@ type ManifestPerm struct {
 	// description it is display text, so a later version may change it.
 	Label       string `yaml:"label,omitempty" json:"label,omitempty"`
 	Description string `yaml:"description,omitempty" json:"description,omitempty"`
+	// PeopleOnly keeps a permission away from agents (approving, administering).
+	// A later version may turn it on, never off.
+	PeopleOnly bool `yaml:"people_only,omitempty" json:"people_only,omitempty"`
 }
 
 type ManifestRole struct {
@@ -182,7 +185,7 @@ func compile(m Manifest, snap *Snapshot) (compiled, []string, error) {
 			return compiled{}, nil, errs.Newf("permission %q is listed twice", p.Key)
 		}
 		perms[key] = true
-		out.perms = append(out.perms, Permission{Key: key, Service: svc, Scope: scope, Label: strings.TrimSpace(p.Label), Description: strings.TrimSpace(p.Description)})
+		out.perms = append(out.perms, Permission{Key: key, Service: svc, Scope: scope, Label: strings.TrimSpace(p.Label), Description: strings.TrimSpace(p.Description), PeopleOnly: p.PeopleOnly})
 	}
 
 	for _, t := range m.ResourceTypes {
@@ -304,6 +307,9 @@ func diff(prev, next compiled) (Summary, error) {
 		}
 		if cur.Scope != old.Scope {
 			return s, errs.Newf("permission %s changed its scope; scopes can't change", key)
+		}
+		if old.PeopleOnly && !cur.PeopleOnly {
+			return s, errs.Newf("permission %s dropped people_only; it can be turned on, never off", key)
 		}
 	}
 	for key := range nextPerms {
@@ -520,8 +526,9 @@ func (c *Service) activate(ctx context.Context, tx pgx.Tx, svc string, version i
 		}
 	}
 	for _, p := range next.perms {
-		if _, err := tx.Exec(ctx, `INSERT INTO permissions (key, service_id, scope, label, description) VALUES ($1, $2, $3, $4, $5)
-			ON CONFLICT (key) DO UPDATE SET label = EXCLUDED.label, description = EXCLUDED.description`, p.Key, p.Service, p.Scope, p.Label, p.Description); err != nil {
+		if _, err := tx.Exec(ctx, `INSERT INTO permissions (key, service_id, scope, label, description, people_only) VALUES ($1, $2, $3, $4, $5, $6)
+			ON CONFLICT (key) DO UPDATE SET label = EXCLUDED.label, description = EXCLUDED.description,
+				people_only = permissions.people_only OR EXCLUDED.people_only`, p.Key, p.Service, p.Scope, p.Label, p.Description, p.PeopleOnly); err != nil {
 			return err
 		}
 	}
