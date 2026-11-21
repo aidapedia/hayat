@@ -59,7 +59,7 @@ function InUseDialog({ role, onClose }: { role: Role; onClose: () => void }) {
           </DialogDescription>
         </DialogHeader>
         <div className="max-h-[50vh] overflow-y-auto">
-          {error ? <ErrorState message={error} onRetry={reload} /> : loading && !data ? <LoadingState /> : <RoleGrantsList grants={data?.grants ?? []} />}
+          {error ? <ErrorState message={error} onRetry={reload} /> : loading && !data ? <LoadingState size="sm" /> : <RoleGrantsList grants={data?.grants ?? []} />}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>

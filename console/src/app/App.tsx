@@ -3,7 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes, useParams } from 'react-router'
 import { AuthProvider, CallbackPage, SessionGate, useMe } from '@/features/auth'
 import { loadConfig, type AppConfig } from '@/shared/lib/config'
 import { ThemeProvider } from '@/shared/lib/theme'
-import { LoadingState } from '@/shared/ui/bits'
+import { LoadingScreen, LoadingState } from '@/shared/ui/bits'
 import { Toaster } from '@/shared/ui/sonner'
 import { TooltipProvider } from '@/shared/ui/tooltip'
 import HomeLayout from './layouts/HomeLayout'
@@ -63,9 +63,7 @@ export default function App() {
         {error ? (
           <div className="flex h-full items-center justify-center px-4 text-center text-[13px] text-muted-foreground">{error}</div>
         ) : !config ? (
-          <div className="flex h-full items-center justify-center">
-            <LoadingState />
-          </div>
+          <LoadingScreen />
         ) : (
           <AuthProvider config={config}>
             <BrowserRouter>
