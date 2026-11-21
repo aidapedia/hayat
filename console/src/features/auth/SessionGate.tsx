@@ -5,7 +5,7 @@ import { errorMessage, useClient } from '@/shared/api/client'
 import { setDisplayZone } from '@/shared/lib/datetime'
 import { consoleLook, useTheme } from '@/shared/lib/theme'
 import { Button } from '@/shared/ui/button'
-import { LoadingState } from '@/shared/ui/bits'
+import { LoadingScreen } from '@/shared/ui/bits'
 import { useAuth } from './AuthContext'
 
 type Me = { me: GetMeResponse; isAdmin: boolean; reload: () => Promise<void> }
@@ -65,13 +65,8 @@ export function SessionGate({ children }: { children: ReactNode }) {
       </FullScreen>
     )
   }
-  if (!me) {
-    return (
-      <FullScreen>
-        <LoadingState label="Signing you in…" />
-      </FullScreen>
-    )
-  }
+  if (!me) return <LoadingScreen label="Signing you in…" />
+
   return <MeContext.Provider value={{ me, isAdmin: !!me.user?.isAdmin, reload: load }}>{children}</MeContext.Provider>
 }
 
@@ -92,16 +87,11 @@ export function CallbackPage() {
       .catch((err) => setError(errorMessage(err)))
   }, [manager, navigate, location.key])
 
+  if (!error) return <LoadingScreen label="Finishing sign-in…" />
   return (
     <FullScreen>
-      {error ? (
-        <>
-          <p className="text-[13px] text-muted-foreground">Sign-in didn't finish: {error}</p>
-          <Button onClick={() => navigate('/', { replace: true })}>Start again</Button>
-        </>
-      ) : (
-        <LoadingState label="Finishing sign-in…" />
-      )}
+      <p className="text-[13px] text-muted-foreground">Sign-in didn't finish: {error}</p>
+      <Button onClick={() => navigate('/', { replace: true })}>Start again</Button>
     </FullScreen>
   )
 }
