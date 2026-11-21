@@ -1,5 +1,6 @@
 import type { Node } from '@/shared/api/gen/hayat/admin/v1/policy_pb'
 
+export const ROOT = 'hayat/root'
 export const TENANT = 'hayat/tenant'
 export const GROUP = 'hayat/group'
 
@@ -8,6 +9,7 @@ export const isContainer = (type: string) => type === TENANT || type === GROUP
 
 /** "Tenant", "Group", or a service type as "Connection · tabletsgo". */
 export function typeLabel(type: string) {
+  if (type === ROOT) return 'Instance'
   if (type === TENANT) return 'Tenant'
   if (type === GROUP) return 'Group'
   const [service, kind = type] = type.split('/')
