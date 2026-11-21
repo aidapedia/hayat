@@ -1,7 +1,7 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
-import { Boxes, Plus } from 'lucide-react'
+import { Boxes, KeyRound, Plus } from 'lucide-react'
 import { RegistryService } from '@/shared/api/gen/hayat/admin/v1/policy_pb'
 import { errorMessage, useClient } from '@/shared/api/client'
 import { useQuery } from '@/shared/hooks/use-query'
@@ -12,9 +12,11 @@ import { EmptyState, ErrorState, Field, LoadingState, PersonAvatar, Pill, Search
 import { Button } from '@/shared/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
 import { Input } from '@/shared/ui/input'
-import { PageHeader } from '@/shared/ui/page/PageHeader'
+import { PageHeader, Section } from '@/shared/ui/page/PageHeader'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
 import { Pagination } from '@/shared/ui/table/Pagination'
+import { EnrollmentDialog } from './components/EnrollmentDialog'
+import { EnrollmentTable } from './components/EnrollmentTable'
 import { ServiceTile } from './components/ServiceTile'
 import { CredentialsDialog } from './CredentialsDialog'
 
@@ -89,6 +91,13 @@ export default function ServicesPage() {
   }, [data, query])
   const { pageRows: items, pager } = usePagination(rows, { resetKey: query })
   const [registering, setRegistering] = useState(false)
+  const [enrolling, setEnrolling] = useState(false)
+  // Codes an instance admin made for services that haven't redeemed them yet.
+  const waiting = useQuery(
+    () => (isAdmin ? registry.listEnrollments({ serviceId: '' }).then((r) => r.enrollments) : Promise.resolve([])),
+    [registry, isAdmin],
+  )
+  const openCodes = (waiting.data ?? []).filter((e) => e.status === 'open')
   const [creds, setCreds] = useState<{ id: string; clientId: string; secret: string } | null>(null)
 
   return (
@@ -98,9 +107,14 @@ export default function ServicesPage() {
         desc="Every application that uses Hayat is a service. It owns a namespace, a contract, an API credential, and the OAuth clients people sign in through."
         action={
           isAdmin && (
-            <Button size="lg" onClick={() => setRegistering(true)}>
-              <Plus /> Register service
-            </Button>
+            <div className="flex gap-2">
+              <Button size="lg" variant="outline" onClick={() => setRegistering(true)} title="Register it here and copy its secret by hand">
+                <Plus /> Register manually
+              </Button>
+              <Button size="lg" onClick={() => setEnrolling(true)} title="A one-time code the service pastes into its setup page">
+                <KeyRound /> Enroll service
+              </Button>
+            </div>
           )
         }
       />
@@ -167,6 +181,20 @@ export default function ServicesPage() {
           </div>
         )}
       </div>
+      {openCodes.length > 0 && (
+        <Section title="Waiting to enroll" desc="Codes for services that haven't redeemed them yet. Redeeming one registers the service.">
+          <EnrollmentTable rows={openCodes} showService canManage onChanged={waiting.reload} />
+        </Section>
+      )}
+      {enrolling && (
+        <EnrollmentDialog
+          onClose={() => {
+            setEnrolling(false)
+            void reload()
+          }}
+          onMade={waiting.reload}
+        />
+      )}
       {registering && (
         <RegisterDialog
           onClose={() => setRegistering(false)}

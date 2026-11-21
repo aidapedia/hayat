@@ -40,6 +40,8 @@ const (
 	AgentServiceName = "hayat.authz.v1.AgentService"
 	// SchemaServiceName is the fully-qualified name of the SchemaService service.
 	SchemaServiceName = "hayat.authz.v1.SchemaService"
+	// EnrollmentServiceName is the fully-qualified name of the EnrollmentService service.
+	EnrollmentServiceName = "hayat.authz.v1.EnrollmentService"
 )
 
 // These constants are the fully-qualified names of the RPCs defined in this package. They're
@@ -102,6 +104,12 @@ const (
 	// SchemaServicePublishContractProcedure is the fully-qualified name of the SchemaService's
 	// PublishContract RPC.
 	SchemaServicePublishContractProcedure = "/hayat.authz.v1.SchemaService/PublishContract"
+	// EnrollmentServiceInspectEnrollmentProcedure is the fully-qualified name of the
+	// EnrollmentService's InspectEnrollment RPC.
+	EnrollmentServiceInspectEnrollmentProcedure = "/hayat.authz.v1.EnrollmentService/InspectEnrollment"
+	// EnrollmentServiceEnrollProcedure is the fully-qualified name of the EnrollmentService's Enroll
+	// RPC.
+	EnrollmentServiceEnrollProcedure = "/hayat.authz.v1.EnrollmentService/Enroll"
 )
 
 // AuthzServiceClient is a client for the hayat.authz.v1.AuthzService service.
@@ -906,4 +914,104 @@ type UnimplementedSchemaServiceHandler struct{}
 
 func (UnimplementedSchemaServiceHandler) PublishContract(context.Context, *connect.Request[v1.PublishContractRequest]) (*connect.Response[v1.PublishContractResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.authz.v1.SchemaService.PublishContract is not implemented"))
+}
+
+// EnrollmentServiceClient is a client for the hayat.authz.v1.EnrollmentService service.
+type EnrollmentServiceClient interface {
+	// What a code would do, without spending it: a setup page shows this before
+	// the person confirms.
+	InspectEnrollment(context.Context, *connect.Request[v1.InspectEnrollmentRequest]) (*connect.Response[v1.InspectEnrollmentResponse], error)
+	Enroll(context.Context, *connect.Request[v1.EnrollRequest]) (*connect.Response[v1.EnrollResponse], error)
+}
+
+// NewEnrollmentServiceClient constructs a client for the hayat.authz.v1.EnrollmentService service.
+// By default, it uses the Connect protocol with the binary Protobuf Codec, asks for gzipped
+// responses, and sends uncompressed requests. To use the gRPC or gRPC-Web protocols, supply the
+// connect.WithGRPC() or connect.WithGRPCWeb() options.
+//
+// The URL supplied here should be the base URL for the Connect or gRPC server (for example,
+// http://api.acme.com or https://acme.com/grpc).
+func NewEnrollmentServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) EnrollmentServiceClient {
+	baseURL = strings.TrimRight(baseURL, "/")
+	enrollmentServiceMethods := v1.File_hayat_authz_v1_authz_proto.Services().ByName("EnrollmentService").Methods()
+	return &enrollmentServiceClient{
+		inspectEnrollment: connect.NewClient[v1.InspectEnrollmentRequest, v1.InspectEnrollmentResponse](
+			httpClient,
+			baseURL+EnrollmentServiceInspectEnrollmentProcedure,
+			connect.WithSchema(enrollmentServiceMethods.ByName("InspectEnrollment")),
+			connect.WithClientOptions(opts...),
+		),
+		enroll: connect.NewClient[v1.EnrollRequest, v1.EnrollResponse](
+			httpClient,
+			baseURL+EnrollmentServiceEnrollProcedure,
+			connect.WithSchema(enrollmentServiceMethods.ByName("Enroll")),
+			connect.WithClientOptions(opts...),
+		),
+	}
+}
+
+// enrollmentServiceClient implements EnrollmentServiceClient.
+type enrollmentServiceClient struct {
+	inspectEnrollment *connect.Client[v1.InspectEnrollmentRequest, v1.InspectEnrollmentResponse]
+	enroll            *connect.Client[v1.EnrollRequest, v1.EnrollResponse]
+}
+
+// InspectEnrollment calls hayat.authz.v1.EnrollmentService.InspectEnrollment.
+func (c *enrollmentServiceClient) InspectEnrollment(ctx context.Context, req *connect.Request[v1.InspectEnrollmentRequest]) (*connect.Response[v1.InspectEnrollmentResponse], error) {
+	return c.inspectEnrollment.CallUnary(ctx, req)
+}
+
+// Enroll calls hayat.authz.v1.EnrollmentService.Enroll.
+func (c *enrollmentServiceClient) Enroll(ctx context.Context, req *connect.Request[v1.EnrollRequest]) (*connect.Response[v1.EnrollResponse], error) {
+	return c.enroll.CallUnary(ctx, req)
+}
+
+// EnrollmentServiceHandler is an implementation of the hayat.authz.v1.EnrollmentService service.
+type EnrollmentServiceHandler interface {
+	// What a code would do, without spending it: a setup page shows this before
+	// the person confirms.
+	InspectEnrollment(context.Context, *connect.Request[v1.InspectEnrollmentRequest]) (*connect.Response[v1.InspectEnrollmentResponse], error)
+	Enroll(context.Context, *connect.Request[v1.EnrollRequest]) (*connect.Response[v1.EnrollResponse], error)
+}
+
+// NewEnrollmentServiceHandler builds an HTTP handler from the service implementation. It returns
+// the path on which to mount the handler and the handler itself.
+//
+// By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
+// and JSON codecs. They also support gzip compression.
+func NewEnrollmentServiceHandler(svc EnrollmentServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	enrollmentServiceMethods := v1.File_hayat_authz_v1_authz_proto.Services().ByName("EnrollmentService").Methods()
+	enrollmentServiceInspectEnrollmentHandler := connect.NewUnaryHandler(
+		EnrollmentServiceInspectEnrollmentProcedure,
+		svc.InspectEnrollment,
+		connect.WithSchema(enrollmentServiceMethods.ByName("InspectEnrollment")),
+		connect.WithHandlerOptions(opts...),
+	)
+	enrollmentServiceEnrollHandler := connect.NewUnaryHandler(
+		EnrollmentServiceEnrollProcedure,
+		svc.Enroll,
+		connect.WithSchema(enrollmentServiceMethods.ByName("Enroll")),
+		connect.WithHandlerOptions(opts...),
+	)
+	return "/hayat.authz.v1.EnrollmentService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case EnrollmentServiceInspectEnrollmentProcedure:
+			enrollmentServiceInspectEnrollmentHandler.ServeHTTP(w, r)
+		case EnrollmentServiceEnrollProcedure:
+			enrollmentServiceEnrollHandler.ServeHTTP(w, r)
+		default:
+			http.NotFound(w, r)
+		}
+	})
+}
+
+// UnimplementedEnrollmentServiceHandler returns CodeUnimplemented from all methods.
+type UnimplementedEnrollmentServiceHandler struct{}
+
+func (UnimplementedEnrollmentServiceHandler) InspectEnrollment(context.Context, *connect.Request[v1.InspectEnrollmentRequest]) (*connect.Response[v1.InspectEnrollmentResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.authz.v1.EnrollmentService.InspectEnrollment is not implemented"))
+}
+
+func (UnimplementedEnrollmentServiceHandler) Enroll(context.Context, *connect.Request[v1.EnrollRequest]) (*connect.Response[v1.EnrollResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hayat.authz.v1.EnrollmentService.Enroll is not implemented"))
 }

@@ -444,3 +444,75 @@ message PublishContractResponse {
   string status = 2;
   repeated string namespaces = 3;
 }
+
+// ---------- Enrollment ----------
+
+// The one service that takes no access token: the enrollment code is the
+// credential. A service's deployment is given a code an owner made in Hayat's
+// console, calls Enroll once, and keeps what comes back. A code for a service
+// Hayat doesn't know registers it; a code for one it knows rotates its API
+// secret (the old one stops working at once). A code is single use; one that
+// fails is given back, so the caller can fix its request and retry.
+service EnrollmentService {
+  // What a code would do, without spending it: a setup page shows this before
+  // the person confirms.
+  rpc InspectEnrollment(InspectEnrollmentRequest) returns (InspectEnrollmentResponse);
+  rpc Enroll(EnrollRequest) returns (EnrollResponse);
+}
+
+message InspectEnrollmentRequest {
+  string code = 1;
+}
+
+message InspectEnrollmentResponse {
+  string service_id = 1;
+  // The name it registers under (or the service's name when it exists).
+  string display_name = 2;
+  // Redeeming it registers the service; otherwise it rotates its API secret.
+  bool registers = 3;
+  // Who made the code: by default, the admin of a service it registers.
+  string made_by_email = 4;
+  string made_by_name = 5;
+  google.protobuf.Timestamp expires_at = 6;
+  string issuer = 7;
+}
+
+message EnrollRequest {
+  // "hye_…", from the console or `hayat enrollment-code`.
+  string code = 1;
+  // The service's contract (YAML or JSON), published when it is newer than
+  // the latest version. Optional.
+  string manifest = 2;
+  // Used when this registers the service.
+  string display_name = 3;
+  string description = 4;
+  // The service's public address. When set, a public sign-in client with
+  // <app_url>/callback as a redirect is made, or kept if one exists.
+  string app_url = 5;
+  // A role of the service's own namespace (e.g. "tabletsgo.admin") granted
+  // at the root to whoever made the code (or admin_email), when this
+  // registers the service.
+  string admin_role = 6;
+  // Who gets admin_role instead of the code's maker. Someone Hayat doesn't
+  // know yet is invited (an email with a link to choose a password).
+  string admin_email = 7;
+}
+
+message EnrollResponse {
+  string service_id = 1;
+  // The service's API credential (client credentials grant).
+  string client_id = 2;
+  string client_secret = 3;
+  // The public sign-in client for app_url; empty without one.
+  string web_client_id = 4;
+  // Hayat's issuer: where people sign in, and what tokens name.
+  string issuer = 5;
+  // This call registered the service; otherwise it rotated the secret.
+  bool registered = 6;
+  int32 contract_version = 7;
+  // "active", "pending" (it waits for other services' owners), or empty when
+  // nothing was published.
+  string contract_status = 8;
+  // What worked but deserves a look (a role not granted, a client turned off).
+  repeated string warnings = 9;
+}

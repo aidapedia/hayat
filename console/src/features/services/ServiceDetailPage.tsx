@@ -16,6 +16,7 @@ import { ownPending } from './lib'
 import { ClientDetail } from './tabs/ClientDetail'
 import { ClientsTab } from './tabs/ClientsTab'
 import { ContractTab } from './tabs/ContractTab'
+import { EnrollmentTab } from './tabs/EnrollmentTab'
 import { LoginPageTab } from './tabs/LoginPageTab'
 import { OverviewTab } from './tabs/OverviewTab'
 import { OwnersTab } from './tabs/OwnersTab'
@@ -23,9 +24,9 @@ import { PublishContract } from './tabs/PublishContract'
 
 /**
  * One service: its header, then a tab per part (each an address):
- * /services/:id, /contract, /contract/publish, /clients, /clients/:clientId, /login, /owners.
+ * /services/:id, /contract, /contract/publish, /clients, /clients/:clientId, /login, /owners, /enrollment.
  * Hayat's own service has only an overview, its clients and its login page.
- * The login page tab shows to whoever may manage the service.
+ * The login page and enrollment tabs show to whoever may manage the service.
  */
 export default function ServiceDetailPage() {
   const { id = '', tab = '', sub = '' } = useParams()
@@ -49,8 +50,13 @@ export default function ServiceDetailPage() {
         { to: `${base}/clients`, label: `Clients · ${s.signInClients}` },
         ...loginTab,
         { to: `${base}/owners`, label: `Owners · ${s.owners.length}` },
+        ...(data.canManage ? [{ to: `${base}/enrollment`, label: 'Enrollment' }] : []),
       ]
-  const known = [...(s.builtin ? ['', 'clients'] : ['', 'contract', 'clients', 'owners']), ...(data.canManage ? ['login'] : [])]
+  const known = [
+    ...(s.builtin ? ['', 'clients'] : ['', 'contract', 'clients', 'owners']),
+    ...(data.canManage ? ['login'] : []),
+    ...(data.canManage && !s.builtin ? ['enrollment'] : []),
+  ]
   if (!known.includes(tab)) return <Navigate to={base} replace />
 
   const crumbs: Crumb[] = [{ label: s.displayName, to: tab ? base : undefined }]
@@ -69,6 +75,9 @@ export default function ServiceDetailPage() {
       break
     case 'owners':
       body = <OwnersTab service={s} canManage={data.canManage} onChanged={reload} />
+      break
+    case 'enrollment':
+      body = <EnrollmentTab service={s} />
       break
     default:
       body = <OverviewTab data={data} onChanged={reload} />

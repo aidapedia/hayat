@@ -171,6 +171,7 @@ internal/agents       agents: sponsor, status, the services they work in, agent_
 internal/oidc         zitadel/oidc storage: clients, keys, auth requests, tokens
 internal/revision     per-tenant revisions + policy events (Watch)
 internal/catalog      node types, permissions, roles, services, contracts
+internal/enrollment   one-time codes a service redeems on the api role for its credentials (registers or rotates)
 internal/tree         nodes, groups, rosters, grants, resource upserts
 internal/authz        the decision engine: At, Check, LookupResources, LookupSubjects
 internal/apiserver    the api role: gRPC/Connect for services (proto/hayat/authz/v1)
