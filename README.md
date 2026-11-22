@@ -74,10 +74,15 @@ default_roles:
 ```
 
 ```ts
-const hayat = await Hayat.create({ apiUrl, issuer, clientId, clientSecret })
+// minHayatVersion: the newest "Since" among the RPCs you call (proto/hayat/authz/v1)
+const hayat = await Hayat.create({ apiUrl, issuer, clientId, clientSecret, minHayatVersion: '1.2.0' })
 void hayat.watch()
 await hayat.check(userId, 'billing.ledger.view', ref('billing/ledger', id))
 ```
+
+Every service declares the oldest Hayat it works with, and the SDKs refuse to
+start against an older one. Hayat's service API only grows, so upgrading Hayat
+before the services that need it is always safe.
 
 The documentation covers
 [connecting an app](https://github.com/aidapedia/aidapedia/tree/HEAD/apps/hayat/src/content/docs/integrate),

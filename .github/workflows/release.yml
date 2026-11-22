@@ -8,7 +8,7 @@ name: Release
 # the tag and the version-synced files are the SAME commit.
 #
 # The binary's version is not a file: it comes from the tag, baked in at image
-# build time (-X internal/adminserver.Version). What this bumps is the console's
+# build time (-X internal/version.Version). What this bumps is the console's
 # package.json, so the console image carries the same number. The Node SDK
 # (sdk/node) keeps its own version — it is a library, released on its own.
 #

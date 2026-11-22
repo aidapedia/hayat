@@ -3,6 +3,7 @@
 //	hz, err := hayat.New(ctx, hayat.Config{
 //		APIURL: "http://hayat-api:7443", Issuer: "https://auth.example.com",
 //		ClientID: os.Getenv("HAYAT_CLIENT_ID"), ClientSecret: os.Getenv("HAYAT_CLIENT_SECRET"),
+//		MinHayatVersion: "1.2.0", // the newest "Since" among the RPCs you call
 //	})
 //	go hz.Watch(ctx) // keep the decision cache honest
 //	ok, err := hz.Check(ctx, userID, "billing.ledger.view", hayat.Ref("billing/ledger", ledgerID))
@@ -11,6 +12,13 @@
 // credentials token, a short-lived decision cache emptied per tenant by the
 // Watch stream, read-your-writes after a resource write, and offline
 // verification of user access tokens.
+//
+// Every service declares the oldest Hayat it works with (MinHayatVersion), and
+// New refuses a Hayat older than that: the RPCs in proto/hayat/authz/v1 each
+// say the release they first shipped in ("Since 1.2.0."), and the newest one
+// your service calls is its minimum. Hayat only adds to that API, so a newer
+// Hayat always works. CheckVersion does the same check without credentials,
+// for a service that hasn't enrolled yet.
 package hayat
 
 import (
@@ -38,6 +46,12 @@ type Config struct {
 	Issuer       string
 	ClientID     string
 	ClientSecret string
+	// MinHayatVersion is the oldest Hayat release this service works with,
+	// e.g. "1.2.0": the newest "Since" among the RPCs it calls (see
+	// proto/hayat/authz/v1). Required. New refuses an older Hayat with a
+	// *VersionError; one below VersionFloor is raised to it. Bump it in the same
+	// change that starts calling a newer RPC.
+	MinHayatVersion string
 	// CacheTTL bounds how long a decision is reused. Default 10s; negative
 	// turns the cache off.
 	CacheTTL time.Duration
@@ -54,9 +68,10 @@ type Client struct {
 	Agents    authzv1connect.AgentServiceClient
 	watch     authzv1connect.WatchServiceClient
 
-	cfg   Config
-	cache *cache
-	keys  *keySet
+	cfg           Config
+	serverVersion string
+	cache         *cache
+	keys          *keySet
 
 	mu        sync.Mutex
 	lastRev   int64
@@ -83,10 +98,15 @@ func discover(ctx context.Context, hc *http.Client, issuer string) (discovery, e
 	return d, json.NewDecoder(resp.Body).Decode(&d)
 }
 
-// New discovers the issuer and prepares the API clients. It makes no API call.
+// New discovers the issuer, checks that the Hayat at APIURL is at least
+// MinHayatVersion (errors.Is(err, ErrHayatTooOld) when it isn't), and prepares
+// the API clients.
 func New(ctx context.Context, cfg Config) (*Client, error) {
 	if cfg.APIURL == "" || cfg.Issuer == "" || cfg.ClientID == "" || cfg.ClientSecret == "" {
 		return nil, errors.New("hayat: APIURL, Issuer, ClientID and ClientSecret are required")
+	}
+	if _, err := minVersion(cfg.MinHayatVersion); err != nil {
+		return nil, err
 	}
 	if cfg.CacheTTL == 0 {
 		cfg.CacheTTL = 10 * time.Second
@@ -94,6 +114,10 @@ func New(ctx context.Context, cfg Config) (*Client, error) {
 	base := cfg.HTTPClient
 	if base == nil {
 		base = http.DefaultClient
+	}
+	have, err := CheckVersion(ctx, cfg.APIURL, cfg.MinHayatVersion, base)
+	if err != nil {
+		return nil, err
 	}
 	d, err := discover(ctx, base, cfg.Issuer)
 	if err != nil {
@@ -107,17 +131,22 @@ func New(ctx context.Context, cfg Config) (*Client, error) {
 	}}
 	api := strings.TrimRight(cfg.APIURL, "/")
 	return &Client{
-		Authz:     authzv1connect.NewAuthzServiceClient(authed, api),
-		Tree:      authzv1connect.NewTreeServiceClient(authed, api),
-		Directory: authzv1connect.NewDirectoryServiceClient(authed, api),
-		Schema:    authzv1connect.NewSchemaServiceClient(authed, api),
-		Agents:    authzv1connect.NewAgentServiceClient(authed, api),
-		watch:     authzv1connect.NewWatchServiceClient(authed, api),
-		cfg:       cfg,
-		cache:     newCache(cfg.CacheTTL),
-		keys:      &keySet{url: d.JWKSURI, issuer: d.Issuer, hc: base},
+		Authz:         authzv1connect.NewAuthzServiceClient(authed, api),
+		Tree:          authzv1connect.NewTreeServiceClient(authed, api),
+		Directory:     authzv1connect.NewDirectoryServiceClient(authed, api),
+		Schema:        authzv1connect.NewSchemaServiceClient(authed, api),
+		Agents:        authzv1connect.NewAgentServiceClient(authed, api),
+		watch:         authzv1connect.NewWatchServiceClient(authed, api),
+		cfg:           cfg,
+		serverVersion: have,
+		cache:         newCache(cfg.CacheTTL),
+		keys:          &keySet{url: d.JWKSURI, issuer: d.Issuer, hc: base},
 	}, nil
 }
+
+// ServerVersion is the release the Hayat reported when New checked it ("dev"
+// for a build from source).
+func (c *Client) ServerVersion() string { return c.serverVersion }
 
 // Resource names a node: one of your resources by type and id, or a tenant
 // with Ref("hayat/tenant", tenantID).

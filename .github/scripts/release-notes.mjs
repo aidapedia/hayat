@@ -138,6 +138,10 @@ Write Markdown in exactly this shape, and nothing else:
 
 <what an operator must do: new migrations (they run with \`hayat migrate\`), new or renamed env vars, breaking API changes. If nothing, write "No action needed.">
 
+## Service API
+
+<every service, RPC or field the input adds to proto/hayat/authz/v1 (lines marked "Since <this version>"), one bullet each with what it is for — a service that calls one must declare this version as its minimum Hayat. If the input adds none, write "Nothing new: services need no newer minimum.">
+
 Rules:
 - Only state what the input shows. Never invent features, flags, numbers or links.
 - Plain, specific language. No marketing words ("powerful", "seamless", "exciting"), no emoji.

@@ -1,4 +1,4 @@
-.PHONY: up dev seed docker db db-down db-reset console test generate lint build images
+.PHONY: up dev seed docker db db-down db-reset console test generate breaking lint build images
 
 COMPOSE = docker compose -f deploy/compose/docker-compose.yml
 # Local runs use the production binary and commands; only these env vars differ.
@@ -59,6 +59,10 @@ generate:       ## regenerate Go and TypeScript from proto/
 	PATH="$$(go env GOPATH)/bin:$$PATH" buf lint && PATH="$$(go env GOPATH)/bin:$$PATH" buf generate
 	@# The Node SDK is the service API only; the admin API is the console's.
 	@rm -rf sdk/node/src/gen/hayat/admin
+
+breaking:       ## the service API only grows: compare proto/ with the last release tag
+	@T=$$(git tag -l 'v*' --sort=-v:refname | head -1); echo "buf breaking against $$T"; \
+	PATH="$$(go env GOPATH)/bin:$$PATH" buf breaking --against ".git#tag=$$T"
 
 build:
 	go build -o hayat ./cmd/hayat

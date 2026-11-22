@@ -50,7 +50,7 @@ func TestServiceJourney(t *testing.T) {
 	// 1. An instance admin registers the service and gets its API credentials.
 	reg, err := registry.RegisterService(ctx, connect.NewRequest(&adminv1.RegisterServiceRequest{Id: "billing", DisplayName: "Billing", OwnerEmail: "root@example.com"}))
 	must(t, err)
-	hz, err := hayat.New(ctx, hayat.Config{APIURL: e.api, Issuer: e.auth, ClientID: reg.Msg.ClientId, ClientSecret: reg.Msg.ClientSecret})
+	hz, err := hayat.New(ctx, hayat.Config{APIURL: e.api, Issuer: e.auth, MinHayatVersion: hayat.VersionFloor, ClientID: reg.Msg.ClientId, ClientSecret: reg.Msg.ClientSecret})
 	must(t, err)
 	go hz.Watch(ctx)
 

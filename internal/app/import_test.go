@@ -191,7 +191,7 @@ func TestDirectoryTenants(t *testing.T) {
 	ctx := context.Background()
 	res, err := e.a.Import(ctx, consoleBundle(), app.ImportOptions{})
 	must(t, err)
-	hz, err := hayat.New(ctx, hayat.Config{APIURL: e.api, Issuer: e.auth, ClientID: res.ClientID, ClientSecret: res.ClientSecret})
+	hz, err := hayat.New(ctx, hayat.Config{APIURL: e.api, Issuer: e.auth, MinHayatVersion: hayat.VersionFloor, ClientID: res.ClientID, ClientSecret: res.ClientSecret})
 	must(t, err)
 
 	tenants, err := hz.Directory.ListUserTenants(ctx, connect.NewRequest(&authzv1.ListUserTenantsRequest{UserId: memberID}))

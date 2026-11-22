@@ -1,6 +1,6 @@
 {
   "name": "@aidapedia/hayat",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Node client for Hayat's service API: decisions, resources, Watch and token verification.",
   "type": "module",
   "main": "dist/index.js",

@@ -7,6 +7,7 @@ import (
 
 	adminv1 "github.com/aidapedia/hayat/gen/go/hayat/admin/v1"
 	"github.com/aidapedia/hayat/internal/audit"
+	"github.com/aidapedia/hayat/internal/version"
 )
 
 // ---------- Overview ----------
@@ -37,7 +38,7 @@ func (o *overviewService) GetOverview(ctx context.Context, _ *connect.Request[ad
 	names := o.s.actorNames(ctx, events)
 	resp := &adminv1.GetOverviewResponse{
 		Users: int32(total), ActiveUsers: int32(active), Tenants: int32(tenants), Clients: int32(clients),
-		ActiveSessions: int32(sessions), Issuer: o.s.cfg.Issuer, Region: o.s.cfg.Region, Version: Version,
+		ActiveSessions: int32(sessions), Issuer: o.s.cfg.Issuer, Region: o.s.cfg.Region, Version: version.Version,
 	}
 	for _, e := range events {
 		resp.Recent = append(resp.Recent, toEvent(e, names))

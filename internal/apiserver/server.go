@@ -7,9 +7,10 @@
 // accepted, for a mesh that terminates TLS in front of it.
 //
 // A caller is a service: it presents an access token from the client
-// credentials grant, issued to the client its registration created. The one
-// exception is EnrollmentService, where a service without credentials yet
-// presents the enrollment code an owner made for it.
+// credentials grant, issued to the client its registration created. The
+// exceptions are EnrollmentService, where a service without credentials yet
+// presents the enrollment code an owner made for it, and ServerInfoService,
+// which says which release this is so a service can refuse an older one.
 package apiserver
 
 import (
@@ -81,6 +82,8 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle(authzv1connect.NewAgentServiceHandler(&agentService{s}, opts))
 	// No access token here: the enrollment code is the credential.
 	mux.Handle(authzv1connect.NewEnrollmentServiceHandler(&enrollmentService{s}))
+	// No access token either: a service checks the version before it enrolls.
+	mux.Handle(authzv1connect.NewServerInfoServiceHandler(serverInfoService{}))
 	return mux
 }
 
