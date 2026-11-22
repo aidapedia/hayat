@@ -31,6 +31,26 @@ admin `:8080`, api `:7443`) with the console on <http://localhost:3000>. Emails
 are written to the log. Ctrl+C stops it. The seeded accounts all use the
 password `hayat-dev-password`; `make seed` prints them.
 
+| Account | Who |
+| --- | --- |
+| `admin@hayat.test` | instance admin |
+| `alice@hayat.test` | owns tenant Acme |
+| `bob@hayat.test` | head of Engineering: on its roster, Group manager there (so over every team under it) |
+| `paula@hayat.test` | Team lead of Engineering › Payment |
+| `pete@hayat.test`, `priya@hayat.test` | members of Engineering › Payment |
+| `leo@hayat.test` | Team lead of Engineering › Promo |
+| `mia@hayat.test` | member of Engineering › Promo |
+| `carol@hayat.test` | member of Engineering › Platform, no grants |
+| `mona@hayat.test` | Team lead of Marketing |
+| `dave@hayat.test` | owns tenant Globex (group Sales) |
+
+Acme is a small org chart. Teams nest under their department, so Payment's,
+Promo's and Platform's people are all in Engineering too: open Engineering in
+the Resource Tree and they're listed "via Payment" and so on. "Team lead" is a
+custom role the seed makes and grants on each team. `hayat seed` refuses to run
+without `HAYAT_DEV=true`; on an unseeded instance the first start logs a setup
+link instead (`hayat setup-link` prints a new one).
+
 Local runs use the same binary and commands as production (`migrate`, then
 `serve`); only `HAYAT_DATABASE_URL`, `HAYAT_MASTER_KEY` (kept in
 `.dev/master.key`) and `HAYAT_DEV=true` differ.
@@ -91,7 +111,7 @@ behind each. Read it before changing anything in `authz`, `tree`, `catalog`,
 These are the ones a reviewer will ask about first. `CLAUDE.md` has the rest.
 
 - **Only `internal/config` reads the environment.** A new setting goes there,
-  in `deploy/compose/.env.example`, and in the README's configuration notes.
+  and in `deploy/compose/.env.example`, with a comment saying what it does.
 - **YugabyteDB compatibility, from day one.** Ids are UUIDv7
   (`store.NewID`), every transaction goes through `store.Tx`, and there are no
   sequences on busy tables, no advisory locks, no triggers or extensions, and
@@ -129,6 +149,21 @@ binary, both images and `console/package.json`. Don't bump versions in a
 feature PR. The Node SDK keeps its own version in `sdk/node/package.json`;
 bump it in the PR that changes the SDK.
 
+Cutting a release (maintainers):
+
+1. **Actions → Release → Run workflow** with a version (or
+   `gh workflow run release.yml -f version=0.3.0`). It bumps
+   `console/package.json` on a `release/v0.3.0` branch and opens a PR into the
+   major's release line (`v0.x.x`, created from `main` on the first release).
+   Set a `RELEASE_PAT` secret to have it open the PR; without one it links to it.
+2. **Merge the PR.** `release-publish.yml` tags the merged commit `v0.3.0`,
+   builds `ghcr.io/aidapedia/hayat` and `ghcr.io/aidapedia/hayat-console` for
+   amd64 and arm64 (tags `0.3.0`, `0.3`, `latest`) and creates the GitHub
+   Release.
+
+Pushing a `v*.*.*` tag by hand builds and publishes the same way. The binary's
+version comes from the tag (`hayat version`).
+
 ---
 
 ## Commit & PR workflow
@@ -137,8 +172,10 @@ bump it in the PR that changes the SDK.
 2. Make your change, following the standards above.
 3. Run `make test` and exercise the change locally with `make up` before
    opening a PR. If it touches sign-in, sign in through the console.
-4. Update `CLAUDE.md`, `deploy/compose/.env.example` and the README if your
-   change affects an invariant, a setting or how Hayat is run.
+4. Update `CLAUDE.md` if your change affects an invariant,
+   `deploy/compose/.env.example` if it adds a setting, and the README only if
+   it adds a headline feature or changes the quick start. Everything else an
+   operator or integrator needs belongs in the docs (see below).
 5. Open a PR against `main` with a clear description of the *why*, not just
    the *what*.
 6. Keep PRs focused: one feature or fix per PR is easier to review than a
