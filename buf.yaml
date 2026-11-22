@@ -4,6 +4,12 @@ modules:
 lint:
   use:
     - STANDARD
+# The service API (hayat.authz.v1) only grows, so a newer Hayat serves every
+# older service: CI runs `buf breaking` against the last release tag
+# (`make breaking`). The admin API is the console's own and ships with it in the
+# same image, so it may change shape between releases.
 breaking:
   use:
     - FILE
+  ignore:
+    - hayat/admin

@@ -84,6 +84,18 @@ built. Clerk gap roadmap: https://claude.ai/artifact/DVzV22FxJ787TwARh6cgbN
   group memberships in it.
 - **A service writes only its own types** (`catalog.ServiceOf(type) == service`).
   Mirrored nodes are created, renamed, moved and deleted by their service only.
+- **The service API only grows, and every integration declares the Hayat it needs.**
+  `hayat.authz.v1` adds services, RPCs and fields and never removes, renames or
+  renumbers one — `make breaking` in CI compares it with the last release tag
+  (the admin API is exempt: it ships with the console). Every RPC carries a
+  `// Since X.Y.Z.` line — the release it first ships in; a new one says the
+  *next* release (`internal/apiserver/since_test.go` fails without it). The SDKs
+  refuse to start without `MinHayatVersion` / `minHayatVersion` and check it
+  against `ServerInfoService.GetServerInfo` (tokenless, reports
+  `internal/version.Version`); the floor is 1.2.0, the first release that
+  reports its version. A service's minimum is the newest Since among the RPCs it
+  calls — tabletsgo, tether and any new service bump theirs in the change that
+  starts calling a newer RPC, and a release note names every RPC it adds.
 - **Admin policy calls are allowed by permission, not by `is_admin`**: handlers
   call `s.require(ctx, perm, node)`. Instance admins pass because they hold
   every platform permission. That includes `TenantService`, so a tenant's owner
@@ -187,8 +199,8 @@ internal/testkey      a software passkey for tests: real WebAuthn messages, no b
 internal/worker       outbox mail, cleanup, key rotation (leased)
 internal/app          wires modules into roles
 proto/ → gen/go, console/src/shared/api/gen   (make generate; output is committed)
-sdk/go/hayat          Go client: token, cached Check, Watch, VerifyAccessToken
-sdk/node              Node client (same features), built with tsc
+sdk/go/hayat          Go client: version check, token, cached Check, Watch, VerifyAccessToken
+sdk/node              Node client (same features), built with tsc; its own semver (package.json)
 console/              React + Vite + shadcn/ui, feature-sliced like tabletsgo
 deploy/compose/       docker-compose + .env.example
 .github/workflows/    quality (go, web, generated-code-is-current), release → release-publish → docker-release (both images)

@@ -1,9 +1,20 @@
 // The service API: what your services call, over gRPC (or Connect/gRPC-Web)
 // on the api role's port. Every call carries an access token from the client
-// credentials grant, issued to the OAuth client a registered service owns.
+// credentials grant, issued to the OAuth client a registered service owns —
+// except EnrollmentService and ServerInfoService, which a service calls before
+// it has credentials.
 //
 // A service asks about any user (it is trusted to ask on their behalf), but
 // writes only nodes of its own namespace.
+//
+// Versioning. This package only grows: a release adds services, RPCs and
+// fields, and never removes, renames or renumbers one (`buf breaking` in CI
+// holds it to that), so a newer Hayat serves every older service. Every RPC
+// says the Hayat release it first shipped in ("Since 1.2.0."); a service's
+// minimum Hayat is the newest Since among the RPCs it calls, never lower than
+// 1.2.0 — the first release that reports its version through
+// ServerInfoService. The SDKs refuse to start without that minimum and check
+// it against the Hayat they reach.
 syntax = "proto3";
 
 package hayat.authz.v1;
@@ -54,13 +65,18 @@ message Resource {
 // ---------- Decisions ----------
 
 service AuthzService {
+  // Since 1.0.0.
   rpc Check(CheckRequest) returns (CheckResponse);
+  // Since 1.0.0.
   rpc BatchCheck(BatchCheckRequest) returns (BatchCheckResponse);
   // Everything a user may do at one node. For drawing a page's buttons.
+  // Since 1.0.0.
   rpc PermissionsAt(PermissionsAtRequest) returns (PermissionsAtResponse);
   // Nodes of one type where a user holds a permission. For lists.
+  // Since 1.0.0.
   rpc LookupResources(LookupResourcesRequest) returns (LookupResourcesResponse);
   // People who really hold a permission at a node, through every route.
+  // Since 1.0.0.
   rpc LookupSubjects(LookupSubjectsRequest) returns (LookupSubjectsResponse);
 }
 
@@ -149,9 +165,12 @@ message LookupSubjectsResponse {
 service TreeService {
   // Create or update the node mirroring a resource of yours. Idempotent: the
   // same (type, external_id) renames, re-owns or re-files the node.
+  // Since 1.0.0.
   rpc UpsertResource(UpsertResourceRequest) returns (UpsertResourceResponse);
   // Refused (FAILED_PRECONDITION) while anything is filed under it.
+  // Since 1.0.0.
   rpc DeleteResource(DeleteResourceRequest) returns (DeleteResourceResponse);
+  // Since 1.0.0.
   rpc GetResource(GetResourceRequest) returns (GetResourceResponse);
 }
 
@@ -192,22 +211,28 @@ message GetResourceResponse {
 // ---------- People ----------
 
 service DirectoryService {
+  // Since 1.0.0.
   rpc GetUser(GetUserRequest) returns (GetUserResponse);
+  // Since 1.0.0.
   rpc BatchGetUsers(BatchGetUsersRequest) returns (BatchGetUsersResponse);
   // The tenants a user belongs to, by name. For a service's tenant switcher.
+  // Since 1.0.0.
   rpc ListUserTenants(ListUserTenantsRequest) returns (ListUserTenantsResponse);
   // A tenant's roster with each person's profile. Belonging, not permission:
   // ask PermissionsAt for what someone may do.
+  // Since 1.0.0.
   rpc ListTenantMembers(ListTenantMembersRequest) returns (ListTenantMembersResponse);
   // What each member was given in a tenant: grants made to them, to a group
   // they are on, or to the whole tenant, and the nodes they own. What was
   // granted, not what it adds up to: ask PermissionsAt for that. Only the
   // tenant, its groups and the calling service's own resource types are listed.
+  // Since 1.1.0.
   rpc ListTenantGrants(ListTenantGrantsRequest) returns (ListTenantGrantsResponse);
   // How the calling service looks for a person: the theme they gave this
   // service of its own, or else their account's, which every other app
   // follows. Both are chosen in Hayat's console. Apply it to their session;
   // don't keep a copy, so a change shows on their next page load.
+  // Since 1.1.0.
   rpc GetUserAppearance(GetUserAppearanceRequest) returns (GetUserAppearanceResponse);
 }
 
@@ -360,6 +385,7 @@ message BatchGetUsersResponse {
 service WatchService {
   // Streams every policy change from the cursor on. Drop cached decisions for
   // the event's tenant (all of them for the zero tenant: a global change).
+  // Since 1.0.0.
   rpc Watch(WatchRequest) returns (stream WatchResponse);
 }
 
@@ -388,12 +414,15 @@ message PolicyEvent {
 // person there (its sponsor); if the sponsor leaves, it pauses. A service sees
 // only the agents that work in it, and may act as one with an agent token.
 service AgentService {
+  // Since 1.2.0.
   rpc GetAgent(GetAgentRequest) returns (GetAgentResponse);
   // The tenant's agents that work in the calling service.
+  // Since 1.2.0.
   rpc ListTenantAgents(ListTenantAgentsRequest) returns (ListTenantAgentsResponse);
   // A short-lived token to act as the agent: sub "agent:<id>", aud the calling
   // service. Refused unless the agent and its sponsor are active and the agent
   // works in the calling service. Check every action as the agent (agent_id).
+  // Since 1.2.0.
   rpc IssueAgentToken(IssueAgentTokenRequest) returns (IssueAgentTokenResponse);
 }
 
@@ -441,6 +470,7 @@ message IssueAgentTokenResponse {
 
 service SchemaService {
   // Publish a new version of your contract. It waits for owner approval.
+  // Since 1.0.0.
   rpc PublishContract(PublishContractRequest) returns (PublishContractResponse);
 }
 
@@ -466,7 +496,9 @@ message PublishContractResponse {
 service EnrollmentService {
   // What a code would do, without spending it: a setup page shows this before
   // the person confirms.
+  // Since 1.2.0.
   rpc InspectEnrollment(InspectEnrollmentRequest) returns (InspectEnrollmentResponse);
+  // Since 1.2.0.
   rpc Enroll(EnrollRequest) returns (EnrollResponse);
 }
 
@@ -525,4 +557,22 @@ message EnrollResponse {
   string contract_status = 8;
   // What worked but deserves a look (a role not granted, a client turned off).
   repeated string warnings = 9;
+}
+
+// ---------- Which Hayat this is ----------
+
+// Served without an access token, like EnrollmentService: a service checks the
+// Hayat it reached before it enrolls or starts, and refuses one older than the
+// minimum it declares. A Hayat without this service is older than 1.2.0.
+service ServerInfoService {
+  // Since 1.2.0.
+  rpc GetServerInfo(GetServerInfoRequest) returns (GetServerInfoResponse);
+}
+
+message GetServerInfoRequest {}
+
+message GetServerInfoResponse {
+  // The release this binary was built from, without its leading v ("1.2.0").
+  // "dev" for a build from source, which a service accepts as new enough.
+  string version = 1;
 }

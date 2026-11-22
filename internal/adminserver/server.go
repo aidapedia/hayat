@@ -41,10 +41,8 @@ import (
 	"github.com/aidapedia/hayat/internal/store"
 	"github.com/aidapedia/hayat/internal/tenancy"
 	"github.com/aidapedia/hayat/internal/tree"
+	"github.com/aidapedia/hayat/internal/version"
 )
-
-// Version is set at build time with -ldflags.
-var Version = "dev"
 
 type Server struct {
 	cfg      config.Config
@@ -114,7 +112,7 @@ func (s *Server) Handler() http.Handler {
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Cache-Control", "no-store")
 		_ = json.NewEncoder(w).Encode(map[string]string{
-			"issuer": s.cfg.Issuer, "clientId": hoidc.ConsoleClientID, "region": s.cfg.Region, "version": Version,
+			"issuer": s.cfg.Issuer, "clientId": hoidc.ConsoleClientID, "region": s.cfg.Region, "version": version.Version,
 		})
 	})
 

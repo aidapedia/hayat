@@ -24,13 +24,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/aidapedia/hayat/internal/adminserver"
 	"github.com/aidapedia/hayat/internal/app"
 	"github.com/aidapedia/hayat/internal/audit"
 	"github.com/aidapedia/hayat/internal/authserver"
 	"github.com/aidapedia/hayat/internal/config"
 	"github.com/aidapedia/hayat/internal/migrate"
 	"github.com/aidapedia/hayat/internal/store"
+	"github.com/aidapedia/hayat/internal/version"
 )
 
 func main() {
@@ -53,7 +53,7 @@ func usage() {
 
 func run(ctx context.Context, cmd string, args []string, log *slog.Logger) error {
 	if cmd == "version" {
-		fmt.Println(adminserver.Version)
+		fmt.Println(version.Version)
 		return nil
 	}
 	cfg, err := config.Load()

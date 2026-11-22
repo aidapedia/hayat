@@ -115,7 +115,7 @@ export function GrantRoleDialog({ role, onClose, onDone }: { role: Role; onClose
         {!tenantId ? (
           <p className="rounded-[10px] border border-dashed px-3 py-4 text-center text-[12px] text-faint">Pick a tenant first.</p>
         ) : loadingTree ? (
-          <LoadingState label="Reading the tree…" />
+          <LoadingState label="Reading the tree…" size="sm" />
         ) : nodes.error ? (
           <p className="text-[12px] text-destructive">{nodes.error}</p>
         ) : (

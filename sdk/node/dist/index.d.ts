@@ -4,6 +4,7 @@
  *   const hayat = await Hayat.create({
  *     apiUrl: 'http://hayat-api:7443', issuer: 'https://auth.example.com',
  *     clientId: process.env.HAYAT_CLIENT_ID!, clientSecret: process.env.HAYAT_CLIENT_SECRET!,
+ *     minHayatVersion: '1.2.0',                   // the newest "Since" among the RPCs you call
  *   })
  *   hayat.watch()                                 // keep the decision cache honest
  *   await hayat.check(userId, 'billing.ledger.view', ref('billing/ledger', id))
@@ -11,6 +12,13 @@
  * It owns the client credentials token, a short decision cache emptied per
  * tenant by the Watch stream, read-your-writes after a resource write, and
  * offline verification of user access tokens.
+ *
+ * Every service declares the oldest Hayat it works with (minHayatVersion), and
+ * create() refuses a Hayat older than that: each RPC in proto/hayat/authz/v1
+ * says the release it first shipped in ("Since 1.2.0."), and the newest one
+ * your service calls is its minimum. Hayat only adds to that API, so a newer
+ * Hayat always works. checkHayatVersion() does the same check without
+ * credentials, for a service that hasn't enrolled yet.
  */
 import { type Client } from '@connectrpc/connect';
 import { type JWTPayload } from 'jose';
@@ -23,9 +31,37 @@ export type HayatConfig = {
     issuer: string;
     clientId: string;
     clientSecret: string;
+    /**
+     * The oldest Hayat release this service works with, e.g. '1.2.0': the newest
+     * "Since" among the RPCs it calls (see proto/hayat/authz/v1). Required.
+     * create() refuses an older Hayat with a HayatVersionError; one below
+     * HAYAT_VERSION_FLOOR is raised to it. Bump it in the same change that starts
+     * calling a newer RPC.
+     */
+    minHayatVersion: string;
     /** How long a decision is reused, in ms. Default 10 000; 0 turns the cache off. */
     cacheTtlMs?: number;
 };
+/**
+ * The oldest Hayat any service can declare: the first release that reports its
+ * version (ServerInfoService). A lower minHayatVersion is raised to it.
+ */
+export declare const HAYAT_VERSION_FLOOR = "1.2.0";
+/** The Hayat a service reached is older than it declared it needs. `have` is '' when it's too old to say. */
+export declare class HayatVersionError extends Error {
+    readonly have: string;
+    readonly need: string;
+    readonly apiUrl: string;
+    constructor(have: string, need: string, apiUrl: string);
+}
+/** have >= need. A version that isn't a release ('dev', a build from source) is new enough. */
+export declare function hayatVersionAtLeast(have: string, need: string): boolean;
+/**
+ * Ask the Hayat at apiUrl which release it is and refuse one older than min
+ * (raised to HAYAT_VERSION_FLOOR). Needs no credentials, so a service calls it
+ * before it enrolls; create() calls it on every start. → the version Hayat reported.
+ */
+export declare function checkHayatVersion(apiUrl: string, min: string): Promise<string>;
 export type Resource = {
     type?: string;
     externalId?: string;
@@ -41,6 +77,8 @@ export type UserClaims = JWTPayload & {
 export declare class Hayat {
     private readonly cfg;
     private readonly discovery;
+    /** The release the Hayat reported when create() checked it ('dev' for a build from source). */
+    readonly serverVersion: string;
     readonly authz: Client<typeof AuthzService>;
     readonly tree: Client<typeof TreeService>;
     readonly directory: Client<typeof DirectoryService>;
@@ -53,6 +91,7 @@ export declare class Hayat {
     private lastWrite;
     private readonly jwks;
     private constructor();
+    /** Check the Hayat's version (a HayatVersionError when it's too old), discover the issuer, and prepare the clients. */
     static create(cfg: HayatConfig): Promise<Hayat>;
     /** A client credentials token, refreshed 30 s before it expires. */
     private accessToken;

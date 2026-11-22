@@ -93,7 +93,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.ver.outputs.tags }}
-          # Baked into the binary (internal/adminserver.Version, via ldflags), so
+          # Baked into the binary (internal/version.Version, via ldflags), so
           # `hayat version` and the console's overview report the release.
           build-args: |
             VERSION=${{ steps.ver.outputs.version }}

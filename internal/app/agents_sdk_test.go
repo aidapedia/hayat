@@ -31,7 +31,7 @@ func TestAgentJourney(t *testing.T) {
 	registry := adminv1connect.NewRegistryServiceClient(http.DefaultClient, e.admin, bearer(token))
 	reg, err := registry.RegisterService(ctx, connect.NewRequest(&adminv1.RegisterServiceRequest{Id: "billing", DisplayName: "Billing", OwnerEmail: "root@example.com"}))
 	must(t, err)
-	hz, err := hayat.New(ctx, hayat.Config{APIURL: e.api, Issuer: e.auth, ClientID: reg.Msg.ClientId, ClientSecret: reg.Msg.ClientSecret, CacheTTL: -1})
+	hz, err := hayat.New(ctx, hayat.Config{APIURL: e.api, Issuer: e.auth, MinHayatVersion: hayat.VersionFloor, ClientID: reg.Msg.ClientId, ClientSecret: reg.Msg.ClientSecret, CacheTTL: -1})
 	must(t, err)
 	_, err = hz.Schema.PublishContract(ctx, connect.NewRequest(&authzv1.PublishContractRequest{Manifest: billingContract}))
 	must(t, err)

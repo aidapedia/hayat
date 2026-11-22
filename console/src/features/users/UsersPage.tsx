@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { UserPlus, Users } from 'lucide-react'
 import { UserService } from '@/shared/api/gen/hayat/admin/v1/admin_pb'
 import { useClient } from '@/shared/api/client'
+import { useDebounced } from '@/shared/hooks/use-debounced'
 import { useServerPagination } from '@/shared/ui/table/usePagination'
 import { formatDate } from '@/shared/lib/datetime'
 import { EmptyState, ErrorState, LoadingState, PersonRow, Pill, SearchInput, StatusBadge } from '@/shared/ui/bits'
@@ -11,15 +12,6 @@ import { PageHeader } from '@/shared/ui/page/PageHeader'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
 import { Pagination } from '@/shared/ui/table/Pagination'
 import { InviteUserDialog } from './InviteUserDialog'
-
-function useDebounced<T>(value: T, ms = 250) {
-  const [v, setV] = useState(value)
-  useEffect(() => {
-    const t = setTimeout(() => setV(value), ms)
-    return () => clearTimeout(t)
-  }, [value, ms])
-  return v
-}
 
 export default function UsersPage() {
   const users = useClient(UserService)

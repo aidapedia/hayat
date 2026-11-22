@@ -52,6 +52,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # the release tags, for `make breaking`
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
@@ -75,6 +77,9 @@ jobs:
       - run: pnpm install --frozen-lockfile
         working-directory: console
       - run: make generate
+      # The service API only grows (proto/hayat/authz/v1's header): nothing a
+      # released service calls may be removed, renamed or renumbered.
+      - run: make breaking
       - run: pnpm install --frozen-lockfile && pnpm build
         working-directory: sdk/node
       - name: Nothing changed

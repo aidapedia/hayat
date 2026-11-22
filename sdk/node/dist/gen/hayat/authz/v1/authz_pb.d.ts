@@ -164,6 +164,13 @@ export type CheckRequest = Message<"hayat.authz.v1.CheckRequest"> & {
      * @generated from field: bool explain = 5;
      */
     explain: boolean;
+    /**
+     * Ask about an agent instead of a person: set agent_id and leave user_id
+     * empty. An agent holds less than a person could: see AgentService.
+     *
+     * @generated from field: string agent_id = 6;
+     */
+    agentId: string;
 };
 /**
  * Describes the message hayat.authz.v1.CheckRequest.
@@ -245,6 +252,12 @@ export type PermissionsAtRequest = Message<"hayat.authz.v1.PermissionsAtRequest"
      * @generated from field: hayat.authz.v1.Consistency consistency = 3;
      */
     consistency?: Consistency | undefined;
+    /**
+     * An agent instead of a person, as in CheckRequest.
+     *
+     * @generated from field: string agent_id = 4;
+     */
+    agentId: string;
 };
 /**
  * Describes the message hayat.authz.v1.PermissionsAtRequest.
@@ -307,6 +320,12 @@ export type LookupResourcesRequest = Message<"hayat.authz.v1.LookupResourcesRequ
      * @generated from field: hayat.authz.v1.Consistency consistency = 7;
      */
     consistency?: Consistency | undefined;
+    /**
+     * An agent instead of a person, as in CheckRequest.
+     *
+     * @generated from field: string agent_id = 8;
+     */
+    agentId: string;
 };
 /**
  * Describes the message hayat.authz.v1.LookupResourcesRequest.
@@ -358,6 +377,8 @@ export declare const LookupSubjectsRequestSchema: GenMessage<LookupSubjectsReque
  */
 export type Subject = Message<"hayat.authz.v1.Subject"> & {
     /**
+     * A person's id; empty when the subject is an agent.
+     *
      * @generated from field: string user_id = 1;
      */
     userId: string;
@@ -365,6 +386,12 @@ export type Subject = Message<"hayat.authz.v1.Subject"> & {
      * @generated from field: hayat.authz.v1.Reason reason = 2;
      */
     reason?: Reason | undefined;
+    /**
+     * An agent's id; empty when the subject is a person.
+     *
+     * @generated from field: string agent_id = 3;
+     */
+    agentId: string;
 };
 /**
  * Describes the message hayat.authz.v1.Subject.
@@ -618,6 +645,20 @@ export type Appearance = Message<"hayat.authz.v1.Appearance"> & {
      * @generated from field: string content_width = 22;
      */
     contentWidth: string;
+    /**
+     * Text on the accent: buttons and anything else filled with it. Empty is
+     * black or white, whichever reads better on the accent.
+     *
+     * @generated from field: string accent_text = 23;
+     */
+    accentText: string;
+    /**
+     * The interface's size as a percent of the app's own text size, 80–120.
+     * It wins over text_size, which only older themes set.
+     *
+     * @generated from field: optional int32 scale = 24;
+     */
+    scale?: number | undefined;
 };
 /**
  * Describes the message hayat.authz.v1.Appearance.
@@ -648,6 +689,13 @@ export type GetUserAppearanceResponse = Message<"hayat.authz.v1.GetUserAppearanc
      * @generated from field: hayat.authz.v1.Appearance appearance = 1;
      */
     appearance?: Appearance | undefined;
+    /**
+     * The person gave the calling service a theme of its own; otherwise this is
+     * their account's theme.
+     *
+     * @generated from field: bool own = 2;
+     */
+    own: boolean;
 };
 /**
  * Describes the message hayat.authz.v1.GetUserAppearanceResponse.
@@ -684,6 +732,12 @@ export type Tenant = Message<"hayat.authz.v1.Tenant"> & {
      * @generated from field: int32 member_count = 6;
      */
     memberCount: number;
+    /**
+     * <issuer>/media/<id>, empty for none.
+     *
+     * @generated from field: string logo_url = 7;
+     */
+    logoUrl: string;
 };
 /**
  * Describes the message hayat.authz.v1.Tenant.
@@ -1020,6 +1074,146 @@ export type PolicyEvent = Message<"hayat.authz.v1.PolicyEvent"> & {
  */
 export declare const PolicyEventSchema: GenMessage<PolicyEvent>;
 /**
+ * @generated from message hayat.authz.v1.Agent
+ */
+export type Agent = Message<"hayat.authz.v1.Agent"> & {
+    /**
+     * @generated from field: string id = 1;
+     */
+    id: string;
+    /**
+     * @generated from field: string tenant_id = 2;
+     */
+    tenantId: string;
+    /**
+     * @generated from field: string handle = 3;
+     */
+    handle: string;
+    /**
+     * @generated from field: string name = 4;
+     */
+    name: string;
+    /**
+     * @generated from field: string sponsor_user_id = 5;
+     */
+    sponsorUserId: string;
+    /**
+     * active | paused | disabled
+     *
+     * @generated from field: string status = 6;
+     */
+    status: string;
+    /**
+     * Why it isn't active: "sponsor_left", or empty when a person paused it.
+     *
+     * @generated from field: string status_reason = 7;
+     */
+    statusReason: string;
+    /**
+     * The services (namespaces) it works in.
+     *
+     * @generated from field: repeated string services = 8;
+     */
+    services: string[];
+    /**
+     * @generated from field: repeated string group_ids = 9;
+     */
+    groupIds: string[];
+};
+/**
+ * Describes the message hayat.authz.v1.Agent.
+ * Use `create(AgentSchema)` to create a new message.
+ */
+export declare const AgentSchema: GenMessage<Agent>;
+/**
+ * @generated from message hayat.authz.v1.GetAgentRequest
+ */
+export type GetAgentRequest = Message<"hayat.authz.v1.GetAgentRequest"> & {
+    /**
+     * @generated from field: string agent_id = 1;
+     */
+    agentId: string;
+};
+/**
+ * Describes the message hayat.authz.v1.GetAgentRequest.
+ * Use `create(GetAgentRequestSchema)` to create a new message.
+ */
+export declare const GetAgentRequestSchema: GenMessage<GetAgentRequest>;
+/**
+ * @generated from message hayat.authz.v1.GetAgentResponse
+ */
+export type GetAgentResponse = Message<"hayat.authz.v1.GetAgentResponse"> & {
+    /**
+     * @generated from field: hayat.authz.v1.Agent agent = 1;
+     */
+    agent?: Agent | undefined;
+};
+/**
+ * Describes the message hayat.authz.v1.GetAgentResponse.
+ * Use `create(GetAgentResponseSchema)` to create a new message.
+ */
+export declare const GetAgentResponseSchema: GenMessage<GetAgentResponse>;
+/**
+ * @generated from message hayat.authz.v1.ListTenantAgentsRequest
+ */
+export type ListTenantAgentsRequest = Message<"hayat.authz.v1.ListTenantAgentsRequest"> & {
+    /**
+     * @generated from field: string tenant_id = 1;
+     */
+    tenantId: string;
+};
+/**
+ * Describes the message hayat.authz.v1.ListTenantAgentsRequest.
+ * Use `create(ListTenantAgentsRequestSchema)` to create a new message.
+ */
+export declare const ListTenantAgentsRequestSchema: GenMessage<ListTenantAgentsRequest>;
+/**
+ * @generated from message hayat.authz.v1.ListTenantAgentsResponse
+ */
+export type ListTenantAgentsResponse = Message<"hayat.authz.v1.ListTenantAgentsResponse"> & {
+    /**
+     * @generated from field: repeated hayat.authz.v1.Agent agents = 1;
+     */
+    agents: Agent[];
+};
+/**
+ * Describes the message hayat.authz.v1.ListTenantAgentsResponse.
+ * Use `create(ListTenantAgentsResponseSchema)` to create a new message.
+ */
+export declare const ListTenantAgentsResponseSchema: GenMessage<ListTenantAgentsResponse>;
+/**
+ * @generated from message hayat.authz.v1.IssueAgentTokenRequest
+ */
+export type IssueAgentTokenRequest = Message<"hayat.authz.v1.IssueAgentTokenRequest"> & {
+    /**
+     * @generated from field: string agent_id = 1;
+     */
+    agentId: string;
+};
+/**
+ * Describes the message hayat.authz.v1.IssueAgentTokenRequest.
+ * Use `create(IssueAgentTokenRequestSchema)` to create a new message.
+ */
+export declare const IssueAgentTokenRequestSchema: GenMessage<IssueAgentTokenRequest>;
+/**
+ * @generated from message hayat.authz.v1.IssueAgentTokenResponse
+ */
+export type IssueAgentTokenResponse = Message<"hayat.authz.v1.IssueAgentTokenResponse"> & {
+    /**
+     * @generated from field: string access_token = 1;
+     */
+    accessToken: string;
+    /**
+     * @generated from field: google.protobuf.Timestamp expires_at = 2;
+     */
+    expiresAt?: Timestamp | undefined;
+};
+/**
+ * Describes the message hayat.authz.v1.IssueAgentTokenResponse.
+ * Use `create(IssueAgentTokenResponseSchema)` to create a new message.
+ */
+export declare const IssueAgentTokenResponseSchema: GenMessage<IssueAgentTokenResponse>;
+/**
  * @generated from message hayat.authz.v1.PublishContractRequest
  */
 export type PublishContractRequest = Message<"hayat.authz.v1.PublishContractRequest"> & {
@@ -1058,10 +1252,210 @@ export type PublishContractResponse = Message<"hayat.authz.v1.PublishContractRes
  */
 export declare const PublishContractResponseSchema: GenMessage<PublishContractResponse>;
 /**
+ * @generated from message hayat.authz.v1.InspectEnrollmentRequest
+ */
+export type InspectEnrollmentRequest = Message<"hayat.authz.v1.InspectEnrollmentRequest"> & {
+    /**
+     * @generated from field: string code = 1;
+     */
+    code: string;
+};
+/**
+ * Describes the message hayat.authz.v1.InspectEnrollmentRequest.
+ * Use `create(InspectEnrollmentRequestSchema)` to create a new message.
+ */
+export declare const InspectEnrollmentRequestSchema: GenMessage<InspectEnrollmentRequest>;
+/**
+ * @generated from message hayat.authz.v1.InspectEnrollmentResponse
+ */
+export type InspectEnrollmentResponse = Message<"hayat.authz.v1.InspectEnrollmentResponse"> & {
+    /**
+     * @generated from field: string service_id = 1;
+     */
+    serviceId: string;
+    /**
+     * The name it registers under (or the service's name when it exists).
+     *
+     * @generated from field: string display_name = 2;
+     */
+    displayName: string;
+    /**
+     * Redeeming it registers the service; otherwise it rotates its API secret.
+     *
+     * @generated from field: bool registers = 3;
+     */
+    registers: boolean;
+    /**
+     * Who made the code: by default, the admin of a service it registers.
+     *
+     * @generated from field: string made_by_email = 4;
+     */
+    madeByEmail: string;
+    /**
+     * @generated from field: string made_by_name = 5;
+     */
+    madeByName: string;
+    /**
+     * @generated from field: google.protobuf.Timestamp expires_at = 6;
+     */
+    expiresAt?: Timestamp | undefined;
+    /**
+     * @generated from field: string issuer = 7;
+     */
+    issuer: string;
+};
+/**
+ * Describes the message hayat.authz.v1.InspectEnrollmentResponse.
+ * Use `create(InspectEnrollmentResponseSchema)` to create a new message.
+ */
+export declare const InspectEnrollmentResponseSchema: GenMessage<InspectEnrollmentResponse>;
+/**
+ * @generated from message hayat.authz.v1.EnrollRequest
+ */
+export type EnrollRequest = Message<"hayat.authz.v1.EnrollRequest"> & {
+    /**
+     * "hye_…", from the console or `hayat enrollment-code`.
+     *
+     * @generated from field: string code = 1;
+     */
+    code: string;
+    /**
+     * The service's contract (YAML or JSON), published when it is newer than
+     * the latest version. Optional.
+     *
+     * @generated from field: string manifest = 2;
+     */
+    manifest: string;
+    /**
+     * Used when this registers the service.
+     *
+     * @generated from field: string display_name = 3;
+     */
+    displayName: string;
+    /**
+     * @generated from field: string description = 4;
+     */
+    description: string;
+    /**
+     * The service's public address. When set, a public sign-in client with
+     * <app_url>/callback as a redirect is made, or kept if one exists.
+     *
+     * @generated from field: string app_url = 5;
+     */
+    appUrl: string;
+    /**
+     * A role of the service's own namespace (e.g. "tabletsgo.admin") granted
+     * at the root to whoever made the code (or admin_email), when this
+     * registers the service.
+     *
+     * @generated from field: string admin_role = 6;
+     */
+    adminRole: string;
+    /**
+     * Who gets admin_role instead of the code's maker. Someone Hayat doesn't
+     * know yet is invited (an email with a link to choose a password).
+     *
+     * @generated from field: string admin_email = 7;
+     */
+    adminEmail: string;
+};
+/**
+ * Describes the message hayat.authz.v1.EnrollRequest.
+ * Use `create(EnrollRequestSchema)` to create a new message.
+ */
+export declare const EnrollRequestSchema: GenMessage<EnrollRequest>;
+/**
+ * @generated from message hayat.authz.v1.EnrollResponse
+ */
+export type EnrollResponse = Message<"hayat.authz.v1.EnrollResponse"> & {
+    /**
+     * @generated from field: string service_id = 1;
+     */
+    serviceId: string;
+    /**
+     * The service's API credential (client credentials grant).
+     *
+     * @generated from field: string client_id = 2;
+     */
+    clientId: string;
+    /**
+     * @generated from field: string client_secret = 3;
+     */
+    clientSecret: string;
+    /**
+     * The public sign-in client for app_url; empty without one.
+     *
+     * @generated from field: string web_client_id = 4;
+     */
+    webClientId: string;
+    /**
+     * Hayat's issuer: where people sign in, and what tokens name.
+     *
+     * @generated from field: string issuer = 5;
+     */
+    issuer: string;
+    /**
+     * This call registered the service; otherwise it rotated the secret.
+     *
+     * @generated from field: bool registered = 6;
+     */
+    registered: boolean;
+    /**
+     * @generated from field: int32 contract_version = 7;
+     */
+    contractVersion: number;
+    /**
+     * "active", "pending" (it waits for other services' owners), or empty when
+     * nothing was published.
+     *
+     * @generated from field: string contract_status = 8;
+     */
+    contractStatus: string;
+    /**
+     * What worked but deserves a look (a role not granted, a client turned off).
+     *
+     * @generated from field: repeated string warnings = 9;
+     */
+    warnings: string[];
+};
+/**
+ * Describes the message hayat.authz.v1.EnrollResponse.
+ * Use `create(EnrollResponseSchema)` to create a new message.
+ */
+export declare const EnrollResponseSchema: GenMessage<EnrollResponse>;
+/**
+ * @generated from message hayat.authz.v1.GetServerInfoRequest
+ */
+export type GetServerInfoRequest = Message<"hayat.authz.v1.GetServerInfoRequest"> & {};
+/**
+ * Describes the message hayat.authz.v1.GetServerInfoRequest.
+ * Use `create(GetServerInfoRequestSchema)` to create a new message.
+ */
+export declare const GetServerInfoRequestSchema: GenMessage<GetServerInfoRequest>;
+/**
+ * @generated from message hayat.authz.v1.GetServerInfoResponse
+ */
+export type GetServerInfoResponse = Message<"hayat.authz.v1.GetServerInfoResponse"> & {
+    /**
+     * The release this binary was built from, without its leading v ("1.2.0").
+     * "dev" for a build from source, which a service accepts as new enough.
+     *
+     * @generated from field: string version = 1;
+     */
+    version: string;
+};
+/**
+ * Describes the message hayat.authz.v1.GetServerInfoResponse.
+ * Use `create(GetServerInfoResponseSchema)` to create a new message.
+ */
+export declare const GetServerInfoResponseSchema: GenMessage<GetServerInfoResponse>;
+/**
  * @generated from service hayat.authz.v1.AuthzService
  */
 export declare const AuthzService: GenService<{
     /**
+     * Since 1.0.0.
+     *
      * @generated from rpc hayat.authz.v1.AuthzService.Check
      */
     check: {
@@ -1070,6 +1464,8 @@ export declare const AuthzService: GenService<{
         output: typeof CheckResponseSchema;
     };
     /**
+     * Since 1.0.0.
+     *
      * @generated from rpc hayat.authz.v1.AuthzService.BatchCheck
      */
     batchCheck: {
@@ -1079,6 +1475,7 @@ export declare const AuthzService: GenService<{
     };
     /**
      * Everything a user may do at one node. For drawing a page's buttons.
+     * Since 1.0.0.
      *
      * @generated from rpc hayat.authz.v1.AuthzService.PermissionsAt
      */
@@ -1089,6 +1486,7 @@ export declare const AuthzService: GenService<{
     };
     /**
      * Nodes of one type where a user holds a permission. For lists.
+     * Since 1.0.0.
      *
      * @generated from rpc hayat.authz.v1.AuthzService.LookupResources
      */
@@ -1099,6 +1497,7 @@ export declare const AuthzService: GenService<{
     };
     /**
      * People who really hold a permission at a node, through every route.
+     * Since 1.0.0.
      *
      * @generated from rpc hayat.authz.v1.AuthzService.LookupSubjects
      */
@@ -1115,6 +1514,7 @@ export declare const TreeService: GenService<{
     /**
      * Create or update the node mirroring a resource of yours. Idempotent: the
      * same (type, external_id) renames, re-owns or re-files the node.
+     * Since 1.0.0.
      *
      * @generated from rpc hayat.authz.v1.TreeService.UpsertResource
      */
@@ -1125,6 +1525,7 @@ export declare const TreeService: GenService<{
     };
     /**
      * Refused (FAILED_PRECONDITION) while anything is filed under it.
+     * Since 1.0.0.
      *
      * @generated from rpc hayat.authz.v1.TreeService.DeleteResource
      */
@@ -1134,6 +1535,8 @@ export declare const TreeService: GenService<{
         output: typeof DeleteResourceResponseSchema;
     };
     /**
+     * Since 1.0.0.
+     *
      * @generated from rpc hayat.authz.v1.TreeService.GetResource
      */
     getResource: {
@@ -1147,6 +1550,8 @@ export declare const TreeService: GenService<{
  */
 export declare const DirectoryService: GenService<{
     /**
+     * Since 1.0.0.
+     *
      * @generated from rpc hayat.authz.v1.DirectoryService.GetUser
      */
     getUser: {
@@ -1155,6 +1560,8 @@ export declare const DirectoryService: GenService<{
         output: typeof GetUserResponseSchema;
     };
     /**
+     * Since 1.0.0.
+     *
      * @generated from rpc hayat.authz.v1.DirectoryService.BatchGetUsers
      */
     batchGetUsers: {
@@ -1164,6 +1571,7 @@ export declare const DirectoryService: GenService<{
     };
     /**
      * The tenants a user belongs to, by name. For a service's tenant switcher.
+     * Since 1.0.0.
      *
      * @generated from rpc hayat.authz.v1.DirectoryService.ListUserTenants
      */
@@ -1175,6 +1583,7 @@ export declare const DirectoryService: GenService<{
     /**
      * A tenant's roster with each person's profile. Belonging, not permission:
      * ask PermissionsAt for what someone may do.
+     * Since 1.0.0.
      *
      * @generated from rpc hayat.authz.v1.DirectoryService.ListTenantMembers
      */
@@ -1188,6 +1597,7 @@ export declare const DirectoryService: GenService<{
      * they are on, or to the whole tenant, and the nodes they own. What was
      * granted, not what it adds up to: ask PermissionsAt for that. Only the
      * tenant, its groups and the calling service's own resource types are listed.
+     * Since 1.1.0.
      *
      * @generated from rpc hayat.authz.v1.DirectoryService.ListTenantGrants
      */
@@ -1197,9 +1607,11 @@ export declare const DirectoryService: GenService<{
         output: typeof ListTenantGrantsResponseSchema;
     };
     /**
-     * How every app looks for a person: one theme per account, chosen in Hayat's
-     * console. Apply it to their session; don't keep a copy, so a change shows
-     * on their next page load.
+     * How the calling service looks for a person: the theme they gave this
+     * service of its own, or else their account's, which every other app
+     * follows. Both are chosen in Hayat's console. Apply it to their session;
+     * don't keep a copy, so a change shows on their next page load.
+     * Since 1.1.0.
      *
      * @generated from rpc hayat.authz.v1.DirectoryService.GetUserAppearance
      */
@@ -1216,6 +1628,7 @@ export declare const WatchService: GenService<{
     /**
      * Streams every policy change from the cursor on. Drop cached decisions for
      * the event's tenant (all of them for the zero tenant: a global change).
+     * Since 1.0.0.
      *
      * @generated from rpc hayat.authz.v1.WatchService.Watch
      */
@@ -1226,11 +1639,56 @@ export declare const WatchService: GenService<{
     };
 }>;
 /**
+ * Agents are members that aren't people: they hold roles and work in
+ * services, but never sign in. Each lives in one tenant and answers to a
+ * person there (its sponsor); if the sponsor leaves, it pauses. A service sees
+ * only the agents that work in it, and may act as one with an agent token.
+ *
+ * @generated from service hayat.authz.v1.AgentService
+ */
+export declare const AgentService: GenService<{
+    /**
+     * Since 1.2.0.
+     *
+     * @generated from rpc hayat.authz.v1.AgentService.GetAgent
+     */
+    getAgent: {
+        methodKind: "unary";
+        input: typeof GetAgentRequestSchema;
+        output: typeof GetAgentResponseSchema;
+    };
+    /**
+     * The tenant's agents that work in the calling service.
+     * Since 1.2.0.
+     *
+     * @generated from rpc hayat.authz.v1.AgentService.ListTenantAgents
+     */
+    listTenantAgents: {
+        methodKind: "unary";
+        input: typeof ListTenantAgentsRequestSchema;
+        output: typeof ListTenantAgentsResponseSchema;
+    };
+    /**
+     * A short-lived token to act as the agent: sub "agent:<id>", aud the calling
+     * service. Refused unless the agent and its sponsor are active and the agent
+     * works in the calling service. Check every action as the agent (agent_id).
+     * Since 1.2.0.
+     *
+     * @generated from rpc hayat.authz.v1.AgentService.IssueAgentToken
+     */
+    issueAgentToken: {
+        methodKind: "unary";
+        input: typeof IssueAgentTokenRequestSchema;
+        output: typeof IssueAgentTokenResponseSchema;
+    };
+}>;
+/**
  * @generated from service hayat.authz.v1.SchemaService
  */
 export declare const SchemaService: GenService<{
     /**
      * Publish a new version of your contract. It waits for owner approval.
+     * Since 1.0.0.
      *
      * @generated from rpc hayat.authz.v1.SchemaService.PublishContract
      */
@@ -1238,5 +1696,58 @@ export declare const SchemaService: GenService<{
         methodKind: "unary";
         input: typeof PublishContractRequestSchema;
         output: typeof PublishContractResponseSchema;
+    };
+}>;
+/**
+ * The one service that takes no access token: the enrollment code is the
+ * credential. A service's deployment is given a code an owner made in Hayat's
+ * console, calls Enroll once, and keeps what comes back. A code for a service
+ * Hayat doesn't know registers it; a code for one it knows rotates its API
+ * secret (the old one stops working at once). A code is single use; one that
+ * fails is given back, so the caller can fix its request and retry.
+ *
+ * @generated from service hayat.authz.v1.EnrollmentService
+ */
+export declare const EnrollmentService: GenService<{
+    /**
+     * What a code would do, without spending it: a setup page shows this before
+     * the person confirms.
+     * Since 1.2.0.
+     *
+     * @generated from rpc hayat.authz.v1.EnrollmentService.InspectEnrollment
+     */
+    inspectEnrollment: {
+        methodKind: "unary";
+        input: typeof InspectEnrollmentRequestSchema;
+        output: typeof InspectEnrollmentResponseSchema;
+    };
+    /**
+     * Since 1.2.0.
+     *
+     * @generated from rpc hayat.authz.v1.EnrollmentService.Enroll
+     */
+    enroll: {
+        methodKind: "unary";
+        input: typeof EnrollRequestSchema;
+        output: typeof EnrollResponseSchema;
+    };
+}>;
+/**
+ * Served without an access token, like EnrollmentService: a service checks the
+ * Hayat it reached before it enrolls or starts, and refuses one older than the
+ * minimum it declares. A Hayat without this service is older than 1.2.0.
+ *
+ * @generated from service hayat.authz.v1.ServerInfoService
+ */
+export declare const ServerInfoService: GenService<{
+    /**
+     * Since 1.2.0.
+     *
+     * @generated from rpc hayat.authz.v1.ServerInfoService.GetServerInfo
+     */
+    getServerInfo: {
+        methodKind: "unary";
+        input: typeof GetServerInfoRequestSchema;
+        output: typeof GetServerInfoResponseSchema;
     };
 }>;

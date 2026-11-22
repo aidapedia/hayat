@@ -1,6 +1,6 @@
-import { Box, Building2, Users } from 'lucide-react'
+import { Box, Building2, Server, Users } from 'lucide-react'
 import { cn } from '@/shared/lib/utils'
-import { GROUP, TENANT } from './tree'
+import { GROUP, ROOT, TENANT } from './tree'
 
 /**
  * One icon per kind of node, so a node looks the same in the tree, the detail
@@ -8,6 +8,6 @@ import { GROUP, TENANT } from './tree'
  * is a container and a roster, and the roster is what a grant is made to.
  */
 export function NodeIcon({ type, className }: { type: string; className?: string }) {
-  const Icon = type === TENANT ? Building2 : type === GROUP ? Users : Box
+  const Icon = type === ROOT ? Server : type === TENANT ? Building2 : type === GROUP ? Users : Box
   return <Icon className={cn('size-3.5 shrink-0', className)} />
 }

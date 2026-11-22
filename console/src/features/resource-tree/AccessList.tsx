@@ -94,7 +94,7 @@ export function AccessList({
   const [pending, setPending] = useState<Grant[] | null>(null)
 
   if (error) return <p className="text-[12px] text-destructive">{error}</p>
-  if (loading && !data) return <LoadingState />
+  if (loading && !data) return <LoadingState size="sm" />
   const blocks = toBlocks(data ?? [], grants)
   if (blocks.length === 0)
     return <p className="rounded-[10px] border border-dashed px-3 py-4 text-center text-[12px] text-faint">Nobody reaches this node yet.</p>

@@ -95,7 +95,7 @@ export function NodePanel({
   const children = useMemo(() => childrenMap(nodes).get(nodeId) ?? [], [nodes, nodeId])
 
   if (error) return <div className="p-4"><ErrorState message={error} onRetry={reload} /></div>
-  if (loading && !data) return <div className="px-4"><LoadingState /></div>
+  if (loading && !data) return <LoadingState size="sm" />
   if (!data?.node) return null
   const n = data.node
   const can = (p: string) => data.myPermissions.includes(p)

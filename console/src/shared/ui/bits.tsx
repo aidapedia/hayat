@@ -1,6 +1,6 @@
 import { useState, type ComponentProps, type ReactNode } from 'react'
 import Avatar from 'boring-avatars'
-import { Check, Copy, Loader2, Search } from 'lucide-react'
+import { Check, Copy, Search } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/shared/lib/utils'
 import { Badge } from '@/shared/ui/badge'
@@ -98,10 +98,38 @@ export function Pill({ children, className }: { children: ReactNode; className?:
   )
 }
 
-export function LoadingState({ label = 'Loading…' }: { label?: string }) {
+const LOADER_SIZE = {
+  sm: { logo: 28, radius: 8, bar: 'w-16', pad: 'py-8' },
+  md: { logo: 40, radius: 10, bar: 'w-24', pad: 'py-20' },
+  lg: { logo: 56, radius: 14, bar: 'w-32', pad: '' },
+}
+
+/**
+ * Hayat's mark, breathing, over a sliding bar — the one loading look, so every
+ * page waits the way the sign-in page greets. `sm` fits a dialog or side panel.
+ * It fades in after a beat, so a fast load never flashes (styles in index.css).
+ */
+export function LoadingState({ label = 'Loading…', size = 'md' }: { label?: string; size?: keyof typeof LOADER_SIZE }) {
+  const s = LOADER_SIZE[size]
   return (
-    <div className="flex items-center gap-2 py-10 text-[13px] text-faint">
-      <Loader2 className="size-4 animate-spin" /> {label}
+    <div role="status" aria-live="polite" className={cn('hayat-loader flex flex-col items-center justify-center gap-3', s.pad)}>
+      <span className="relative inline-flex" style={{ width: s.logo, height: s.logo }}>
+        <span className="hayat-loader-ring absolute inset-0 bg-primary/25" style={{ borderRadius: s.radius }} />
+        <img src="/hayat.png" alt="" className="hayat-loader-logo relative size-full" style={{ borderRadius: s.radius }} />
+      </span>
+      <span className={cn('relative h-0.5 overflow-hidden rounded-full bg-muted', s.bar)}>
+        <span className="hayat-loader-bar absolute inset-y-0 left-0 w-2/5 rounded-full bg-primary" />
+      </span>
+      <span className="text-[12px] text-faint">{label}</span>
+    </div>
+  )
+}
+
+/** The loader on its own screen: before the app, or the session, is ready. */
+export function LoadingScreen({ label }: { label?: string }) {
+  return (
+    <div className="flex h-full items-center justify-center px-4">
+      <LoadingState label={label} size="lg" />
     </div>
   )
 }
