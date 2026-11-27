@@ -2532,7 +2532,12 @@ func (x *BatchGetUsersResponse) GetUsers() []*User {
 type WatchRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The id of the last event you processed; empty starts from now.
-	Cursor        string `protobuf:"bytes,1,opt,name=cursor,proto3" json:"cursor,omitempty"`
+	Cursor string `protobuf:"bytes,1,opt,name=cursor,proto3" json:"cursor,omitempty"`
+	// Ask for a heartbeat: a response with no event as soon as the stream opens
+	// and after every 30 seconds without one, so a proxy in between (Cloudflare
+	// ends a request that's quiet for 100 seconds) keeps the stream open. Skip a
+	// response without an event. Since 1.3.0; an older Hayat ignores it.
+	Heartbeat     bool `protobuf:"varint,2,opt,name=heartbeat,proto3" json:"heartbeat,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2574,9 +2579,17 @@ func (x *WatchRequest) GetCursor() string {
 	return ""
 }
 
+func (x *WatchRequest) GetHeartbeat() bool {
+	if x != nil {
+		return x.Heartbeat
+	}
+	return false
+}
+
 type WatchResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Event         *PolicyEvent           `protobuf:"bytes,1,opt,name=event,proto3" json:"event,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Empty on a heartbeat.
+	Event         *PolicyEvent `protobuf:"bytes,1,opt,name=event,proto3" json:"event,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3823,9 +3836,10 @@ const file_hayat_authz_v1_authz_proto_rawDesc = "" +
 	"\x14BatchGetUsersRequest\x12\x10\n" +
 	"\x03ids\x18\x01 \x03(\tR\x03ids\"C\n" +
 	"\x15BatchGetUsersResponse\x12*\n" +
-	"\x05users\x18\x01 \x03(\v2\x14.hayat.authz.v1.UserR\x05users\"&\n" +
+	"\x05users\x18\x01 \x03(\v2\x14.hayat.authz.v1.UserR\x05users\"D\n" +
 	"\fWatchRequest\x12\x16\n" +
-	"\x06cursor\x18\x01 \x01(\tR\x06cursor\"B\n" +
+	"\x06cursor\x18\x01 \x01(\tR\x06cursor\x12\x1c\n" +
+	"\theartbeat\x18\x02 \x01(\bR\theartbeat\"B\n" +
 	"\rWatchResponse\x121\n" +
 	"\x05event\x18\x01 \x01(\v2\x1b.hayat.authz.v1.PolicyEventR\x05event\"\x8c\x01\n" +
 	"\vPolicyEvent\x12\x0e\n" +
