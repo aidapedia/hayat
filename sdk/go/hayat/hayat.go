@@ -249,10 +249,13 @@ func (c *Client) Watch(ctx context.Context) {
 	cursor := ""
 	backoff := time.Second
 	for ctx.Err() == nil {
-		stream, err := c.watch.Watch(ctx, connect.NewRequest(&authzv1.WatchRequest{Cursor: cursor}))
+		stream, err := c.watch.Watch(ctx, connect.NewRequest(&authzv1.WatchRequest{Cursor: cursor, Heartbeat: true}))
 		if err == nil {
 			for stream.Receive() {
 				e := stream.Msg().Event
+				if e == nil {
+					continue // a heartbeat
+				}
 				cursor = e.Id
 				if e.TenantId == globalTenant {
 					c.cache.dropAll()

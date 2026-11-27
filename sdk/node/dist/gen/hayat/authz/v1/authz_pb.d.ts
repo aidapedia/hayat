@@ -1021,6 +1021,15 @@ export type WatchRequest = Message<"hayat.authz.v1.WatchRequest"> & {
      * @generated from field: string cursor = 1;
      */
     cursor: string;
+    /**
+     * Ask for a heartbeat: a response with no event as soon as the stream opens
+     * and after every 30 seconds without one, so a proxy in between (Cloudflare
+     * ends a request that's quiet for 100 seconds) keeps the stream open. Skip a
+     * response without an event. Since 1.3.0; an older Hayat ignores it.
+     *
+     * @generated from field: bool heartbeat = 2;
+     */
+    heartbeat: boolean;
 };
 /**
  * Describes the message hayat.authz.v1.WatchRequest.
@@ -1032,6 +1041,8 @@ export declare const WatchRequestSchema: GenMessage<WatchRequest>;
  */
 export type WatchResponse = Message<"hayat.authz.v1.WatchResponse"> & {
     /**
+     * Empty on a heartbeat.
+     *
      * @generated from field: hayat.authz.v1.PolicyEvent event = 1;
      */
     event?: PolicyEvent | undefined;

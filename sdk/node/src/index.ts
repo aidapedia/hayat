@@ -263,7 +263,7 @@ export class Hayat {
     let backoff = 1000
     while (!signal?.aborted) {
       try {
-        for await (const res of this.watcher.watch({ cursor }, { signal })) {
+        for await (const res of this.watcher.watch({ cursor, heartbeat: true }, { signal })) {
           const e = res.event
           if (!e) continue
           cursor = e.id

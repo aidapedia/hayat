@@ -424,6 +424,10 @@ func (d *directoryService) ListTenantGrants(ctx context.Context, req *connect.Re
 
 type watchService struct{ s *Server }
 
+// watchHeartbeat is how long a stream that asked for heartbeats stays quiet:
+// well under the 100 seconds Cloudflare allows, and nginx's default 60.
+const watchHeartbeat = 30 * time.Second
+
 // Watch polls the policy event table. It needs nothing but the database, so it
 // works the same on PostgreSQL and YugabyteDB, with or without Redis.
 func (w *watchService) Watch(ctx context.Context, req *connect.Request[authzv1.WatchRequest], stream *connect.ServerStream[authzv1.WatchResponse]) error {
@@ -437,6 +441,7 @@ func (w *watchService) Watch(ctx context.Context, req *connect.Request[authzv1.W
 	}
 	tick := time.NewTicker(500 * time.Millisecond)
 	defer tick.Stop()
+	var lastSent time.Time // zero: the first idle poll sends a heartbeat, so headers go out at once
 	for {
 		events, err := revision.Since(ctx, w.s.store.Pool, cursor, 200)
 		if err != nil {
@@ -451,9 +456,16 @@ func (w *watchService) Watch(ctx context.Context, req *connect.Request[authzv1.W
 				return err
 			}
 			cursor = e.ID
+			lastSent = time.Now()
 		}
 		if len(events) == 200 {
 			continue // more waiting
+		}
+		if req.Msg.Heartbeat && time.Since(lastSent) >= watchHeartbeat {
+			if err := stream.Send(&authzv1.WatchResponse{}); err != nil {
+				return err
+			}
+			lastSent = time.Now()
 		}
 		select {
 		case <-ctx.Done():
